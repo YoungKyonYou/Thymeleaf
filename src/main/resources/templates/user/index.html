@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{user/layout :: page(~{::content}, 'Users')}">
+<body>
+<div th:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="m-0">Users</h3>
+        <button id="btn-new" class="btn btn-primary">새 사용자</button>
+    </div>
+
+    <div id="grid">
+        <form class="row gy-2 gx-2 align-items-center mb-3">
+            <div class="col-auto">
+                <input name="q" class="form-control" placeholder="검색" th:value="${q}">
+            </div>
+            <div class="col-auto">
+                <select name="size" class="form-select">
+                    <option th:selected="${size==10}" value="10">10</option>
+                    <option th:selected="${size==20}" value="20">20</option>
+                    <option th:selected="${size==50}" value="50">50</option>
+                </select>
+            </div>
+            <input type="hidden" id="sort" th:value="${sort}">
+            <input type="hidden" id="dir"  th:value="${dir}">
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead id="grid-head">
+                <tr>
+                    <th><a href="#" data-sort="id">ID <span class="sort-indicator"></span></a></th>
+                    <th><a href="#" data-sort="username">Username <span class="sort-indicator"></span></a></th>
+                    <th><a href="#" data-sort="email">Email <span class="sort-indicator"></span></a></th>
+                    <th><a href="#" data-sort="firstName">First <span class="sort-indicator"></span></a></th>
+                    <th><a href="#" data-sort="lastName">Last <span class="sort-indicator"></span></a></th>
+                    <th>Phone</th>
+                    <th style="width:160px"></th>
+                </tr>
+                </thead>
+
+                <!-- tbody 래퍼는 유지, 내부 내용만 프래그먼트가 채움 -->
+                <tbody id="grid-tbody"
+                       th:insert="~{common/fragment/pagination :: initialTbody(${pageData})}">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- nav 래퍼는 유지, 내부 내용만 프래그먼트가 채움 -->
+        <nav id="grid-pager"
+             th:insert="~{common/fragment/pagination :: pager(${pageData}, ${sort}, ${dir}, ${q}, ${size})}">
+        </nav>
+
+        <!-- Modal -->
+        <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="modal-body" class="modal-body"></div>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- 페이지 전용 스크립트 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const baseUrl   = '/user';
+            const grid      = document.getElementById('grid'); if (!grid) return;
+            const btnNew    = document.getElementById('btn-new');
+            const modalEl   = document.getElementById('formModal');
+            const modalBody = document.getElementById('modal-body');
+            const head      = document.getElementById('grid-head');
+
+            const searchForm = grid.querySelector('form');
+            const inputQ     = searchForm?.querySelector('input[name="q"]');
+            const selectSize = searchForm?.querySelector('select[name="size"]');
+            const inputSort  = document.getElementById('sort');
+            const inputDir   = document.getElementById('dir');
+
+            let tbody = document.getElementById('grid-tbody');
+            let pager = document.getElementById('grid-pager');
+
+            function currentParams() {
+                return {
+                    q:    inputQ?.value ?? '',
+                    size: parseInt(selectSize?.value || '10', 10),
+                    sort: inputSort?.value || 'id',
+                    dir:  inputDir?.value  || 'asc',
+                    page: 0
+                };
+            }
+            function buildUrl(params) {
+                const url = new URL(baseUrl, window.location.origin);
+                Object.entries(params).forEach(([k, v]) => {
+                    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+                });
+                url.searchParams.set('_', Date.now()); // 캐시 회피
+                return url.toString();
+            }
+            function requeryRefs() {
+                tbody = document.getElementById('grid-tbody');
+                pager = document.getElementById('grid-pager');
+            }
+            function getActivePage() {
+                const activeLink = pager?.querySelector('.active a, [aria-current="page"]');
+                if (!activeLink) return 0;
+                const href = activeLink.getAttribute('href') || '';
+                const u = new URL(href, window.location.origin);
+                return parseInt(u.searchParams.get('page') || '0', 10);
+            }
+            const modal = (() => { let inst; return () => (inst ??= new window.bootstrap.Modal(modalEl)); })();
+            modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
+
+            async function reloadList({ page } = {}) {
+                const params = currentParams();
+                params.page = (typeof page === 'number') ? page : getActivePage();
+
+                const res = await fetch(buildUrl(params), { headers: { 'Accept': 'text/html' }, cache: 'no-store' });
+                if (!res.ok) { alert('목록을 불러오지 못했습니다.'); return; }
+
+                const html = await res.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+
+                const newTbody = doc.querySelector('#grid-tbody');
+                const newPager = doc.querySelector('#grid-pager');
+
+                if (newTbody && tbody) tbody.replaceWith(newTbody);
+                if (newPager && pager) pager.replaceWith(newPager);
+
+                requeryRefs();
+                bindDynamicHandlers();
+            }
+
+            async function openCreateModal() {
+                const res = await fetch(baseUrl + '/new', { headers: { 'Accept': 'text/html' }});
+                if (!res.ok) { alert('폼을 불러오지 못했습니다.'); return; }
+
+                modalBody.innerHTML = await res.text();
+
+                const formEl =
+                    modalBody.querySelector('form#user-form') ||
+                    modalBody.querySelector('form#entity-form') ||
+                    modalBody.querySelector('form');
+
+                if (formEl) formEl.addEventListener('submit', onSubmitCreate, { once: true });
+
+                modal().show();
+            }
+
+            async function onSubmitCreate(e) {
+                e.preventDefault();
+                const formEl = e.currentTarget;
+                const fd = new FormData(formEl);
+
+                const res  = await fetch(baseUrl, { method: 'POST', body: fd, headers: { 'Accept': 'text/html' }});
+                const html = await res.text();
+
+                if (!res.ok) {
+                    modalBody.innerHTML = html;
+                    const rebind =
+                        modalBody.querySelector('form#user-form') ||
+                        modalBody.querySelector('form#entity-form') ||
+                        modalBody.querySelector('form');
+                    if (rebind) rebind.addEventListener('submit', onSubmitCreate, { once: true });
+                    return;
+                }
+
+                await reloadList({ page: getActivePage() });
+
+                if (modalEl.contains(document.activeElement)) document.activeElement.blur();
+                modal().hide();
+            }
+
+            function onPagerClick(e) {
+                const a = e.target.closest('a'); if (!a) return;
+                const href = a.getAttribute('href'); if (!href) return;
+                e.preventDefault();
+                const u = new URL(href, window.location.origin);
+                const p = parseInt(u.searchParams.get('page') || '0', 10);
+                reloadList({ page: isNaN(p) ? 0 : p });
+            }
+            function onHeadSortClick(e) {
+                const a = e.target.closest('a[data-sort]'); if (!a) return;
+                e.preventDefault();
+                const nextSort = a.dataset.sort;
+                const currSort = inputSort?.value || 'id';
+                let nextDir    = inputDir?.value  || 'asc';
+                if (nextSort === currSort) nextDir = (nextDir === 'asc' ? 'desc' : 'asc'); else nextDir = 'asc';
+                if (inputSort) inputSort.value = nextSort;
+                if (inputDir)  inputDir.value  = nextDir;
+                reloadList({ page: 0 });
+            }
+            function bindDynamicHandlers() {
+                if (pager) pager.addEventListener('click', onPagerClick, { once: true });
+            }
+
+            if (btnNew) btnNew.addEventListener('click', openCreateModal);
+            if (pager)  pager.addEventListener('click', onPagerClick);
+            if (head)   head.addEventListener('click', onHeadSortClick);
+
+            if (searchForm) {
+                searchForm.addEventListener('submit', (e) => { e.preventDefault(); reloadList({ page: 0 }); });
+                if (selectSize) selectSize.addEventListener('change', () => reloadList({ page: 0 }));
+            }
+        });
+    </script>
+</div>
+</body>
+</html>

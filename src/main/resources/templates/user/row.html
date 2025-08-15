@@ -1,0 +1,16 @@
+<tr xmlns:th="http://www.thymeleaf.org"
+    th:fragment="row(u)"
+    th:if="${u != null}">
+    <td th:text="${u.id}">1</td>
+    <td th:text="${u.username}">user01</td>
+    <td>
+        <a th:href="'mailto:' + ${u.email}" th:text="${u.email}">user01@example.com</a>
+    </td>
+    <td th:text="${u.firstName}">John</td>
+    <td th:text="${u.lastName}">Doe</td>
+    <td th:text="${u.phone}">010-1111-0001</td>
+    <td class="text-end">
+        <button class="btn btn-sm btn-outline-primary">Edit</button>
+        <button class="btn btn-sm btn-outline-danger">Del</button>
+    </td>
+</tr>

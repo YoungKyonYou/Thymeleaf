@@ -1,0 +1,45 @@
+<form th:fragment="form" id="user-form" th:object="${user}">
+    <input type="hidden" name="id" th:value="*{id}">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Username</label>
+            <input class="form-control" th:field="*{username}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Password</label>
+            <input class="form-control" th:field="*{password}" required>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" th:field="*{email}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">First Name</label>
+            <input class="form-control" th:field="*{firstName}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Last Name</label>
+            <input class="form-control" th:field="*{lastName}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Gender</label>
+            <select class="form-select" th:field="*{gender}">
+                <option value="">-</option>
+                <option value="M">M</option>
+                <option value="F">F</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Birth Date</label>
+            <input type="date" class="form-control" th:field="*{birthDate}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input class="form-control" th:field="*{phone}">
+        </div>
+    </div>
+    <div class="mt-4 d-flex justify-content-end">
+        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">취소</button>
+        <button class="btn btn-primary" type="submit">저장</button>
+    </div>
+</form>
