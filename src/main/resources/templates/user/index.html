@@ -145,6 +145,7 @@
                 let inst;
                 return () => (inst ??= new window.bootstrap.Modal(modalEl));
             })();
+
             modalEl.addEventListener('hidden.bs.modal', () => {
                 modalBody.innerHTML = '';
             });

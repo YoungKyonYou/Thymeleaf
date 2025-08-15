@@ -86,9 +86,11 @@ public class UserRepositoryImpl implements UserRepository {
         //정렬
         String orderBy = SORT.getOrDefault(sort, "id");
         String direction = "desc".equalsIgnoreCase(dir) ? "DESC" : "ASC";
+
         int offset = Math.max(page, 0) * size;
 
         params.addValue("size", size).addValue("offset", offset);
+
         String sql = "SELECT * FROM users" + where + " ORDER BY " + orderBy + " " + direction +
                 " LIMIT :size OFFSET :offset";
 
