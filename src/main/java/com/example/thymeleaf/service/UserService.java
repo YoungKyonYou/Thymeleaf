@@ -12,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     @Transactional(readOnly = true)
-    public PageData<UserDto> search(String q, int page, int size, String sort, String dir) {
-        return userRepository.search(q, page, size, sort, dir);
+    public PageData<UserDto> search(String q, String by, int page, int size, String sort, String dir) {
+        return userRepository.search(q, by, page, size, sort, dir);
     }
 
     @Transactional(readOnly = true)

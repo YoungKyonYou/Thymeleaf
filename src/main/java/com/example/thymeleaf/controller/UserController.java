@@ -24,13 +24,17 @@ public class UserController {
     private final UserService userService;
     // 전체 페이지
     @GetMapping
-    public String page(@RequestParam(required = false, defaultValue = "") String q,
+    public String page(@RequestParam(defaultValue = "all") String by,
+                       @RequestParam(required = false, defaultValue = "") String q,
                        @RequestParam(defaultValue = "0") int page,
                        @RequestParam(defaultValue = "10") int size,
-                       @RequestParam(required = false, defaultValue = "id") String sort,
-                       @RequestParam(required = false, defaultValue = "asc") String dir,
+                       @RequestParam(defaultValue = "id") String sort,
+                       @RequestParam(defaultValue = "asc") String dir,
                        Model model) {
-        PageData<UserDto> contents = userService.search(q, page, size, sort, dir);
+
+        PageData<UserDto> contents = userService.search(q, by, page, size, sort, dir);
+
+        model.addAttribute("by", by);
         model.addAttribute("q", q);
         model.addAttribute("pageData", contents);
         model.addAttribute("sort", sort);
@@ -39,22 +43,6 @@ public class UserController {
         return "user/index";
     }
 
-    // rows + pager 묶음 조각(HTML) 반환
-    @GetMapping(path="/rows", produces = MediaType.TEXT_HTML_VALUE)
-    public String rows(@RequestParam(required = false, defaultValue = "") String q,
-                       @RequestParam(defaultValue = "0") int page,
-                       @RequestParam(defaultValue = "10") int size,
-                       @RequestParam(required = false, defaultValue = "id") String sort,
-                       @RequestParam(required = false, defaultValue = "asc") String dir,
-                       Model model) {
-        PageData<UserDto> contents = userService.search(q, page, size, sort, dir);
-        model.addAttribute("q", q);
-        model.addAttribute("pageData", contents);
-        model.addAttribute("sort", sort);
-        model.addAttribute("dir", dir);
-        model.addAttribute("size", size);
-        return "common/fragment/pagination :: rowsAndPager(pageData, sort, dir, q, size)";
-    }
     @GetMapping(path="/new", produces = MediaType.TEXT_HTML_VALUE)
     public String newForm(Model model) {
         model.addAttribute("user", new UserDto());
