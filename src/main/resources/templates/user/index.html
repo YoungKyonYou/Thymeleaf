@@ -90,277 +90,188 @@
     <!-- 페이지 전용 스크립트 -->
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
-            const baseUrl = '/user';
-            const grid = document.getElementById('grid');
+            // ─── 작은 유틸 ───────────────────────────────────────────────────────────────
+            const $ = (sel, el = document) => el.querySelector(sel);
+            const buildUrl = (base, params = {}) => {
+                const u = new URL(base, window.location.origin);
+                Object.entries(params).forEach(([k, v]) => (v ?? '') !== '' && u.searchParams.set(k, v));
+                u.searchParams.set('_', Date.now()); // cache bust
+                return u.toString();
+            };
+            const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
+            const swap = (html, selector) => {
+                const doc = parseHtml(html);
+                const next = doc.querySelector(selector);
+                const curr = document.querySelector(selector);
+                if (next && curr) curr.replaceWith(next);
+            };
+            const fetchHtml = async (url, opt = {}) => {
+                const res = await fetch(url, { headers: {'Accept': 'text/html'}, cache: 'no-store', ...opt });
+                const text = await res.text();
+                if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status, body: text });
+                return text;
+            };
+            const activePage = () => {
+                const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
+                if (!a) return 0;
+                const u = new URL(a.getAttribute('href') || '', window.location.origin);
+                return parseInt(u.searchParams.get('page') || '0', 10) || 0;
+            };
+            const ensureBootstrapReady = () =>
+                window.bootstrap ? Promise.resolve() : new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, {once:true})));
+
+            // ─── 엘리먼트 & 상태소스 ─────────────────────────────────────────────────────
+            const baseUrl   = '/user';
+            const grid      = document.getElementById('grid');
             if (!grid) return;
-            const btnNew = document.getElementById('btn-new');
-            const modalEl = document.getElementById('formModal');
-            const modalBody = document.getElementById('modal-body');
-            const head = document.getElementById('grid-head');
 
-            const searchForm = grid.querySelector('form');
-            const selectBy   = searchForm?.querySelector('select[name="by"]');
-            const inputQ = searchForm?.querySelector('input[name="q"]');
-            const selectSize = searchForm?.querySelector('select[name="size"]');
-            const inputSort = document.getElementById('sort');
-            const inputDir = document.getElementById('dir');
+            const btnNew      = document.getElementById('btn-new');
+            const head        = document.getElementById('grid-head');
+            const modalEl     = document.getElementById('formModal');
+            const modalBody   = document.getElementById('modal-body');
+            const searchForm  = grid.querySelector('form');
+            const selectBy    = searchForm?.querySelector('select[name="by"]');
+            const inputQ      = searchForm?.querySelector('input[name="q"]');
+            const selectSize  = searchForm?.querySelector('select[name="size"]');
+            const inputSort   = document.getElementById('sort');
+            const inputDir    = document.getElementById('dir');
 
-            let tbody = document.getElementById('grid-tbody');
-            let pager = document.getElementById('grid-pager');
-
-            function currentParams() {
-                return {
-                    by:   selectBy?.value || 'all',
-                    q: inputQ?.value ?? '',
-                    size: parseInt(selectSize?.value || '10', 10),
-                    sort: inputSort?.value || 'id',
-                    dir: inputDir?.value || 'asc',
-                    page: 0
-                };
-            }
-
-            function buildUrl(params) {
-                const url = new URL(baseUrl, window.location.origin);
-                Object.entries(params).forEach(([k, v]) => {
-                    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
-                });
-                url.searchParams.set('_', Date.now()); // 캐시 회피
-                return url.toString();
-            }
-
-            function requeryRefs() {
-                tbody = document.getElementById('grid-tbody');
-                pager = document.getElementById('grid-pager');
-            }
-
-            function getActivePage() {
-                const activeLink = pager?.querySelector('.active a, [aria-current="page"]');
-                if (!activeLink) return 0;
-                const href = activeLink.getAttribute('href') || '';
-                const u = new URL(href, window.location.origin);
-                return parseInt(u.searchParams.get('page') || '0', 10);
-            }
-
-            const modal = (() => {
-                let inst;
-                return () => (inst ??= new window.bootstrap.Modal(modalEl));
-            })();
-
-            modalEl.addEventListener('hidden.bs.modal', () => {
-                modalBody.innerHTML = '';
+            const state = (overrides = {}) => ({
+                by:   selectBy?.value || 'all',
+                q:    inputQ?.value ?? '',
+                size: parseInt(selectSize?.value || '10', 10),
+                sort: inputSort?.value || 'id',
+                dir:  inputDir?.value || 'asc',
+                page: 0,
+                ...overrides
             });
 
-            async function reloadList({page} = {}) {
-                const params = currentParams();
-                params.page = (typeof page === 'number') ? page : getActivePage();
+            // ─── 목록 갱신 (tbody + pager 한번에) ────────────────────────────────────────
+            let listAbort;
+            async function reloadList({ page } = {}) {
+                listAbort?.abort();
+                listAbort = new AbortController();
+                const signal = listAbort.signal;
 
-                const res = await fetch(buildUrl(params), {headers: {'Accept': 'text/html'}, cache: 'no-store'});
-                if (!res.ok) {
-                    alert('목록을 불러오지 못했습니다.');
-                    return;
+                const params = state({ page: typeof page === 'number' ? page : activePage() });
+                try {
+                    const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
+                    swap(html, '#grid-tbody');
+                    swap(html, '#grid-pager');
+                } catch (e) {
+                    if (e.name !== 'AbortError') alert('목록을 불러오지 못했습니다.');
                 }
-
-                const html = await res.text();
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-
-                const newTbody = doc.querySelector('#grid-tbody');
-                const newPager = doc.querySelector('#grid-pager');
-
-                if (newTbody && tbody) tbody.replaceWith(newTbody);
-                if (newPager && pager) pager.replaceWith(newPager);
-
-                requeryRefs();
-                bindDynamicHandlers();
             }
+
+            // ─── 모달 도우미 ────────────────────────────────────────────────────────────
+            let modalInst;
+            const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
+            modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
 
             async function openCreateModal() {
                 await ensureBootstrapReady();
-                const res = await fetch(baseUrl + '/new', {headers: {'Accept': 'text/html'}});
-                if (!res.ok) {
-                    alert('폼을 불러오지 못했습니다.');
+                try {
+                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/new`);
+                    const form = modalBody.querySelector('form');
+                    form?.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        try {
+                            const fd = new FormData(form);
+                            await fetchHtml(baseUrl, { method: 'POST', body: fd });
+                            await reloadList({ page: activePage() });
+                            modal().hide();
+                        } catch (err) {
+                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
+                        }
+                    }, { once: true });
+                    modal().show();
+                } catch { alert('폼을 불러오지 못했습니다.'); }
+            }
+
+            async function openEditModal(id) {
+                await ensureBootstrapReady();
+                try {
+                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/${id}/edit`);
+                    const form = modalBody.querySelector('form');
+                    form?.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const fd = new FormData(form);
+                        const params = new URLSearchParams();
+                        for (const [k,v] of fd.entries()) params.append(k, v);
+                        try {
+                            const html = await fetchHtml(`${baseUrl}/${id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: params
+                            });
+                            // 서버가 <tr>만 내려준다고 가정하고 교체
+                            const temp = document.createElement('tbody');
+                            temp.innerHTML = html.trim();
+                            const newRow = temp.firstElementChild;
+                            const oldRow = document.getElementById(`row-${id}`);
+                            if (oldRow && newRow) oldRow.replaceWith(newRow);
+                            modal().hide();
+                        } catch (err) {
+                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
+                        }
+                    }, { once: true });
+                    modal().show();
+                } catch { alert('수정 폼을 불러오지 못했습니다.'); }
+            }
+
+            async function onDelete(id) {
+                if (!confirm('해당 행을 삭제하시겠습니까?')) return;
+                try {
+                    await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
+                    await reloadList({ page: activePage() });
+                } catch { alert('삭제에 실패했습니다.'); }
+            }
+
+            // ─── 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경 ────────────────────────────
+            // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
+            grid.addEventListener('click', (e) => {
+                // 페이저
+                const pagerLink = e.target.closest('#grid-pager a');
+                if (pagerLink) {
+                    e.preventDefault();
+                    const u = new URL(pagerLink.getAttribute('href') || '', window.location.origin);
+                    const p = parseInt(u.searchParams.get('page') || '0', 10);
+                    reloadList({ page: isNaN(p) ? 0 : p });
                     return;
                 }
 
-                modalBody.innerHTML = await res.text();
+                // 수정/삭제
+                const editBtn = e.target.closest('.js-edit');
+                if (editBtn) { openEditModal(editBtn.dataset.id); return; }
+                const delBtn = e.target.closest('.js-del');
+                if (delBtn) { onDelete(delBtn.dataset.id); }
+            });
 
-                const formEl =
-                    modalBody.querySelector('form#user-form') ||
-                    modalBody.querySelector('form#entity-form') ||
-                    modalBody.querySelector('form');
-
-                if (formEl) formEl.addEventListener('submit', onSubmitCreate, {once: true});
-
-                modal().show();
-            }
-
-            async function onSubmitCreate(e) {
-                e.preventDefault();
-                const formEl = e.currentTarget;
-                const fd = new FormData(formEl);
-
-                const res = await fetch(baseUrl, {method: 'POST', body: fd, headers: {'Accept': 'text/html'}});
-                const html = await res.text();
-
-                if (!res.ok) {
-                    modalBody.innerHTML = html;
-                    const rebind =
-                        modalBody.querySelector('form#user-form') ||
-                        modalBody.querySelector('form#entity-form') ||
-                        modalBody.querySelector('form');
-                    if (rebind) rebind.addEventListener('submit', onSubmitCreate, {once: true});
-                    return;
-                }
-
-                await reloadList({page: getActivePage()});
-
-                if (modalEl.contains(document.activeElement)) document.activeElement.blur();
-                modal().hide();
-            }
-
-            function onPagerClick(e) {
-                const a = e.target.closest('a');
-                if (!a) return;
-                const href = a.getAttribute('href');
-                if (!href) return;
-                e.preventDefault();
-                const u = new URL(href, window.location.origin);
-                const p = parseInt(u.searchParams.get('page') || '0', 10);
-                reloadList({page: isNaN(p) ? 0 : p});
-            }
-
-            function onHeadSortClick(e) {
+            head?.addEventListener('click', (e) => {
                 const a = e.target.closest('a[data-sort]');
                 if (!a) return;
                 e.preventDefault();
-                const nextSort = a.dataset.sort;
-                const currSort = inputSort?.value || 'id';
-                let nextDir = inputDir?.value || 'asc';
-                if (nextSort === currSort) nextDir = (nextDir === 'asc' ? 'desc' : 'asc'); else nextDir = 'asc';
-                if (inputSort) inputSort.value = nextSort;
-                if (inputDir) inputDir.value = nextDir;
-                reloadList({page: 0});
-            }
+                const next = a.dataset.sort;
+                const curr = inputSort?.value || 'id';
+                let dir   = inputDir?.value || 'asc';
+                dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+                if (inputSort) inputSort.value = next;
+                if (inputDir)  inputDir.value  = dir;
+                reloadList({ page: 0 });
+            });
 
-            function bindDynamicHandlers() {
-                if (pager) pager.addEventListener('click', onPagerClick, {once: true});
-            }
+            searchForm?.addEventListener('submit', (e) => { e.preventDefault(); reloadList({ page: 0 }); });
+            selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
 
-            if (btnNew) btnNew.addEventListener('click', openCreateModal);
-            if (pager) pager.addEventListener('click', onPagerClick);
-            if (head) head.addEventListener('click', onHeadSortClick);
+            // ─── 초기화 끝 ──────────────────────────────────────────────────────────────
 
-
-            function onTbodyClick(e) {
-                const editBtn = e.target.closest('.js-edit');
-                if (editBtn) {
-                    openEditModal(editBtn.dataset.id);
-                    return;
-                }
-
-                const delBtn = e.target.closest('.js-del');
-                if (delBtn) {
-                    onDelete(delBtn.dataset.id);
-                    return;
-                }
-            }
-
-            if (tbody) tbody.addEventListener('click', onTbodyClick);
-
-// reloadList 끝에서 tbody가 갈아끼워지므로 다시 참조 + 위임 바인딩 유지
-            function requeryRefs() {
-                tbody = document.getElementById('grid-tbody');
-                pager = document.getElementById('grid-pager');
-                if (tbody) tbody.addEventListener('click', onTbodyClick); // 재바인딩
-            }
-
-            async function ensureBootstrapReady() {
-                if (window.bootstrap) return; // 이미 로드됨
-                await new Promise(resolve => {
-                    // 모든 리소스(스크립트 포함) 로드가 끝나면 resolve
-                    if (document.readyState === 'complete') resolve();
-                    else window.addEventListener('load', resolve, {once: true});
-                });
-            }
-
-// ====== Edit ======
-            async function openEditModal(id) {
-                await ensureBootstrapReady();
-                const res = await fetch(`${baseUrl}/${id}/edit`, {headers: {'Accept': 'text/html'}});
-                if (!res.ok) {
-                    alert('수정 폼을 불러오지 못했습니다.');
-                    return;
-                }
-
-                modalBody.innerHTML = await res.text();
-                const formEl = modalBody.querySelector('form');
-                if (formEl) {
-                    formEl.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        const fd = new FormData(formEl);
-                        onSubmitEdit(id, fd);
-                    }, {once: true});
-                }
-                modal().show();
-            }
-
-            async function onSubmitEdit(id, fd) {
-                // FormData -> x-www-form-urlencoded
-                const params = new URLSearchParams();
-                for (const [k, v] of fd.entries()) params.append(k, v);
-
-                const res = await fetch(`${baseUrl}/${id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Accept': 'text/html',
-                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                    },
-                    body: params
-                });
-                const html = await res.text();
-
-                if (!res.ok) {
-                    modalBody.innerHTML = html;
-                    const formEl = modalBody.querySelector('form');
-                    if (formEl) {
-                        formEl.addEventListener('submit', (e) => {
-                            e.preventDefault();
-                            onSubmitEdit(id, new FormData(formEl));
-                        }, {once: true});
-                    }
-                    return;
-                }
-
-                const temp = document.createElement('tbody');
-                temp.innerHTML = html.trim();
-                const newRow = temp.firstElementChild;
-                const oldRow = document.querySelector(`#row-${id}`);
-                if (oldRow && newRow) oldRow.replaceWith(newRow);
-                modal().hide();
-            }
-
-            // 행 Delete
-            async function onDelete(id) {
-                if (!confirm(`해당 행을 삭제하시겠습니까?`)) return;
-
-                const res = await fetch(`${baseUrl}/${id}`, {method: 'DELETE'});
-                if (!res.ok) {
-                    alert('삭제에 실패했습니다.');
-                    return;
-                }
-
-                // 현재 페이지 유지한 채 재조회(페이지가 비면 이전 페이지로 이동하는 로직은 필요 시 추가)
-                await reloadList({page: getActivePage()});
-            }
-            if (searchForm) {
-                searchForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    reloadList({ page: 0 });
-                });
-                if (selectSize) selectSize.addEventListener('change', () => reloadList({ page: 0 }));
-
-            }
+            btnNew?.addEventListener('click', (e) => {
+                e.preventDefault();
+                openCreateModal();
+            });
         });
     </script>
+
 </div>
 </body>
 </html>
