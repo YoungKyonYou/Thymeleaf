@@ -87,7 +87,7 @@ public class FileController {
                 .contentType(mediaType)
                 .body(file);
     }
-    @GetMapping("/file/list.json")
+    @GetMapping("/file/list")
     @ResponseBody
     public List<String> listJson() {
         return storageService.listFilenames().collect(Collectors.toList());

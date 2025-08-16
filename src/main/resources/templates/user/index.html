@@ -250,17 +250,23 @@
             head?.addEventListener('click', (e) => {
                 const a = e.target.closest('a[data-sort]');
                 if (!a) return;
+                //<a> 태그의 원래 링크 이동을 막음.
                 e.preventDefault();
                 const next = a.dataset.sort;
                 const curr = inputSort?.value || 'id';
                 let dir   = inputDir?.value || 'asc';
                 dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
-                if (inputSort) inputSort.value = next;
-                if (inputDir)  inputDir.value  = dir;
+                if (inputSort)
+                    inputSort.value = next;
+                if (inputDir)
+                    inputDir.value  = dir;
                 reloadList({ page: 0 });
             });
 
-            searchForm?.addEventListener('submit', (e) => { e.preventDefault(); reloadList({ page: 0 }); });
+            searchForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                reloadList({ page: 0 });
+            });
             selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
 
             // ─── 초기화 끝 ──────────────────────────────────────────────────────────────

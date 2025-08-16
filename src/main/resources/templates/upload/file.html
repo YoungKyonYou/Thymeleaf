@@ -61,30 +61,109 @@
 </div>
 
 <script>
+    //즉시 실행 함수
     (() => {
+        // ---- 유틸 --------------------------------------------------------------
+        // DOM 선택을 짧게 쓰는 헬퍼, const element = document.querySelector(sel);와 동일
+        // 다만 두 번째 인자 el을 주면 그 요소 내부에서만 찾습니다.
+        // 원래는 document.querySelector('#title') 이런 식으로 해야하지만 이게 있으면
+        // $('#title')로 짧게 쓸 수 있음
+        const $ = (sel, el = document) => el.querySelector(sel);
+        /**
+         *  const btn1 = document.querySelector('#btn');
+         *   btn1.addEventListener('click', function() {
+         *     alert('원래 방식: 버튼 클릭!');
+         *   });
+         *
+         *   // ✅ on을 쓴 방식
+         *   const btn2 = $('#btn');
+         *   on(btn2, 'click', () => {
+         *     alert('on 방식: 버튼 클릭!');
+         *   });
+         */
+        const on = (el, type, handler) => el.addEventListener(type, handler, { passive: false });
 
-        // ---------- 메시지 ----------
-        function showInfo(msg) {
-            const el = document.getElementById('info');
-            el.textContent = msg || '';
-            el.classList.toggle('d-none', !msg);
+        function flash(msg, { ok = true, holdMs = 1500 } = {}) {
+            const box = $('#info');
+            if (!box) return;
+            box.textContent = msg || '';
+            /**
+             * alert는 기본 박스 스타일
+             * alert-success, alert-danger, alert-info는 색상(상태)
+             * d-none은 화면에서 숨김
+             */
+            box.classList.remove('d-none', 'alert-info', 'alert-danger', 'alert-success');
+            box.classList.add(ok ? 'alert-success' : 'alert-danger');
+            if (!msg) box.classList.add('d-none');
+            if (msg && holdMs) setTimeout(() => { box.classList.add('d-none'); }, holdMs);
         }
 
-        // ---------- 목록 렌더 ----------
-        function renderList(files) {
-            const list = document.getElementById('file-list');
-            const form = document.getElementById('delete-form');
-            const empty = document.getElementById('empty');
+        // 공통 fetch 래퍼
+        async function api(url, { method = 'GET', body, headers = {}, expect = 'auto' } = {}) {
+            const res = await fetch(url, {
+                method,
+                headers: { 'X-Requested-With': 'fetch', ...headers },
+                body
+            });
 
-            list.innerHTML = '';
-            if (!files || files.length === 0) {
-                form.classList.add('d-none');     // 목록 폼 숨기기
-                empty.classList.remove('d-none'); // "파일이 없습니다" 메시지 보이기
-                return;
+            //실제로는 204면 ok가 true라 이 블록 안 옴
+            if (!res.ok && res.status !== 204) {
+                const text = await res.text().catch(() => '');
+                const msg = text?.trim() || `HTTP ${res.status}`;
+                throw new Error(msg);
             }
 
-            empty.classList.add('d-none');        // "파일 없음" 메시지 숨기기
-            form.classList.remove('d-none');      // 목록 폼 보여주기
+            if (res.status === 204)
+                return null;
+
+            const ct = res.headers.get('content-type') || '';
+
+            if (expect === 'text')
+                return res.text();
+
+            if (expect === 'json' || expect === 'auto') {
+                if (ct.includes('application/json'))
+                    return res.json();
+
+                if (expect === 'json') throw new Error('서버가 JSON을 반환하지 않았습니다.');
+                return res.text();
+
+            }
+            return res.text();
+        }
+
+        // ---- 요소 캐시 ----------------------------------------------------------
+        const el = {
+            uploadForm: $('#upload-form'),
+            deleteForm: $('#delete-form'),
+            fileList :  $('#file-list'),
+            empty    :  $('#empty'),
+            resetBtn :  $('#reset-btn')
+        };
+
+        const ENDPOINT = {
+            list    : '/file/list',
+            upload  : $('#upload-form')?.action || '/file/upload',
+            del     : '/file/delete',
+            reset   : '/file/reset',
+            view    : (f) => `/file/view/${encodeURIComponent(f)}`,
+            download: (f) => `/file/download/${encodeURIComponent(f)}`
+        };
+
+        // ---- 렌더 ---------------------------------------------------------------
+        function renderList(files) {
+            const { fileList, deleteForm, empty } = { fileList: el.fileList, deleteForm: el.deleteForm, empty: el.empty };
+
+            fileList.innerHTML = '';
+            if (!files || files.length === 0) {
+                deleteForm.classList.add('d-none');
+                empty.classList.remove('d-none');
+                return;
+            }
+            empty.classList.add('d-none');
+            deleteForm.classList.remove('d-none');
+
+            const frag = document.createDocumentFragment();
 
             for (const f of files) {
                 const li = document.createElement('li');
@@ -104,117 +183,123 @@
                 span.style.maxWidth = '60%';
                 span.textContent = f;
 
-                left.appendChild(cb);
-                left.appendChild(span);
+                left.append(cb, span);
 
                 const right = document.createElement('span');
                 right.className = 'd-flex gap-2';
 
                 const aView = document.createElement('a');
                 aView.className = 'btn btn-sm btn-outline-secondary';
-                aView.href = `/file/view/${encodeURIComponent(f)}`;
+                aView.href = ENDPOINT.view(f);
                 aView.target = '_blank';
                 aView.textContent = '보기';
 
                 const aDown = document.createElement('a');
                 aDown.className = 'btn btn-sm btn-primary';
-                aDown.href = `/file/download/${encodeURIComponent(f)}`;
+                aDown.href = ENDPOINT.download(f);
                 aDown.textContent = '다운로드';
 
-                right.appendChild(aView);
-                right.appendChild(aDown);
-
-                li.appendChild(left);
-                li.appendChild(right);
-                list.appendChild(li);
+                right.append(aView, aDown);
+                li.append(left, right);
+                frag.appendChild(li);
             }
-        }
-
-        // ---------- 서버 통신 ----------
-        async function fetchList() {
-            const res = await fetch('/file/list.json', { headers: { 'X-Requested-With': 'fetch' } });
-            if (!res.ok) throw new Error('목록 요청 실패: ' + res.status);
-            return await res.json(); // ["a","b",...]
+            fileList.appendChild(frag);
         }
 
         async function refreshList() {
             try {
-                const files = await fetchList();
+                const files = await api(ENDPOINT.list, { expect: 'json' });
                 renderList(files);
             } catch (e) {
                 console.error(e);
-                showInfo('목록을 불러오지 못했습니다.');
+                flash('목록을 불러오지 못했습니다.', { ok: false, holdMs: 2500 });
             }
         }
 
-        // ---------- 바인딩 ----------
-        function wireUpload() {
-            const form = document.getElementById('upload-form');
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showInfo('');
-                const fd = new FormData(form);
-
-                const res = await fetch(form.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'fetch' } });
-                if (!res.ok && res.status !== 204) {
-                    showInfo('업로드 실패: HTTP ' + res.status);
-                    return;
-                }
-                form.reset();
+        // ---- 공통 변이 → 새로고침 ----------------------------------------------
+        async function mutateAndRefresh(doWork, { successMsg }) {
+            try {
+                setDisabled(true);
+                await doWork();
                 await refreshList();
-                showInfo('업로드 완료');
-                setTimeout(() => showInfo(''), 1500);
+                flash(successMsg, { ok: true });
+            } catch (e) {
+                console.error(e);
+                flash(e.message || '요청 처리 실패', { ok: false, holdMs: 2500 });
+            } finally {
+                setDisabled(false);
+            }
+        }
+
+        function setDisabled(flag) {
+            el.uploadForm?.querySelectorAll('button, input, select').forEach((n) => n.disabled = flag);
+            el.deleteForm?.querySelectorAll('button, input, select').forEach((n) => n.disabled = flag);
+            if (el.resetBtn) el.resetBtn.disabled = flag;
+        }
+
+        // ---- 바인딩 -------------------------------------------------------------
+        function bindUpload() {
+            if (!el.uploadForm) return;
+            on(el.uploadForm, 'submit', async (e) => {
+                e.preventDefault();
+                flash('');
+                const fd = new FormData(el.uploadForm);
+
+                await mutateAndRefresh(
+                    () => api(ENDPOINT.upload, { method: 'POST', body: fd }),
+                    { successMsg: '업로드 완료' }
+                );
+
+                el.uploadForm.reset();
             });
         }
 
-        function wireDelete() {
-            const delForm = document.getElementById('delete-form');
-            delForm.addEventListener('submit', async (e) => {
+        function bindDeleteSelected() {
+            if (!el.deleteForm) return;
+            on(el.deleteForm, 'submit', async (e) => {
                 e.preventDefault();
-                showInfo('');
-                const checked = delForm.querySelectorAll('input[name="filenames"]:checked');
-                if (checked.length === 0) { showInfo('삭제할 파일을 선택하세요.'); return; }
+                flash('');
+
+                const checked = el.deleteForm.querySelectorAll('input[name="filenames"]:checked');
+                if (checked.length === 0) {
+                    flash('삭제할 파일을 선택하세요.', { ok: false, holdMs: 1800 });
+                    return;
+                }
 
                 const fd = new FormData();
-                for (const c of checked) fd.append('filenames', c.value);
+                checked.forEach((c) => fd.append('filenames', c.value));
 
-                const res = await fetch('/file/delete', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'fetch' } });
-                if (!res.ok && res.status !== 204) {
-                    showInfo('선택 초기화 실패: HTTP ' + res.status);
-                    return;
-                }
-                await refreshList();
-                showInfo('선택 초기화 완료');
-                setTimeout(() => showInfo(''), 1500);
+                await mutateAndRefresh(
+                    () => api(ENDPOINT.del, { method: 'POST', body: fd }),
+                    { successMsg: '선택 초기화 완료' }
+                );
             });
         }
 
-        function wireReset() {
-            const btn = document.getElementById('reset-btn');
-            btn.addEventListener('click', async () => {
-                showInfo('');
+        function bindResetAll() {
+            if (!el.resetBtn) return;
+            on(el.resetBtn, 'click', async () => {
+                flash('');
                 if (!confirm('모든 파일을 삭제하시겠습니까?')) return;
 
                 const fd = new FormData();
 
-                const res = await fetch('/file/reset', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'fetch' } });
-                if (!res.ok && res.status !== 204) {
-                    showInfo('전체 초기화 실패: HTTP ' + res.status);
-                    return;
-                }
-                await refreshList();
-                showInfo('전체 초기화 완료');
-                setTimeout(() => showInfo(''), 1500);
+                await mutateAndRefresh(
+                    () => api(ENDPOINT.reset, { method: 'POST', body: fd }),
+                    { successMsg: '전체 초기화 완료' }
+                );
             });
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            wireUpload();
-            wireDelete();
-            wireReset();
-            await refreshList(); // 최초 로딩
+        // ---- 시작 ---------------------------------------------------------------
+        on(document, 'DOMContentLoaded', async () => {
+            bindUpload();
+            bindDeleteSelected();
+            bindResetAll();
+            await refreshList();
         });
     })();
 </script>
+
 </body>
 </html>

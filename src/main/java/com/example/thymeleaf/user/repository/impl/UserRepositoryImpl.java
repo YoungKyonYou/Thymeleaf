@@ -90,10 +90,13 @@ public class UserRepositoryImpl implements UserRepository {
 
         params.addValue("size", size).addValue("offset", offset);
 
-        String sql = "SELECT * FROM users" + where + " ORDER BY " + orderBy + " " + direction +
-                " LIMIT :size OFFSET :offset";
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM users ");
+        sql.append(where).append(" ");
+        sql.append("ORDER BY ").append(orderBy).append(" ").append(direction).append(" ");
+        sql.append("LIMIT :size OFFSET :offset");
 
-        List<UserDto> content = jdbc.query(sql, params, MAPPER);
+        List<UserDto> content = jdbc.query(sql.toString(), params, MAPPER);
         return new PageData<>(content, page, size, total);
     }
 
@@ -105,8 +108,26 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public UserDto insert(UserDto u) {
-        String sql = "INSERT INTO users (username,password,email,first_name,last_name,gender,birth_date,phone) " +
-                "VALUES (:username,:password,:email,:firstName,:lastName,:gender,:birthDate,:phone)";
+        StringBuilder sql = new StringBuilder();
+        sql.append("INSERT INTO users (");
+        sql.append("username, ");
+        sql.append("password, ");
+        sql.append("email, ");
+        sql.append("first_name, ");
+        sql.append("last_name, ");
+        sql.append("gender, ");
+        sql.append("birth_date, ");
+        sql.append("phone");
+        sql.append(") VALUES (");
+        sql.append(":username, ");
+        sql.append(":password, ");
+        sql.append(":email, ");
+        sql.append(":firstName, ");
+        sql.append(":lastName, ");
+        sql.append(":gender, ");
+        sql.append(":birthDate, ");
+        sql.append(":phone");
+        sql.append(")");
 
         MapSqlParameterSource p = new MapSqlParameterSource()
                 .addValue("username", u.getUsername())
@@ -119,7 +140,7 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("phone", u.getPhone());
 
         KeyHolder kh = new GeneratedKeyHolder();
-        jdbc.update(sql, p, kh, new String[]{"id"});
+        jdbc.update(sql.toString(), p, kh, new String[]{"id"});
         if (kh.getKey() != null) {
             u.setId(kh.getKey().longValue());
         }
@@ -128,9 +149,17 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public UserDto update(Long id, UserDto u) {
-        String sql = "UPDATE users SET username=:username,password=:password,email=:email," +
-                "first_name=:firstName,last_name=:lastName,gender=:gender,birth_date=:birthDate,phone=:phone " +
-                "WHERE id=:id";
+        StringBuilder sql = new StringBuilder();
+        sql.append("UPDATE users SET ");
+        sql.append("username=:username, ");
+        sql.append("password=:password, ");
+        sql.append("email=:email, ");
+        sql.append("first_name=:firstName, ");
+        sql.append("last_name=:lastName, ");
+        sql.append("gender=:gender, ");
+        sql.append("birth_date=:birthDate, ");
+        sql.append("phone=:phone ");
+        sql.append("WHERE id=:id");
 
         MapSqlParameterSource p = new MapSqlParameterSource()
                 .addValue("id", id)
@@ -143,7 +172,7 @@ public class UserRepositoryImpl implements UserRepository {
                 .addValue("birthDate", u.getBirthDate())
                 .addValue("phone", u.getPhone());
 
-        jdbc.update(sql, p);
+        jdbc.update(sql.toString(), p);
         u.setId(id);
         return u;
     }
