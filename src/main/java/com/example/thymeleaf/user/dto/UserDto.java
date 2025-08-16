@@ -1,5 +1,6 @@
-package com.example.thymeleaf.dto;
+package com.example.thymeleaf.user.dto;
 
+import com.example.thymeleaf.user.entity.User;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ public class UserDto {
     private LocalDate birthDate;
     private LocalDateTime createdAt;
 
-    public UserDto from(com.example.thymeleaf.entity.User user){
+    public UserDto from(User user){
         return new UserDto(
             user.getId(),
             user.getUsername(),

@@ -1,10 +1,9 @@
-package com.example.thymeleaf.repository.impl;
+package com.example.thymeleaf.user.repository.impl;
 
 import com.example.thymeleaf.common.PageData;
-import com.example.thymeleaf.dto.UserDto;
-import com.example.thymeleaf.repository.UserRepository;
+import com.example.thymeleaf.user.dto.UserDto;
+import com.example.thymeleaf.user.repository.UserRepository;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

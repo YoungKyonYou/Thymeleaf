@@ -1,8 +1,8 @@
-package com.example.thymeleaf.repository;
+package com.example.thymeleaf.user.repository;
 
 
 import com.example.thymeleaf.common.PageData;
-import com.example.thymeleaf.dto.UserDto;
+import com.example.thymeleaf.user.dto.UserDto;
 
 public interface UserRepository {
     PageData<UserDto> search(String q, String by, int page, int size, String sort, String dir);

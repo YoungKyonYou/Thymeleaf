@@ -1,4 +1,4 @@
-package com.example.thymeleaf.entity;
+package com.example.thymeleaf.user.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

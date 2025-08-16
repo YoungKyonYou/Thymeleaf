@@ -1,8 +1,8 @@
-package com.example.thymeleaf.controller;
+package com.example.thymeleaf.user.controller;
 
 import com.example.thymeleaf.common.PageData;
-import com.example.thymeleaf.dto.UserDto;
-import com.example.thymeleaf.service.UserService;
+import com.example.thymeleaf.user.dto.UserDto;
+import com.example.thymeleaf.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

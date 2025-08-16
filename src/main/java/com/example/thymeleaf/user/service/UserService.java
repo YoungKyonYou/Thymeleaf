@@ -1,8 +1,8 @@
-package com.example.thymeleaf.service;
+package com.example.thymeleaf.user.service;
 
 import com.example.thymeleaf.common.PageData;
-import com.example.thymeleaf.dto.UserDto;
-import com.example.thymeleaf.repository.UserRepository;
+import com.example.thymeleaf.user.dto.UserDto;
+import com.example.thymeleaf.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
