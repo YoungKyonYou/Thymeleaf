@@ -34,14 +34,6 @@ public class FileController {
         return "upload/file";
     }
 
-    /** 목록 프래그먼트만 반환 (부분 갱신용) */
-    @GetMapping("/file/list")
-    public String list(Model model) {
-        List<String> existing = storageService.listFilenames().collect(Collectors.toList());
-        model.addAttribute("savedFiles", existing);
-        return "upload/list :: list(savedFiles=${savedFiles})";
-    }
-
     /** 업로드 (AJAX/일반 둘 다 허용) */
     @PostMapping("/file/upload")
     public String handleFileUpload(@RequestParam(name = "files", required = false) MultipartFile[] files) {

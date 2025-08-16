@@ -97,7 +97,7 @@ public class FileStorageService {
         try {
             // 루트 바로 아래 파일만 나열 (하위 폴더 탐색 X)
             return Files.list(rootLocation)
-                    .filter(Files::isRegularFile)
+                    .filter(Files::isRegularFile) // 텍스트파일, 이미지파일, 워드파일처럼 데이터가 저장된 파일인지 검사
                     .map(p -> p.getFileName().toString());
         } catch (Exception e) {
             throw new RuntimeException("파일 목록 조회 실패", e);
