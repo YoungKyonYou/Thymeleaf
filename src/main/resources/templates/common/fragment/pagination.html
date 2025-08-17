@@ -15,7 +15,9 @@
     <ul class="pagination justify-content-center my-3">
 
         <!-- 처음/이전 -->
+        <!-- hasPrev가 없으면 disabled 추가 -->
         <li class="page-item" th:classappend="${!pageData.hasPrev} ? ' disabled'">
+            <!-- 원래 페이지가 새로고침되지만 스크립트 단에서 preventDefault()로 막음 -->
             <a class="page-link"
                th:href="@{/user(page=${0}, size=${pageData.size}, sort=${sort}, dir=${dir}, q=${q})}"
                aria-label="First">&laquo;</a>
@@ -30,6 +32,7 @@
         <li class="page-item"
             th:each="i : ${#numbers.sequence(0, pageData.totalPages - 1)}"
             th:classappend="${i == pageData.page} ? ' active'">
+            <!-- 백엔드는 0부터 시작하므로, 1부터 시작하는 UI를 위해 +1 -->
             <a class="page-link"
                th:href="@{/user(page=${i}, size=${pageData.size}, sort=${sort}, dir=${dir}, q=${q})}"
                th:text="${i + 1}">1</a>

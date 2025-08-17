@@ -89,36 +89,95 @@
 
     <!-- 페이지 전용 스크립트 -->
     <script th:inline="javascript">
+
         document.addEventListener('DOMContentLoaded', () => {
-            // ─── 작은 유틸 ───────────────────────────────────────────────────────────────
+            // 작은 유틸
             const $ = (sel, el = document) => el.querySelector(sel);
             const buildUrl = (base, params = {}) => {
+                //첫 번째 인자 base가 절대 경로(https://…)면 그대로 쓰이고,
+                // 상대 경로(/user)면 두 번째 인자인 window.location.origin(현재 페이지의 스킴+호스트+포트)을 기준으로 절대 URL을 만듬
                 const u = new URL(base, window.location.origin);
+                //params 객체를 [키, 값] 쌍 배열로 변환하여 검색 파라미터로 추가
+                //u.searchParams.set(k, v):
+                // URL의 쿼리스트링에 k=v를 설정. 같은 키가 이미 있으면 덮어씀.
+                //?? 는 왼쪽 값이 null 또는 undefined일 때만 오른쪽 값을 취함
+                //set() 실행 후 전체 표현식은 undefined
                 Object.entries(params).forEach(([k, v]) => (v ?? '') !== '' && u.searchParams.set(k, v));
+                //즉, URL에 항상 _=1723893852921 같은 쿼리 파라미터가 추가
+                //브라우저 / 프록시 캐시 무력화 목적
+                //브라우저는 같은 URL로 요청하면 네트워크에 안 가고 캐시에 저장된 응답을 줄 수 있음
+                //하지만 매번 URL이 다르면 항상 새 요청을 보냄
+                //그래서 쿼리에 무의미한 유니크 값(타임스탬프)을 붙여서 캐시를 피하는 것
                 u.searchParams.set('_', Date.now()); // cache bust
                 return u.toString();
             };
+            /**
+             * 문자열 상태로는 단순 텍스트일 뿐이던 HTML을
+             * 진짜 DOM으로 바꿔서 기존 페이지에 삽입하거나 교체할 수 있게 해주는 도구
+             * const html = '<table><tbody><tr><td>Hi</td></tr></tbody></table>';
+             * const doc = parseHtml(html);
+             *
+             * const td = doc.querySelector('td');
+             * console.log(td.textContent); // "Hi"
+             */
             const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
+            //기존 DOM 조각을 새로운 DOM 조각으로 교체
             const swap = (html, selector) => {
                 const doc = parseHtml(html);
                 const next = doc.querySelector(selector);
                 const curr = document.querySelector(selector);
-                if (next && curr) curr.replaceWith(next);
+
+                //next와 curr이 모두 존재하면,
+                //기존 화면의 curr 요소를 next 요소로 통째로 교체
+                if (next && curr)
+                    curr.replaceWith(next);
             };
             const fetchHtml = async (url, opt = {}) => {
-                const res = await fetch(url, { headers: {'Accept': 'text/html'}, cache: 'no-store', ...opt });
+                const res = await fetch(url, {
+                    //Spring Controller에서 @ResponseBody 대신 return "fragment"; 같은 경우 HTML 내려줌
+                    headers: {'Accept': 'text/html'}, //서버에 “난 HTML을 원해” 라고 알림
+                    //브라우저가 캐시에 저장하지 말고 매번 서버에서 새로 가져오라는 의미
+                    cache: 'no-store',
+                    //호출할 때 추가로 넘긴 옵션이 있으면 합쳐줌
+                    //예: { method: 'POST', body: fd } 이런 것.
+                    ...opt
+                });
+
+                //await는 Promise가 끝날 때까지 기다렸다가 결과를 꺼내줌 (비동기)
                 const text = await res.text();
-                if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status, body: text });
+                if (!res.ok)
+                    throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status, body: text });
                 return text;
             };
             const activePage = () => {
                 const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
-                if (!a) return 0;
+                //현재 활성 페이지 링크가 없으면 0페이지 반환
+                if (!a)
+                    return 0;
+
+                //만약 href가 비어있으면 ''가 들어가고, window.location.origin을 기준으로 함
                 const u = new URL(a.getAttribute('href') || '', window.location.origin);
+
+                /**
+                 * 쿼리스트링에서 page 파라미터 값을 꺼낸다.
+                 * 예: /user?page=2&size=20 → "2"
+                 * 없으면 '0' 사용.
+                 * parseInt(..., 10)으로 10진수 정수로 변환.
+                 * 변환 실패(NaN)면 || 0 때문에 최종 반환은 0.
+                 */
                 return parseInt(u.searchParams.get('page') || '0', 10) || 0;
             };
+            //부트스트랩(JS 라이브러리)이 로드되어 준비됐는지 확인하는 작은 유틸
+            //window.bootstrap 이 존재한다면 → 부트스트랩 JS가 이미 로드된 상태
+            //없다면 아직 로드 안 된 상태 → 기다렸다가 로드 시점에 실행
+            //Promise.resolve() : 이미 bootstrap 이 준비됐다면, 즉시 완료되는 Promise 반환
+
             const ensureBootstrapReady = () =>
-                window.bootstrap ? Promise.resolve() : new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, {once:true})));
+                window.bootstrap ?
+                    Promise.resolve() : new Promise(r => (document.readyState === 'complete' ?
+                    //윈도우의 "load" 이벤트(모든 리소스 로드 완료)를 기다림
+                    //{once:true} → 한 번 실행되면 자동 해제됨
+                        r() : window.addEventListener('load', r, {once:true})));
 
             // ─── 엘리먼트 & 상태소스 ─────────────────────────────────────────────────────
             const baseUrl   = '/user';
@@ -132,6 +191,16 @@
             const searchForm  = grid.querySelector('form');
             const selectBy    = searchForm?.querySelector('select[name="by"]');
             const inputQ      = searchForm?.querySelector('input[name="q"]');
+            /**
+             * ->querySelector('select[name="size"]')
+             * form 내부에서 name="size" 속성을 가진 <select> 요소를 찾음.
+             *
+             * <select name="size" class="form-select w-auto">
+             *   <option value="10">10</option>
+             *   <option value="20">20</option>
+             *   <option value="50">50</option>
+             * </select>
+             */
             const selectSize  = searchForm?.querySelector('select[name="size"]');
             const inputSort   = document.getElementById('sort');
             const inputDir    = document.getElementById('dir');
@@ -148,24 +217,40 @@
 
             // ─── 목록 갱신 (tbody + pager 한번에) ────────────────────────────────────────
             let listAbort;
+            //인자로 { page }를 받는데, 객체 구조분해를 사용.
+            //기본값 {} → 인자를 안 주면 page는 undefined
             async function reloadList({ page } = {}) {
+                //listAbort가 이미 있다면(이전 요청이 진행 중이었다면) → 중단(abort)시킴, 즉, 이전 요청을 취소하는 용도
                 listAbort?.abort();
+                //새 AbortController 생성. fetch API와 함께 쓰면 중간에 요청을 취소 가능
                 listAbort = new AbortController();
+                //이 시그널을 fetch에 넘겨서 "나중에 abort 시키면 이 요청도 중단돼라"라고 연결
                 const signal = listAbort.signal;
 
                 const params = state({ page: typeof page === 'number' ? page : activePage() });
                 try {
+                    //{ signal }을 같이 넘겨서 abort 가능하게 만듦.
                     const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
+                    //새 HTML에서 <tbody id="grid-tbody">를 찾아 현재 페이지의 tbody와 교체
                     swap(html, '#grid-tbody');
+                    //새 HTML에서 <nav id="grid-pager">를 찾아 현재 페이지의 pager와 교체
                     swap(html, '#grid-pager');
                 } catch (e) {
-                    if (e.name !== 'AbortError') alert('목록을 불러오지 못했습니다.');
+                    if (e.name !== 'AbortError')
+                        alert('목록을 불러오지 못했습니다.');
                 }
             }
 
-            // ─── 모달 도우미 ────────────────────────────────────────────────────────────
+            // 모달 도우미
+            // Bootstrap Modal 인스턴스를 저장
             let modalInst;
+
+            //Null 병합 할당 연산자 (??=): modalInst가 null 또는 undefined일 경우에만, 오른쪽 값을 할당
+            //new window.bootstrap.Modal(modalEl) : 인스턴스를 생성하면 .show(), .hide() 같은 메서드를 쓸 수 있음
             const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
+
+            //hidden.bs.modal : 모달이 닫히고 난 뒤에 발생
+            //이전에 불러온 <form>이나 텍스트를 지워서 다음에 새로 불러오게끔 함
             modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
 
             async function openCreateModal() {
@@ -174,8 +259,11 @@
                     modalBody.innerHTML = await fetchHtml(`${baseUrl}/new`);
                     const form = modalBody.querySelector('form');
                     form?.addEventListener('submit', async (e) => {
+                        //e.preventDefault() → 기본 동작(페이지 새로고침) 막음
                         e.preventDefault();
                         try {
+                            //폼 입력값을 key=value로 자동 수집
+                            //브라우저가 자동으로 form 안의 모든 입력 요소(<input>, <select>, <textarea>)를 찾아서 name=value 쌍으로 만들어 줌
                             const fd = new FormData(form);
                             await fetchHtml(baseUrl, { method: 'POST', body: fd });
                             await reloadList({ page: activePage() });
@@ -183,7 +271,10 @@
                         } catch (err) {
                             modalBody.innerHTML = err.body || '오류가 발생했습니다.';
                         }
+                        //한 번 실행되면 자동으로 이벤트 핸들러 제거
                     }, { once: true });
+
+                    //모델 표시
                     modal().show();
                 } catch { alert('폼을 불러오지 못했습니다.'); }
             }
@@ -197,7 +288,13 @@
                         e.preventDefault();
                         const fd = new FormData(form);
                         const params = new URLSearchParams();
-                        for (const [k,v] of fd.entries()) params.append(k, v);
+
+                        //위 openCreateModal과 달리, 수정 폼은 username=wesley&email=hi%40example.com&phone=010과 같이
+                        //URLSearchParams로 변환해서 서버에 전송
+                        // OpenCreateModal은 body에 FormData를 그대로 넘김
+                        for (const [k,v] of fd.entries())
+                            params.append(k, v);
+
                         try {
                             const html = await fetchHtml(`${baseUrl}/${id}`, {
                                 method: 'PUT',
@@ -207,9 +304,14 @@
                             // 서버가 <tr>만 내려준다고 가정하고 교체
                             const temp = document.createElement('tbody');
                             temp.innerHTML = html.trim();
+
                             const newRow = temp.firstElementChild;
+                            //현재 tr 쪽 생성할 때 id를 row-<id>로 지정하고 있음 그래서 그걸 edit하는 거니까 replace하는 것
                             const oldRow = document.getElementById(`row-${id}`);
-                            if (oldRow && newRow) oldRow.replaceWith(newRow);
+
+                            if (oldRow && newRow)
+                                oldRow.replaceWith(newRow);
+
                             modal().hide();
                         } catch (err) {
                             modalBody.innerHTML = err.body || '오류가 발생했습니다.';
@@ -220,14 +322,15 @@
             }
 
             async function onDelete(id) {
-                if (!confirm('해당 행을 삭제하시겠습니까?')) return;
+                if (!confirm('해당 행을 삭제하시겠습니까?'))
+                    return;
                 try {
                     await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
                     await reloadList({ page: activePage() });
                 } catch { alert('삭제에 실패했습니다.'); }
             }
 
-            // ─── 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경 ────────────────────────────
+            // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
             // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
             grid.addEventListener('click', (e) => {
                 // 페이저
@@ -242,20 +345,38 @@
 
                 // 수정/삭제
                 const editBtn = e.target.closest('.js-edit');
-                if (editBtn) { openEditModal(editBtn.dataset.id); return; }
+
+                if (editBtn) {
+                    openEditModal(editBtn.dataset.id);
+                    return;
+                }
+
                 const delBtn = e.target.closest('.js-del');
-                if (delBtn) { onDelete(delBtn.dataset.id); }
+
+                if (delBtn) {
+                    onDelete(delBtn.dataset.id);
+                }
             });
 
+
+            //정렬 이벤트
             head?.addEventListener('click', (e) => {
+                // closest : 위로 올라가면서(selector와 매칭되는 가장 가까운 조상 요소)를 찾는 메서드
+                // 'a[data-sort]' → data-sort 속성이 있는 <a> 태그만 찾음
                 const a = e.target.closest('a[data-sort]');
-                if (!a) return;
+                if (!a)
+                    return;
+
                 //<a> 태그의 원래 링크 이동을 막음.
                 e.preventDefault();
-                const next = a.dataset.sort;
+
+                const next = a.dataset.sort; // 클릭한 컬럼명
                 const curr = inputSort?.value || 'id';
                 let dir   = inputDir?.value || 'asc';
+
+                //// 같은 컬럼 클릭 시 → asc ↔ desc 토글, 다른 컬럼 클릭 시 → asc 초기화
                 dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+
                 if (inputSort)
                     inputSort.value = next;
                 if (inputDir)
@@ -263,14 +384,16 @@
                 reloadList({ page: 0 });
             });
 
+            //const searchForm  = grid.querySelector('form');
             searchForm?.addEventListener('submit', (e) => {
                 e.preventDefault();
                 reloadList({ page: 0 });
             });
+
+            //const selectSize  = searchForm?.querySelector('select[name="size"]');
             selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
 
-            // ─── 초기화 끝 ──────────────────────────────────────────────────────────────
-
+            // 생성 버튼 클릭 이벤트
             btnNew?.addEventListener('click', (e) => {
                 e.preventDefault();
                 openCreateModal();
