@@ -47,7 +47,10 @@
             <input type="hidden" id="dir" th:value="${dir}">
         </form>
 
-        <div class="table-responsive">
+        <!-- 엑셀 출력 버튼 -->
+        <button class="btn btn-outline-success" data-export="xlsx" data-provider="user">엑셀 출력</button>
+
+        <div class="table-responsive mt-2">
             <table class="table table-sm align-middle">
                 <thead id="grid-head">
                 <tr>
@@ -89,7 +92,6 @@
 
     <!-- 페이지 전용 스크립트 -->
     <script th:inline="javascript">
-
         document.addEventListener('DOMContentLoaded', () => {
             // 작은 유틸
             const $ = (sel, el = document) => el.querySelector(sel);
@@ -334,7 +336,6 @@
                                 modalBody.innerHTML = err.body;
                                 // JSON으로 왔을 때
                             } else {
-
                                 const msg = (err.payload && err.payload.message) ? err.payload.message : '입력값을 확인해주세요.';
                                 alert(msg);
                             }
@@ -442,6 +443,37 @@
             // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
             // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
             grid.addEventListener('click', (e) => {
+                // 엑셀 내보내기
+                const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                if (exportBtn) {
+                    const provider = exportBtn.dataset.provider;
+                    if (!provider) { alert('provider가 지정되지 않았습니다.'); return; }
+
+                    const scope  = grid;                         // grid 내부 상태를 기준으로 파라미터 구성
+                    const form   = scope.querySelector('form');  // 검색폼
+                    const params = new URLSearchParams({ provider });
+
+                    // 현재 검색/필터 조건을 그대로 반영
+                    if (form) {
+                        const fd = new FormData(form);
+                        for (const [k, v] of fd.entries()) {
+                            if (v != null && String(v).trim() !== '') params.set(k, v);
+                        }
+                    }
+                    // 정렬 파라미터
+                    const sort = scope.querySelector('#sort')?.value || 'id';
+                    const dir  = scope.querySelector('#dir')?.value || 'asc';
+                    params.set('sort', sort);
+                    params.set('dir', dir);
+
+                    // 페이지 사이즈를 크게 지정해 전체를 받도록 시도(※ 서버에서 상한/검증 권장)
+                    if (!params.has('size')) params.set('size', '100000');
+
+                    // 단순 파일 다운로드 트리거
+                    window.location.href = '/export/xlsx?' + params.toString();
+                    return;
+                }
+
                 // 페이저
                 const pagerLink = e.target.closest('#grid-pager a');
                 if (pagerLink) {
@@ -466,7 +498,6 @@
                     onDelete(delBtn.dataset.id);
                 }
             });
-
 
             //정렬 이벤트
             head?.addEventListener('click', (e) => {
