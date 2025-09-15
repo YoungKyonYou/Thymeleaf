@@ -467,7 +467,7 @@
                     params.set('dir', dir);
 
                     // 페이지 사이즈를 크게 지정해 전체를 받도록 시도(※ 서버에서 상한/검증 권장)
-                    if (!params.has('size')) params.set('size', '100000');
+                    params.set('size', '100000');
 
                     // 단순 파일 다운로드 트리거
                     window.location.href = '/export/xlsx?' + params.toString();
