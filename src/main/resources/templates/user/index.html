@@ -15,12 +15,12 @@
             <div class="col-auto">
                 <div class="input-group">
                     <select name="by" class="form-select" style="flex:0 0 120px">
-                        <option value="all"       th:selected="${by=='all'}">전체</option>
-                        <option value="username"  th:selected="${by=='username'}">Username</option>
-                        <option value="email"     th:selected="${by=='email'}">Email</option>
+                        <option value="all" th:selected="${by=='all'}">전체</option>
+                        <option value="username" th:selected="${by=='username'}">Username</option>
+                        <option value="email" th:selected="${by=='email'}">Email</option>
                         <option value="firstName" th:selected="${by=='firstName'}">First</option>
-                        <option value="lastName"  th:selected="${by=='lastName'}">Last</option>
-                        <option value="phone"     th:selected="${by=='phone'}">Phone</option>
+                        <option value="lastName" th:selected="${by=='lastName'}">Last</option>
+                        <option value="phone" th:selected="${by=='phone'}">Phone</option>
                     </select>
 
                     <input name="q"
@@ -44,7 +44,7 @@
             </div>
 
             <input type="hidden" id="sort" th:value="${sort}">
-            <input type="hidden" id="dir"  th:value="${dir}">
+            <input type="hidden" id="dir" th:value="${dir}">
         </form>
 
         <div class="table-responsive">
@@ -123,6 +123,9 @@
             const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
             //기존 DOM 조각을 새로운 DOM 조각으로 교체
             const swap = (html, selector) => {
+                // 에러로 throw된 경우는 여기까지 오지 않음. 호출부에서 catch로 처리됨.
+                if (!html) return;
+
                 const doc = parseHtml(html);
                 const next = doc.querySelector(selector);
                 const curr = document.querySelector(selector);
@@ -132,23 +135,47 @@
                 if (next && curr)
                     curr.replaceWith(next);
             };
+
+            /**
+             * fetchHtml (리팩터링)
+             * - HTML 조각을 기대. 실패 시 UI를 띄우지 않고 "표준화된 에러 객체"만 throw.
+             * - 호출부가 상황(검증/비즈/서버)에 맞춰 alert/인라인/토스트 등 UI 처리.
+             * - throw되는 에러: { name, message, status, body, payload, contentType }
+             */
             const fetchHtml = async (url, opt = {}) => {
                 const res = await fetch(url, {
-                    //Spring Controller에서 @ResponseBody 대신 return "fragment"; 같은 경우 HTML 내려줌
-                    headers: {'Accept': 'text/html'}, //서버에 “난 HTML을 원해” 라고 알림
-                    //브라우저가 캐시에 저장하지 말고 매번 서버에서 새로 가져오라는 의미
+                    // Accept를 넓게: html 우선, json도 수용
+                    headers: { 'Accept': 'text/html, application/json;q=0.9' },
                     cache: 'no-store',
-                    //호출할 때 추가로 넘긴 옵션이 있으면 합쳐줌
-                    //예: { method: 'POST', body: fd } 이런 것.
                     ...opt
                 });
 
-                //await는 Promise가 끝날 때까지 기다렸다가 결과를 꺼내줌 (비동기)
-                const text = await res.text();
-                if (!res.ok)
-                    throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status, body: text });
-                return text;
+                const ct = res.headers.get('content-type') || '';
+                const bodyText = await res.text();
+
+                if (!res.ok) {
+                    let payload = null;
+                    if (ct.includes('application/json')) {
+                        try {
+                            payload = JSON.parse(bodyText);
+                        } catch {
+                            // JSON 파싱 실패 시 payload는 null 유지
+                        }
+                    }
+                    // 에러 메시지 우선순위: JSON.message → HTTP 상태 문구
+                    const message = (payload && payload.message) ? payload.message : `HTTP ${res.status}`;
+                    const err = new Error(message);
+                    err.name = 'FetchHtmlError';
+                    err.status = res.status;
+                    err.body = bodyText;           // 호출부 호환 (예: 모달에 그대로 꽂기)
+                    err.payload = payload;         // JSON 응답 원문 객체
+                    err.contentType = ct;
+                    throw err; // ★ UI는 호출부에서
+                }
+
+                return bodyText;
             };
+
             const activePage = () => {
                 const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
                 //현재 활성 페이지 링크가 없으면 0페이지 반환
@@ -175,22 +202,22 @@
             const ensureBootstrapReady = () =>
                 window.bootstrap ?
                     Promise.resolve() : new Promise(r => (document.readyState === 'complete' ?
-                    //윈도우의 "load" 이벤트(모든 리소스 로드 완료)를 기다림
-                    //{once:true} → 한 번 실행되면 자동 해제됨
-                        r() : window.addEventListener('load', r, {once:true})));
+                        //윈도우의 "load" 이벤트(모든 리소스 로드 완료)를 기다림
+                        //{once:true} → 한 번 실행되면 자동 해제됨
+                        r() : window.addEventListener('load', r, {once: true})));
 
             // ─── 엘리먼트 & 상태소스 ─────────────────────────────────────────────────────
-            const baseUrl   = '/user';
-            const grid      = document.getElementById('grid');
+            const baseUrl = '/user';
+            const grid = document.getElementById('grid');
             if (!grid) return;
 
-            const btnNew      = document.getElementById('btn-new');
-            const head        = document.getElementById('grid-head');
-            const modalEl     = document.getElementById('formModal');
-            const modalBody   = document.getElementById('modal-body');
-            const searchForm  = grid.querySelector('form');
-            const selectBy    = searchForm?.querySelector('select[name="by"]');
-            const inputQ      = searchForm?.querySelector('input[name="q"]');
+            const btnNew = document.getElementById('btn-new');
+            const head = document.getElementById('grid-head');
+            const modalEl = document.getElementById('formModal');
+            const modalBody = document.getElementById('modal-body');
+            const searchForm = grid.querySelector('form');
+            const selectBy = searchForm?.querySelector('select[name="by"]');
+            const inputQ = searchForm?.querySelector('input[name="q"]');
             /**
              * ->querySelector('select[name="size"]')
              * form 내부에서 name="size" 속성을 가진 <select> 요소를 찾음.
@@ -201,16 +228,16 @@
              *   <option value="50">50</option>
              * </select>
              */
-            const selectSize  = searchForm?.querySelector('select[name="size"]');
-            const inputSort   = document.getElementById('sort');
-            const inputDir    = document.getElementById('dir');
+            const selectSize = searchForm?.querySelector('select[name="size"]');
+            const inputSort = document.getElementById('sort');
+            const inputDir = document.getElementById('dir');
 
             const state = (overrides = {}) => ({
-                by:   selectBy?.value || 'all',
-                q:    inputQ?.value ?? '',
+                by: selectBy?.value || 'all',
+                q: inputQ?.value ?? '',
                 size: parseInt(selectSize?.value || '10', 10),
                 sort: inputSort?.value || 'id',
-                dir:  inputDir?.value || 'asc',
+                dir: inputDir?.value || 'asc',
                 page: 0,
                 ...overrides
             });
@@ -219,7 +246,7 @@
             let listAbort;
             //인자로 { page }를 받는데, 객체 구조분해를 사용.
             //기본값 {} → 인자를 안 주면 page는 undefined
-            async function reloadList({ page } = {}) {
+            async function reloadList({page} = {}) {
                 //listAbort가 이미 있다면(이전 요청이 진행 중이었다면) → 중단(abort)시킴, 즉, 이전 요청을 취소하는 용도
                 listAbort?.abort();
                 //새 AbortController 생성. fetch API와 함께 쓰면 중간에 요청을 취소 가능
@@ -227,17 +254,25 @@
                 //이 시그널을 fetch에 넘겨서 "나중에 abort 시키면 이 요청도 중단돼라"라고 연결
                 const signal = listAbort.signal;
 
-                const params = state({ page: typeof page === 'number' ? page : activePage() });
+                const params = state({page: typeof page === 'number' ? page : activePage()});
                 try {
                     //{ signal }을 같이 넘겨서 abort 가능하게 만듦.
-                    const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
+                    const html = await fetchHtml(buildUrl(baseUrl, params), {signal});
                     //새 HTML에서 <tbody id="grid-tbody">를 찾아 현재 페이지의 tbody와 교체
                     swap(html, '#grid-tbody');
                     //새 HTML에서 <nav id="grid-pager">를 찾아 현재 페이지의 pager와 교체
                     swap(html, '#grid-pager');
                 } catch (e) {
-                    if (e.name !== 'AbortError')
-                        alert('목록을 불러오지 못했습니다.');
+                    if (e.name === 'AbortError') return;
+                    // 검증/비즈니스 오류면 400/409/422 → 사용자에게 구체 메시지
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    // 그 외(5xx/네트워크) → 일반 메시지
+                    alert('목록을 불러오지 못했습니다.');
+                    console.error(e);
                 }
             }
 
@@ -251,83 +286,157 @@
 
             //hidden.bs.modal : 모달이 닫히고 난 뒤에 발생
             //이전에 불러온 <form>이나 텍스트를 지워서 다음에 새로 불러오게끔 함
-            modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modalBody.innerHTML = '';
+            });
 
             async function openCreateModal() {
-                await ensureBootstrapReady();
-                try {
-                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/new`);
-                    const form = modalBody.querySelector('form');
-                    form?.addEventListener('submit', async (e) => {
-                        //e.preventDefault() → 기본 동작(페이지 새로고침) 막음
-                        e.preventDefault();
-                        try {
-                            //폼 입력값을 key=value로 자동 수집
-                            //브라우저가 자동으로 form 안의 모든 입력 요소(<input>, <select>, <textarea>)를 찾아서 name=value 쌍으로 만들어 줌
-                            const fd = new FormData(form);
-                            await fetchHtml(baseUrl, { method: 'POST', body: fd });
-                            await reloadList({ page: activePage() });
-                            modal().hide();
-                        } catch (err) {
-                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
-                        }
-                        //한 번 실행되면 자동으로 이벤트 핸들러 제거
-                    }, { once: true });
 
-                    //모델 표시
-                    modal().show();
-                } catch { alert('폼을 불러오지 못했습니다.'); }
+                // 서버에서 new 폼 HTML을 받아옴
+                try {
+                    const newHtml = await fetchHtml(`${baseUrl}/new`);
+                    modalBody.innerHTML = newHtml;
+                } catch (e) {
+                    // 검증/비즈니스 오류 (400/409/422): 보통 여기로 오지 않지만, 컨트롤러 구조에 따라 올 수도 있음
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    // 서버가 HTML 에러 페이지를 내려줬다면 그대로 보여도 됨
+                    if (e.contentType && e.contentType.includes('text/html') && e.body) {
+                        console.error('Raw error page (new form):', e.body);
+                        alert('폼을 불러오는 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    alert('폼을 불러오지 못했습니다.');
+                    console.error(e);
+                    return;
+                }
+
+                const form = modalBody.querySelector('form');
+                form?.addEventListener('submit', async (e) => {
+                    //e.preventDefault() → 기본 동작(페이지 새로고침) 막음
+                    e.preventDefault();
+                    try {
+                        //폼 입력값을 key=value로 자동 수집
+                        //브라우저가 자동으로 form 안의 모든 입력 요소(<input>, <select>, <textarea>)를 찾아서 name=value 쌍으로 만들어 줌
+                        const fd = new FormData(form);
+                        const result = await fetchHtml(baseUrl, {method: 'POST', body: fd});
+                        await reloadList({page: activePage()});
+                        modal().hide();
+                    } catch (err) {
+                        // 검증/비즈니스 오류면 서버가 HTML 조각을 내려줄 수도/JSON을 내려줄 수도 있음
+                        if ([400, 409, 422].includes(err.status)) {
+                            //서버가 HTML 형태로 에러를 보냈는지 확인
+                            if (err.contentType && err.contentType.includes('text/html') && err.body) {
+                                // 서버가 검증 실패시 폼(HTML) 다시 내려준 경우 → 그대로 교체
+                                modalBody.innerHTML = err.body;
+                                // JSON으로 왔을 때
+                            } else {
+
+                                const msg = (err.payload && err.payload.message) ? err.payload.message : '입력값을 확인해주세요.';
+                                alert(msg);
+                            }
+                            return;
+                        }
+                        // 5xx 등
+                        alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                        console.error(err);
+                    }
+                    //한 번 실행되면 자동으로 이벤트 핸들러 제거
+                }, {once: true});
+
+                //모델 표시
+                modal().show();
+
             }
 
             async function openEditModal(id) {
                 await ensureBootstrapReady();
                 try {
-                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/${id}/edit`);
-                    const form = modalBody.querySelector('form');
-                    form?.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        const fd = new FormData(form);
-                        const params = new URLSearchParams();
+                    const editHtml = await fetchHtml(`${baseUrl}/${id}/edit`);
+                    modalBody.innerHTML = editHtml;
+                } catch (e) {
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    if (e.contentType && e.contentType.includes('text/html') && e.body) {
+                        console.error('Raw error page (edit form):', e.body);
+                        alert('수정 폼을 불러오는 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    alert('수정 폼을 불러오지 못했습니다.');
+                    console.error(e);
+                    return;
+                }
 
-                        //위 openCreateModal과 달리, 수정 폼은 username=wesley&email=hi%40example.com&phone=010과 같이
-                        //URLSearchParams로 변환해서 서버에 전송
-                        // OpenCreateModal은 body에 FormData를 그대로 넘김
-                        for (const [k,v] of fd.entries())
-                            params.append(k, v);
+                const form = modalBody.querySelector('form');
+                form?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(form);
+                    const params = new URLSearchParams();
 
-                        try {
-                            const html = await fetchHtml(`${baseUrl}/${id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                                body: params
-                            });
-                            // 서버가 <tr>만 내려준다고 가정하고 교체
-                            const temp = document.createElement('tbody');
-                            temp.innerHTML = html.trim();
+                    //위 openCreateModal과 달리, 수정 폼은 username=wesley&email=hi%40example.com&phone=010과 같이
+                    //URLSearchParams로 변환해서 서버에 전송
+                    // OpenCreateModal은 body에 FormData를 그대로 넘김
+                    for (const [k, v] of fd.entries())
+                        params.append(k, v);
 
-                            const newRow = temp.firstElementChild;
-                            //현재 tr 쪽 생성할 때 id를 row-<id>로 지정하고 있음 그래서 그걸 edit하는 거니까 replace하는 것
-                            const oldRow = document.getElementById(`row-${id}`);
+                    try {
+                        const html = await fetchHtml(`${baseUrl}/${id}`, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                            body: params
+                        });
 
-                            if (oldRow && newRow)
-                                oldRow.replaceWith(newRow);
+                        // 서버가 <tr>만 내려준다고 가정하고 교체
+                        const temp = document.createElement('tbody');
+                        temp.innerHTML = html.trim();
 
-                            modal().hide();
-                        } catch (err) {
-                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
+                        const newRow = temp.firstElementChild;
+                        //현재 tr 쪽 생성할 때 id를 row-<id>로 지정하고 있음 그래서 그걸 edit하는 거니까 replace하는 것
+                        const oldRow = document.getElementById(`row-${id}`);
+
+                        if (oldRow && newRow)
+                            oldRow.replaceWith(newRow);
+
+                        modal().hide();
+                    } catch (err) {
+                        // 검증/비즈니스 오류 → 폼 다시 렌더 or 메시지
+                        if ([400, 409, 422].includes(err.status)) {
+                            if (err.contentType && err.contentType.includes('text/html') && err.body) {
+                                modalBody.innerHTML = err.body; // 서버가 에러 포함 폼을 내려줬다면 그대로 교체
+                            } else {
+                                const msg = (err.payload && err.payload.message) ? err.payload.message : '입력값을 확인해주세요.';
+                                alert(msg);
+                            }
+                            return;
                         }
-                    }, { once: true });
-                    modal().show();
-                } catch { alert('수정 폼을 불러오지 못했습니다.'); }
+                        alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                        console.error(err);
+                    }
+                }, {once: true});
+                modal().show();
             }
 
             async function onDelete(id) {
                 if (!confirm('해당 행을 삭제하시겠습니까?'))
                     return;
                 try {
-                    await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
-                    await reloadList({ page: activePage() });
-                } catch { alert('삭제에 실패했습니다.'); }
+                    await fetchHtml(`${baseUrl}/${id}`, {method: 'DELETE'});
+                    await reloadList({page: activePage()});
+                } catch (e) {
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '삭제할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    alert('삭제에 실패했습니다.');
+                    console.error(e);
+                }
             }
 
             // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
@@ -339,7 +448,7 @@
                     e.preventDefault();
                     const u = new URL(pagerLink.getAttribute('href') || '', window.location.origin);
                     const p = parseInt(u.searchParams.get('page') || '0', 10);
-                    reloadList({ page: isNaN(p) ? 0 : p });
+                    reloadList({page: isNaN(p) ? 0 : p});
                     return;
                 }
 
@@ -372,7 +481,7 @@
 
                 const next = a.dataset.sort; // 클릭한 컬럼명
                 const curr = inputSort?.value || 'id';
-                let dir   = inputDir?.value || 'asc';
+                let dir = inputDir?.value || 'asc';
 
                 //// 같은 컬럼 클릭 시 → asc ↔ desc 토글, 다른 컬럼 클릭 시 → asc 초기화
                 dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
@@ -380,18 +489,18 @@
                 if (inputSort)
                     inputSort.value = next;
                 if (inputDir)
-                    inputDir.value  = dir;
-                reloadList({ page: 0 });
+                    inputDir.value = dir;
+                reloadList({page: 0});
             });
 
             //const searchForm  = grid.querySelector('form');
             searchForm?.addEventListener('submit', (e) => {
                 e.preventDefault();
-                reloadList({ page: 0 });
+                reloadList({page: 0});
             });
 
             //const selectSize  = searchForm?.querySelector('select[name="size"]');
-            selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
+            selectSize?.addEventListener('change', () => reloadList({page: 0}));
 
             // 생성 버튼 클릭 이벤트
             btnNew?.addEventListener('click', (e) => {
