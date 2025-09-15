@@ -11,16 +11,15 @@
 
     <div id="grid">
         <form class="row g-2 align-items-center mb-3">
-            <!-- 검색 콤보 + 입력창을 한 줄로 -->
             <div class="col-auto">
                 <div class="input-group">
                     <select name="by" class="form-select" style="flex:0 0 120px">
-                        <option value="all"       th:selected="${by=='all'}">전체</option>
-                        <option value="username"  th:selected="${by=='username'}">Username</option>
-                        <option value="email"     th:selected="${by=='email'}">Email</option>
+                        <option value="all" th:selected="${by=='all'}">전체</option>
+                        <option value="username" th:selected="${by=='username'}">Username</option>
+                        <option value="email" th:selected="${by=='email'}">Email</option>
                         <option value="firstName" th:selected="${by=='firstName'}">First</option>
-                        <option value="lastName"  th:selected="${by=='lastName'}">Last</option>
-                        <option value="phone"     th:selected="${by=='phone'}">Phone</option>
+                        <option value="lastName" th:selected="${by=='lastName'}">Last</option>
+                        <option value="phone" th:selected="${by=='phone'}">Phone</option>
                     </select>
 
                     <input name="q"
@@ -28,13 +27,9 @@
                            class="form-control"
                            placeholder="검색"
                            th:value="${q}">
-                    <!-- 필요하면 버튼도 추가 가능
-                    <button class="btn btn-outline-secondary" type="submit">검색</button>
-                    -->
                 </div>
             </div>
 
-            <!-- 페이지 사이즈 선택 -->
             <div class="col-auto">
                 <select name="size" class="form-select w-auto">
                     <option th:selected="${size==10}" value="10">10</option>
@@ -44,7 +39,7 @@
             </div>
 
             <input type="hidden" id="sort" th:value="${sort}">
-            <input type="hidden" id="dir"  th:value="${dir}">
+            <input type="hidden" id="dir" th:value="${dir}">
         </form>
 
         <div class="table-responsive">
@@ -61,19 +56,16 @@
                 </tr>
                 </thead>
 
-                <!-- tbody 래퍼는 유지, 내부 내용만 프래그먼트가 채움 -->
                 <tbody id="grid-tbody"
                        th:insert="~{common/fragment/pagination :: initialTbody(${pageData})}">
                 </tbody>
             </table>
         </div>
 
-        <!-- nav 래퍼는 유지, 내부 내용만 프래그먼트가 채움 -->
         <nav id="grid-pager"
              th:insert="~{common/fragment/pagination :: pager(${pageData}, ${sort}, ${dir}, ${q}, ${size})}">
         </nav>
 
-        <!-- Modal -->
         <div class="modal fade" id="formModal" data-bs-focus="false" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -87,189 +79,298 @@
         </div>
     </div>
 
-    <!-- 페이지 전용 스크립트 -->
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
-            // ─── 작은 유틸 ───────────────────────────────────────────────────────────────
             const $ = (sel, el = document) => el.querySelector(sel);
             const buildUrl = (base, params = {}) => {
                 const u = new URL(base, window.location.origin);
                 Object.entries(params).forEach(([k, v]) => (v ?? '') !== '' && u.searchParams.set(k, v));
-                u.searchParams.set('_', Date.now()); // cache bust
+                u.searchParams.set('_', Date.now());
                 return u.toString();
             };
             const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
             const swap = (html, selector) => {
+                if (!html) return;
                 const doc = parseHtml(html);
                 const next = doc.querySelector(selector);
                 const curr = document.querySelector(selector);
-                if (next && curr) curr.replaceWith(next);
+                if (next && curr)
+                    curr.replaceWith(next);
             };
+
             const fetchHtml = async (url, opt = {}) => {
-                const res = await fetch(url, { headers: {'Accept': 'text/html'}, cache: 'no-store', ...opt });
-                const text = await res.text();
-                if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status, body: text });
-                return text;
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'text/html, application/json;q=0.9' },
+                    cache: 'no-store',
+                    ...opt
+                });
+
+                const ct = res.headers.get('content-type') || '';
+                const bodyText = await res.text();
+
+                if (!res.ok) {
+                    let payload = null;
+                    if (ct.includes('application/json')) {
+                        try {
+                            payload = JSON.parse(bodyText);
+                        } catch {}
+                    }
+                    const message = (payload && payload.message) ? payload.message : `HTTP ${res.status}`;
+                    const err = new Error(message);
+                    err.name = 'FetchHtmlError';
+                    err.status = res.status;
+                    err.body = bodyText;
+                    err.payload = payload;
+                    err.contentType = ct;
+                    throw err;
+                }
+
+                return bodyText;
             };
+
             const activePage = () => {
                 const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
-                if (!a) return 0;
+                if (!a)
+                    return 0;
                 const u = new URL(a.getAttribute('href') || '', window.location.origin);
                 return parseInt(u.searchParams.get('page') || '0', 10) || 0;
             };
-            const ensureBootstrapReady = () =>
-                window.bootstrap ? Promise.resolve() : new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, {once:true})));
 
-            // ─── 엘리먼트 & 상태소스 ─────────────────────────────────────────────────────
-            const baseUrl   = '/user';
-            const grid      = document.getElementById('grid');
+            const ensureBootstrapReady = () =>
+                window.bootstrap ?
+                    Promise.resolve() : new Promise(r => (document.readyState === 'complete' ?
+                        r() : window.addEventListener('load', r, {once: true})));
+
+            const baseUrl = '/user';
+            const grid = document.getElementById('grid');
             if (!grid) return;
 
-            const btnNew      = document.getElementById('btn-new');
-            const head        = document.getElementById('grid-head');
-            const modalEl     = document.getElementById('formModal');
-            const modalBody   = document.getElementById('modal-body');
-            const searchForm  = grid.querySelector('form');
-            const selectBy    = searchForm?.querySelector('select[name="by"]');
-            const inputQ      = searchForm?.querySelector('input[name="q"]');
-            const selectSize  = searchForm?.querySelector('select[name="size"]');
-            const inputSort   = document.getElementById('sort');
-            const inputDir    = document.getElementById('dir');
+            const btnNew = document.getElementById('btn-new');
+            const head = document.getElementById('grid-head');
+            const modalEl = document.getElementById('formModal');
+            const modalBody = document.getElementById('modal-body');
+            const searchForm = grid.querySelector('form');
+            const selectBy = searchForm?.querySelector('select[name="by"]');
+            const inputQ = searchForm?.querySelector('input[name="q"]');
+            const selectSize = searchForm?.querySelector('select[name="size"]');
+            const inputSort = document.getElementById('sort');
+            const inputDir = document.getElementById('dir');
 
             const state = (overrides = {}) => ({
-                by:   selectBy?.value || 'all',
-                q:    inputQ?.value ?? '',
+                by: selectBy?.value || 'all',
+                q: inputQ?.value ?? '',
                 size: parseInt(selectSize?.value || '10', 10),
                 sort: inputSort?.value || 'id',
-                dir:  inputDir?.value || 'asc',
+                dir: inputDir?.value || 'asc',
                 page: 0,
                 ...overrides
             });
 
-            // ─── 목록 갱신 (tbody + pager 한번에) ────────────────────────────────────────
             let listAbort;
-            async function reloadList({ page } = {}) {
+            async function reloadList({page} = {}) {
                 listAbort?.abort();
                 listAbort = new AbortController();
                 const signal = listAbort.signal;
 
-                const params = state({ page: typeof page === 'number' ? page : activePage() });
+                const params = state({page: typeof page === 'number' ? page : activePage()});
                 try {
-                    const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
+                    const html = await fetchHtml(buildUrl(baseUrl, params), {signal});
                     swap(html, '#grid-tbody');
                     swap(html, '#grid-pager');
                 } catch (e) {
-                    if (e.name !== 'AbortError') alert('목록을 불러오지 못했습니다.');
+                    if (e.name === 'AbortError') return;
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    alert('목록을 불러오지 못했습니다.');
+                    console.error(e);
                 }
             }
 
-            // ─── 모달 도우미 ────────────────────────────────────────────────────────────
             let modalInst;
             const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
-            modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modalBody.innerHTML = '';
+            });
 
             async function openCreateModal() {
-                await ensureBootstrapReady();
                 try {
-                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/new`);
-                    const form = modalBody.querySelector('form');
-                    form?.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        try {
-                            const fd = new FormData(form);
-                            await fetchHtml(baseUrl, { method: 'POST', body: fd });
-                            await reloadList({ page: activePage() });
-                            modal().hide();
-                        } catch (err) {
-                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
+                    const newHtml = await fetchHtml(`${baseUrl}/new`);
+                    modalBody.innerHTML = newHtml;
+                } catch (e) {
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    if (e.contentType && e.contentType.includes('text/html') && e.body) {
+                        console.error('Raw error page (new form):', e.body);
+                        alert('폼을 불러오는 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    alert('폼을 불러오지 못했습니다.');
+                    console.error(e);
+                    return;
+                }
+
+                const form = modalBody.querySelector('form');
+                form?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const fd = new FormData(form);
+                        const result = await fetchHtml(baseUrl, {method: 'POST', body: fd});
+                        await reloadList({page: activePage()});
+                        modal().hide();
+                    } catch (err) {
+                        if ([400, 409, 422].includes(err.status)) {
+                            if (err.contentType && err.contentType.includes('text/html') && err.body) {
+                                modalBody.innerHTML = err.body;
+                            } else {
+                                const msg = (err.payload && err.payload.message) ? err.payload.message : '입력값을 확인해주세요.';
+                                alert(msg);
+                            }
+                            return;
                         }
-                    }, { once: true });
-                    modal().show();
-                } catch { alert('폼을 불러오지 못했습니다.'); }
+                        alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                        console.error(err);
+                    }
+                }, {once: true});
+
+                modal().show();
             }
 
             async function openEditModal(id) {
                 await ensureBootstrapReady();
                 try {
-                    modalBody.innerHTML = await fetchHtml(`${baseUrl}/${id}/edit`);
-                    const form = modalBody.querySelector('form');
-                    form?.addEventListener('submit', async (e) => {
-                        e.preventDefault();
-                        const fd = new FormData(form);
-                        const params = new URLSearchParams();
-                        for (const [k,v] of fd.entries()) params.append(k, v);
-                        try {
-                            const html = await fetchHtml(`${baseUrl}/${id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                                body: params
-                            });
-                            // 서버가 <tr>만 내려준다고 가정하고 교체
-                            const temp = document.createElement('tbody');
-                            temp.innerHTML = html.trim();
-                            const newRow = temp.firstElementChild;
-                            const oldRow = document.getElementById(`row-${id}`);
-                            if (oldRow && newRow) oldRow.replaceWith(newRow);
-                            modal().hide();
-                        } catch (err) {
-                            modalBody.innerHTML = err.body || '오류가 발생했습니다.';
+                    const editHtml = await fetchHtml(`${baseUrl}/${id}/edit`);
+                    modalBody.innerHTML = editHtml;
+                } catch (e) {
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '요청을 처리할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    if (e.contentType && e.contentType.includes('text/html') && e.body) {
+                        console.error('Raw error page (edit form):', e.body);
+                        alert('수정 폼을 불러오는 중 오류가 발생했습니다.');
+                        return;
+                    }
+                    alert('수정 폼을 불러오지 못했습니다.');
+                    console.error(e);
+                    return;
+                }
+
+                const form = modalBody.querySelector('form');
+                form?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(form);
+                    const params = new URLSearchParams();
+                    for (const [k, v] of fd.entries())
+                        params.append(k, v);
+
+                    try {
+                        const html = await fetchHtml(`${baseUrl}/${id}`, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                            body: params
+                        });
+
+                        const temp = document.createElement('tbody');
+                        temp.innerHTML = html.trim();
+
+                        const newRow = temp.firstElementChild;
+                        const oldRow = document.getElementById(`row-${id}`);
+
+                        if (oldRow && newRow)
+                            oldRow.replaceWith(newRow);
+
+                        modal().hide();
+                    } catch (err) {
+                        if ([400, 409, 422].includes(err.status)) {
+                            if (err.contentType && err.contentType.includes('text/html') && err.body) {
+                                modalBody.innerHTML = err.body;
+                            } else {
+                                const msg = (err.payload && err.payload.message) ? err.payload.message : '입력값을 확인해주세요.';
+                                alert(msg);
+                            }
+                            return;
                         }
-                    }, { once: true });
-                    modal().show();
-                } catch { alert('수정 폼을 불러오지 못했습니다.'); }
+                        alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                        console.error(err);
+                    }
+                }, {once: true});
+                modal().show();
             }
 
             async function onDelete(id) {
-                if (!confirm('해당 행을 삭제하시겠습니까?')) return;
+                if (!confirm('해당 행을 삭제하시겠습니까?'))
+                    return;
                 try {
-                    await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
-                    await reloadList({ page: activePage() });
-                } catch { alert('삭제에 실패했습니다.'); }
+                    await fetchHtml(`${baseUrl}/${id}`, {method: 'DELETE'});
+                    await reloadList({page: activePage()});
+                } catch (e) {
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : '삭제할 수 없습니다.';
+                        alert(msg);
+                        return;
+                    }
+                    alert('삭제에 실패했습니다.');
+                    console.error(e);
+                }
             }
 
-            // ─── 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경 ────────────────────────────
-            // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
             grid.addEventListener('click', (e) => {
-                // 페이저
                 const pagerLink = e.target.closest('#grid-pager a');
                 if (pagerLink) {
                     e.preventDefault();
                     const u = new URL(pagerLink.getAttribute('href') || '', window.location.origin);
                     const p = parseInt(u.searchParams.get('page') || '0', 10);
-                    reloadList({ page: isNaN(p) ? 0 : p });
+                    reloadList({page: isNaN(p) ? 0 : p});
                     return;
                 }
 
-                // 수정/삭제
                 const editBtn = e.target.closest('.js-edit');
-                if (editBtn) { openEditModal(editBtn.dataset.id); return; }
+
+                if (editBtn) {
+                    openEditModal(editBtn.dataset.id);
+                    return;
+                }
+
                 const delBtn = e.target.closest('.js-del');
-                if (delBtn) { onDelete(delBtn.dataset.id); }
+
+                if (delBtn) {
+                    onDelete(delBtn.dataset.id);
+                }
             });
 
             head?.addEventListener('click', (e) => {
                 const a = e.target.closest('a[data-sort]');
-                if (!a) return;
-                //<a> 태그의 원래 링크 이동을 막음.
+                if (!a)
+                    return;
+
                 e.preventDefault();
+
                 const next = a.dataset.sort;
                 const curr = inputSort?.value || 'id';
-                let dir   = inputDir?.value || 'asc';
+                let dir = inputDir?.value || 'asc';
+
                 dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+
                 if (inputSort)
                     inputSort.value = next;
                 if (inputDir)
-                    inputDir.value  = dir;
-                reloadList({ page: 0 });
+                    inputDir.value = dir;
+                reloadList({page: 0});
             });
 
             searchForm?.addEventListener('submit', (e) => {
                 e.preventDefault();
-                reloadList({ page: 0 });
+                reloadList({page: 0});
             });
-            selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
 
-            // ─── 초기화 끝 ──────────────────────────────────────────────────────────────
+            selectSize?.addEventListener('change', () => reloadList({page: 0}));
 
             btnNew?.addEventListener('click', (e) => {
                 e.preventDefault();
