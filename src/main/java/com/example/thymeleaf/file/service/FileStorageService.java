@@ -64,14 +64,11 @@ public class FileStorageService {
         }
     }
 
-    public List<String> storeAll(List<MultipartFile> files) {
-        List<String> result = new ArrayList<>();
-        for (MultipartFile f : files) {
-            if (f != null && !f.isEmpty()) {
-                result.add(store(f));
-            }
+    public String storeAll(MultipartFile file) {
+        if (file != null && !file.isEmpty()) {
+            return store(file);
         }
-        return result;
+        return "";
     }
 
     public Path getUploadRoot() {

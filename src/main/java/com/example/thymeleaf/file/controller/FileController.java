@@ -36,9 +36,8 @@ public class FileController {
 
     /** 업로드 (AJAX/일반 둘 다 허용) */
     @PostMapping("/file/upload")
-    public String handleFileUpload(@RequestParam(name = "files", required = false) MultipartFile[] files) {
-        List<MultipartFile> list = (files == null) ? List.<MultipartFile>of() : Arrays.asList(files);
-        storageService.storeAll(list);
+    public String handleFileUpload(@RequestParam(name = "file", required = false) MultipartFile file) {
+        storageService.storeAll(file);
         // AJAX일 땐 JS가 /file/list를 다시 호출 → 여기선 빈 204처럼 동작시키려면 redirect 없이 fragment도 가능
         return "redirect:/file/upload"; // 일반 폼 제출 대비
     }

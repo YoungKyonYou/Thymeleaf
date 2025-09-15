@@ -42,6 +42,7 @@
             <input type="hidden" id="dir" th:value="${dir}">
         </form>
 
+        <button class="btn btn-outline-success" data-export="xlsx" data-provider="user">엑셀 출력</button>
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <thead id="grid-head">
@@ -81,6 +82,8 @@
 
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
+
+            // 작은 유틸
             const $ = (sel, el = document) => el.querySelector(sel);
             const buildUrl = (base, params = {}) => {
                 const u = new URL(base, window.location.origin);
@@ -96,6 +99,7 @@
                 const curr = document.querySelector(selector);
                 if (next && curr)
                     curr.replaceWith(next);
+
             };
 
             const fetchHtml = async (url, opt = {}) => {
@@ -143,6 +147,7 @@
 
             const baseUrl = '/user';
             const grid = document.getElementById('grid');
+
             if (!grid) return;
 
             const btnNew = document.getElementById('btn-new');
@@ -166,6 +171,8 @@
                 ...overrides
             });
 
+
+            // 목록 갱신
             let listAbort;
             async function reloadList({page} = {}) {
                 listAbort?.abort();
@@ -189,6 +196,7 @@
                 }
             }
 
+            // 모달 도우미
             let modalInst;
             const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
             modalEl.addEventListener('hidden.bs.modal', () => {
@@ -321,7 +329,37 @@
                 }
             }
 
+            // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
+            // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
             grid.addEventListener('click', (e) => {
+                // 엑셀 내보내기
+                const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                if (exportBtn) {
+                    const provider = exportBtn.dataset.provider;
+                    if (!provider) { alert('provider가 지정되지 않았습니다.'); return; }
+
+                    const scope  = grid;
+                    const form   = scope.querySelector('form');
+                    const params = new URLSearchParams({ provider });
+
+                    if (form) {
+                        const fd = new FormData(form);
+                        for (const [k, v] of fd.entries()) {
+                            if (v != null && String(v).trim() !== '') params.set(k, v);
+                        }
+                    }
+                    const sort = scope.querySelector('#sort')?.value || 'id';
+                    const dir  = scope.querySelector('#dir')?.value || 'asc';
+                    params.set('sort', sort);
+                    params.set('dir', dir);
+
+                    params.set('size', '100000');
+
+                    window.location.href = '/export/xlsx?' + params.toString();
+                    return;
+                }
+
+                // 페이저
                 const pagerLink = e.target.closest('#grid-pager a');
                 if (pagerLink) {
                     e.preventDefault();
@@ -331,17 +369,18 @@
                     return;
                 }
 
+                // 수정
                 const editBtn = e.target.closest('.js-edit');
-
                 if (editBtn) {
                     openEditModal(editBtn.dataset.id);
                     return;
                 }
 
+                // 삭제
                 const delBtn = e.target.closest('.js-del');
-
                 if (delBtn) {
                     onDelete(delBtn.dataset.id);
+                    return;
                 }
             });
 
@@ -371,12 +410,14 @@
             });
 
             selectSize?.addEventListener('change', () => reloadList({page: 0}));
+            // 초기화 끝
 
             btnNew?.addEventListener('click', (e) => {
                 e.preventDefault();
                 openCreateModal();
             });
         });
+
     </script>
 
 </div>

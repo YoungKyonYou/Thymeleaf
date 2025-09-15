@@ -16,7 +16,7 @@
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h3 class="card-title mb-3">파일 업로드 (여러 개)</h3>
+                    <h3 class="card-title mb-3">파일 업로드 (한 개)</h3>
 
                     <p class="text-muted mb-2">
                         서버 저장 경로: <code th:text="${uploadRoot}">uploads</code>
@@ -27,9 +27,9 @@
                         <!-- Spring Security 사용 시 필요 -->
                         <input type="hidden"  />
                         <div class="mb-3">
-                            <label for="files" class="form-label">파일 선택</label>
-                            <input class="form-control" type="file" id="files" name="files" multiple>
-                            <div class="form-text">여러 파일을 선택할 수 있습니다.</div>
+                            <label for="file" class="form-label">파일 선택</label>
+                            <input class="form-control" type="file" id="file" name="file">
+                            <div class="form-text">한 개 파일만 선택할 수 있습니다.</div>
                         </div>
                         <div class="d-flex flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary">업로드</button>
@@ -244,6 +244,7 @@
                 e.preventDefault();
                 flash('');
                 const fd = new FormData(el.uploadForm);
+
 
                 await mutateAndRefresh(
                     () => api(ENDPOINT.upload, { method: 'POST', body: fd }),
