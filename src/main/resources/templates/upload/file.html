@@ -16,7 +16,7 @@
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h3 class="card-title mb-3">파일 업로드 (한 개)</h3>
+                    <h3 class="card-title mb-3">파일 업로드 (여러 개)</h3>
 
                     <p class="text-muted mb-2">
                         서버 저장 경로: <code th:text="${uploadRoot}">uploads</code>
@@ -27,9 +27,9 @@
                         <!-- Spring Security 사용 시 필요 -->
                         <input type="hidden"  />
                         <div class="mb-3">
-                            <label for="file" class="form-label">파일 선택</label>
-                            <input class="form-control" type="file" id="file" name="file">
-                            <div class="form-text">한 개 파일만 선택할 수 있습니다.</div>
+                            <label for="files" class="form-label">파일 선택</label>
+                            <input class="form-control" type="file" id="files" name="files" multiple>
+                            <div class="form-text">여러 파일을 선택할 수 있습니다.</div>
                         </div>
                         <div class="d-flex flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary">업로드</button>
@@ -75,7 +75,7 @@
          *     alert('원래 방식: 버튼 클릭!');
          *   });
          *
-         *   // ✅ on을 쓴 방식
+         *   // on을 쓴 방식
          *   const btn2 = $('#btn');
          *   on(btn2, 'click', () => {
          *     alert('on 방식: 버튼 클릭!');
@@ -102,15 +102,36 @@
         async function api(url, { method = 'GET', body, headers = {}, expect = 'auto' } = {}) {
             const res = await fetch(url, {
                 method,
-                headers: { 'X-Requested-With': 'fetch', ...headers },
+                headers: {
+                    'X-Requested-With': 'fetch',
+                    // 서버가 JSON 에러를 내려줄 때 message를 읽기 위해 Accept 추가
+                    'Accept': expect === 'json' ? 'application/json' : '*/*',
+                    ...headers
+                },
                 body
             });
 
             //실제로는 204면 ok가 true라 이 블록 안 옴
             if (!res.ok && res.status !== 204) {
-                const text = await res.text().catch(() => '');
-                const msg = text?.trim() || `HTTP ${res.status}`;
-                throw new Error(msg);
+                const ct = res.headers.get('content-type') || '';
+                const bodyText = await res.text().catch(() => '');
+
+                // JSON 에러 본문을 파싱해서 message 우선 사용
+                let payload = null;
+                if (ct.includes('application/json')) {
+                    try { payload = JSON.parse(bodyText); } catch {}
+                }
+                const message =
+                    (payload && payload.message) ? payload.message :
+                        (bodyText?.trim() || `HTTP ${res.status}`);
+
+                // 호출부에서만 UI 처리하도록 표준화된 에러를 throw
+                const err = new Error(message);
+                err.status = res.status;
+                err.payload = payload;    // 서버의 JSON 에러 객체(있다면)
+                err.body = bodyText;      // 원문 텍스트(HTML/텍스트)
+                err.contentType = ct;
+                throw err;
             }
 
             if (res.status === 204)
@@ -212,7 +233,10 @@
                 renderList(files);
             } catch (e) {
                 console.error(e);
-                flash('목록을 불러오지 못했습니다.', { ok: false, holdMs: 2500 });
+                const msg = [400, 409, 422].includes(e.status)
+                    ? (e.message || '목록 요청을 처리할 수 없습니다.')
+                    : '목록을 불러오지 못했습니다.';
+                flash(msg, { ok: false, holdMs: 2500 });
             }
         }
 
@@ -225,7 +249,11 @@
                 flash(successMsg, { ok: true });
             } catch (e) {
                 console.error(e);
-                flash(e.message || '요청 처리 실패', { ok: false, holdMs: 2500 });
+                // 검증/비즈니스 오류는 서버 메시지 노출, 그 외는 일반 실패 메시지
+                const msg = [400, 409, 422].includes(e.status)
+                    ? (e.message || '요청 처리 실패')
+                    : '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+                flash(msg, { ok: false, holdMs: 2500 });
             } finally {
                 setDisabled(false);
             }
@@ -244,7 +272,6 @@
                 e.preventDefault();
                 flash('');
                 const fd = new FormData(el.uploadForm);
-
 
                 await mutateAndRefresh(
                     () => api(ENDPOINT.upload, { method: 'POST', body: fd }),
