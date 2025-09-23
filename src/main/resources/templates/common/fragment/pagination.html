@@ -1,34 +1,48 @@
-<!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-
 <th:block th:fragment="initialTbody(pageData)">
     <th:block th:each="u : ${pageData.content}">
         <tr th:replace="~{user/row :: row(u=${u})}"></tr>
     </th:block>
 </th:block>
-
 <th:block th:fragment="pager(pageData)">
-    <ul class="pagination justify-content-center my-3" id="grid-pager">
-        <li class="page-item" th:classappend="${!pageData.hasPrev} ? ' disabled'">
-            <a class="page-link" href="#" data-page="0" aria-label="First">&laquo;</a>
-        </li>
-        <li class="page-item" th:classappend="${!pageData.hasPrev} ? ' disabled'">
-            <a class="page-link" href="#" th:attr="data-page=${pageData.page - 1}" aria-label="Previous">&lsaquo;</a>
-        </li>
-        <li class="page-item"
-            th:each="i : ${#numbers.sequence(0, pageData.totalPages - 1)}"
-            th:classappend="${i == pageData.page} ? ' active'">
-            <a class="page-link" href="#" th:attr="data-page=${i}" th:text="${i + 1}">1</a>
-        </li>
-        <li class="page-item" th:classappend="${!pageData.hasNext} ? ' disabled'">
-            <a class="page-link" href="#" th:attr="data-page=${pageData.page + 1}" aria-label="Next">&rsaquo;</a>
-        </li>
-        <li class="page-item" th:classappend="${!pageData.hasNext} ? ' disabled'">
-            <a class="page-link" href="#" th:attr="data-page=${pageData.totalPages - 1}" aria-label="Last">&raquo;</a>
-        </li>
-    </ul>
-</th:block>
+    <!-- 결과가 있을 때 -->
+    <th:block th:if="${pageData.totalPages > 0}">
+        <ul class="pagination justify-content-center my-3"><!-- id 제거 -->
+            <li class="page-item" th:classappend="${!pageData.hasPrev} ? ' disabled'">
+                <a class="page-link" href="#" aria-label="First"
+                   th:if="${pageData.hasPrev}" data-page="0">&laquo;</a>
+                <span class="page-link" th:unless="${pageData.hasPrev}">&laquo;</span>
+            </li>
+            <li class="page-item" th:classappend="${!pageData.hasPrev} ? ' disabled'">
+                <a class="page-link" href="#" aria-label="Previous"
+                   th:if="${pageData.hasPrev}" th:attr="data-page=${pageData.page - 1}">&lsaquo;</a>
+                <span class="page-link" th:unless="${pageData.hasPrev}">&lsaquo;</span>
+            </li>
+            <li class="page-item"
+                th:each="i : ${#numbers.sequence(0, pageData.totalPages - 1)}"
+                th:classappend="${i == pageData.page} ? ' active'">
+                <a class="page-link" href="#" th:attr="data-page=${i}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${!pageData.hasNext} ? ' disabled'">
+                <a class="page-link" href="#" aria-label="Next"
+                   th:if="${pageData.hasNext}" th:attr="data-page=${pageData.page + 1}">&rsaquo;</a>
+                <span class="page-link" th:unless="${pageData.hasNext}">&rsaquo;</span>
+            </li>
+            <li class="page-item" th:classappend="${!pageData.hasNext} ? ' disabled'">
+                <a class="page-link" href="#" aria-label="Last"
+                   th:if="${pageData.hasNext}" th:attr="data-page=${pageData.totalPages - 1}">&raquo;</a>
+                <span class="page-link" th:unless="${pageData.hasNext}">&raquo;</span>
+            </li>
+        </ul>
+    </th:block>
 
-</body>
-</html>
+    <!-- 결과가 없을 때 -->
+    <th:block th:unless="${pageData.totalPages > 0}">
+        <ul class="pagination justify-content-center my-3"><!-- id 제거 -->
+            <li class="page-item disabled"><span class="page-link" aria-label="First">&laquo;</span></li>
+            <li class="page-item disabled"><span class="page-link" aria-label="Previous">&lsaquo;</span></li>
+            <li class="page-item active"><span class="page-link">0</span></li>
+            <li class="page-item disabled"><span class="page-link" aria-label="Next">&rsaquo;</span></li>
+            <li class="page-item disabled"><span class="page-link" aria-label="Last">&raquo;</span></li>
+        </ul>
+    </th:block>
+</th:block>

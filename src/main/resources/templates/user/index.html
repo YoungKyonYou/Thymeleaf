@@ -10,7 +10,7 @@
     </div>
 
     <div id="grid">
-        <!-- 검색 폼: th:object + th:field 로 변경 -->
+        <!-- 검색 폼: th:object + th:field -->
         <form class="row g-2 align-items-center mb-3" th:object="${req}">
             <div class="col-12">
                 <div class="row g-2">
@@ -37,6 +37,8 @@
                             <option th:selected="${size==50}" value="50">50</option>
                         </select>
                     </div>
+
+                    <!-- 검색 버튼 -->
                     <div class="col-auto ms-auto">
                         <button type="submit" class="btn btn-primary">검색</button>
                     </div>
@@ -65,13 +67,14 @@
                 </thead>
 
                 <tbody id="grid-tbody"
-                       th:insert="~{common/fragment/pagination :: initialTbody(${pageData})}">
+                       th:insert="~{common/fragment/pagination :: initialTbody(pageData=${pageData})}">
                 </tbody>
             </table>
         </div>
 
+        <!-- 공통 페이저 (data-page 전용) -->
         <nav id="grid-pager"
-             th:insert="~{common/fragment/pagination :: pager(${pageData})}">
+             th:insert="~{common/fragment/pagination :: pager(pageData=${pageData})}">
         </nav>
 
         <div class="modal fade" id="formModal" data-bs-focus="false" tabindex="-1" aria-hidden="true">
@@ -90,7 +93,7 @@
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
 
-            // 작은 유틸 (기존 스타일 유지)
+            // ============== 유틸 ==============
             const $ = (sel, el = document) => el.querySelector(sel);
             const buildUrl = (base, params = {}) => {
                 const u = new URL(base, window.location.origin);
@@ -133,6 +136,7 @@
             };
 
             const activePage = () => {
+                // data-page 기반 공통 페이저에서는 의미가 없지만, 하위호환으로 유지
                 const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
                 if (!a) return 0;
                 const u = new URL(a.getAttribute('href') || '', window.location.origin);
@@ -144,21 +148,23 @@
                     ? Promise.resolve()
                     : new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, { once: true })));
 
-            const baseUrl = '/user';
-            const grid = document.getElementById('grid');
+            // ============== 요소 캐시 ==============
+            const baseUrl  = '/user';
+            const grid     = document.getElementById('grid');
             if (!grid) return;
 
-            const btnNew = document.getElementById('btn-new');
-            const head = document.getElementById('grid-head');
-            const modalEl = document.getElementById('formModal');
-            const modalBody = document.getElementById('modal-body');
+            const btnNew   = document.getElementById('btn-new');
+            const head     = document.getElementById('grid-head');
+            const modalEl  = document.getElementById('formModal');
+            const modalBody= document.getElementById('modal-body');
             const searchForm = grid.querySelector('form');
             const selectSize = searchForm?.querySelector('select[name="size"]');
-            const inputSort = document.getElementById('sort');
-            const inputDir = document.getElementById('dir');
+            const inputSort  = document.getElementById('sort');
+            const inputDir   = document.getElementById('dir');
 
-            // 상태 수집: 폼의 모든 인풋(name/value) + 정렬/사이즈
-            const state = (overrides = {}) => {
+            // ============== 상태 수집 / 적용 스냅샷 ==============
+            // 폼에서 현재 입력된 값을 읽음
+            const collectFromForm = () => {
                 const params = {};
                 if (searchForm) {
                     const fd = new FormData(searchForm);
@@ -166,24 +172,35 @@
                         if (v != null && String(v).trim() !== '') params[k] = v;
                     }
                 }
-                return {
-                    size: parseInt(selectSize?.value || '10', 10),
-                    sort: inputSort?.value || 'id',
-                    dir:  inputDir?.value  || 'asc',
-                    page: 0,
-                    ...params,     // username/email/firstName/lastName/phone
-                    ...overrides
-                };
+                return params; // username/email/firstName/lastName/phone
             };
 
-            // 목록 갱신
+            // "적용된 검색값" (검색 버튼 눌렀을 때만 갱신)
+            let applied = collectFromForm();
+
+            const withSortAndSize = (base, overrides = {}) => ({
+                ...base,
+                size: parseInt(selectSize?.value || '10', 10),
+                sort: inputSort?.value || 'id',
+                dir:  inputDir?.value  || 'asc',
+                page: 0,
+                ...overrides
+            });
+
+            // useApplied=true => 적용값 사용, false => 폼 현재값 사용
+            const state = ({ useApplied = true, overrides = {} } = {}) => {
+                const base = useApplied ? applied : collectFromForm();
+                return withSortAndSize(base, overrides);
+            };
+
+            // ============== 목록 갱신 ==============
             let listAbort;
-            async function reloadList({ page } = {}) {
+            async function reloadList({ page, useApplied = true } = {}) {
                 listAbort?.abort();
                 listAbort = new AbortController();
                 const signal = listAbort.signal;
 
-                const params = state({ page: typeof page === 'number' ? page : activePage() });
+                const params = state({ useApplied, overrides: { page: typeof page === 'number' ? page : activePage() } });
                 try {
                     const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
                     swap(html, '#grid-tbody');
@@ -200,7 +217,7 @@
                 }
             }
 
-            // 모달 처리 (기존 스타일 유지)
+            // ============== 모달 ==============
             let modalInst;
             const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
             modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
@@ -230,7 +247,7 @@
                     try {
                         const fd = new FormData(form);
                         await fetchHtml(baseUrl, { method: 'POST', body: fd });
-                        await reloadList({ page: activePage() });
+                        await reloadList({ page: activePage(), useApplied: true });
                         modal().hide();
                     } catch (err) {
                         if ([400, 409, 422].includes(err.status)) {
@@ -311,7 +328,7 @@
                 if (!confirm('해당 행을 삭제하시겠습니까?')) return;
                 try {
                     await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
-                    await reloadList({ page: activePage() });
+                    await reloadList({ page: activePage(), useApplied: true });
                 } catch (e) {
                     if ([400, 409, 422].includes(e.status)) {
                         const msg = (e.payload && e.payload.message) ? e.payload.message : '삭제할 수 없습니다.';
@@ -323,37 +340,32 @@
                 }
             }
 
-            // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
+            // ============== 이벤트 바인딩 ==============
             grid.addEventListener('click', (e) => {
-                // 엑셀 내보내기
+                // 엑셀 내보내기 (항상 applied 기준)
                 const exportBtn = e.target.closest('button[data-export="xlsx"]');
                 if (exportBtn) {
                     const provider = exportBtn.dataset.provider;
                     if (!provider) { alert('provider가 지정되지 않았습니다.'); return; }
 
                     const params = new URLSearchParams({ provider });
-                    if (searchForm) {
-                        const fd = new FormData(searchForm);
-                        for (const [k, v] of fd.entries()) {
-                            if (v != null && String(v).trim() !== '') params.set(k, v);
-                        }
-                    }
-                    const sort = inputSort?.value || 'id';
-                    const dir  = inputDir?.value || 'asc';
-                    params.set('sort', sort);
-                    params.set('dir', dir);
+                    Object.entries(applied).forEach(([k, v]) => {
+                        if (v != null && String(v).trim() !== '') params.set(k, v);
+                    });
+                    params.set('sort', inputSort?.value || 'id');
+                    params.set('dir',  inputDir?.value  || 'asc');
 
                     window.location.href = '/export/xlsx?' + params.toString();
                     return;
                 }
 
-                // 페이저
+                // 페이저 (data-page)
                 const pagerLink = e.target.closest('#grid-pager a[data-page]');
                 if (pagerLink) {
                     e.preventDefault();
                     const dp = pagerLink.getAttribute('data-page');
                     const p = parseInt(dp, 10);
-                    reloadList({ page: isNaN(p) ? 0 : p });
+                    reloadList({ page: isNaN(p) ? 0 : p, useApplied: true });
                     return;
                 }
 
@@ -372,7 +384,9 @@
                 }
             });
 
-            head?.addEventListener('click', (e) => {
+            // 정렬 (항상 applied 기준)
+            const headEl = head;
+            headEl?.addEventListener('click', (e) => {
                 const a = e.target.closest('a[data-sort]');
                 if (!a) return;
                 e.preventDefault();
@@ -384,25 +398,27 @@
 
                 if (inputSort) inputSort.value = next;
                 if (inputDir)  inputDir.value = dir;
-                reloadList({ page: 0 });
+
+                reloadList({ page: 0, useApplied: true });
             });
 
+            // 검색 submit 시에만 적용 스냅샷 갱신
             searchForm?.addEventListener('submit', (e) => {
                 e.preventDefault();
-                reloadList({ page: 0 });
+                applied = collectFromForm();
+                reloadList({ page: 0, useApplied: true });
             });
 
-            selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
+            // size 변경 즉시 반영(의도된 리스트 크기 변경) — 검색값은 applied 유지
+            selectSize?.addEventListener('change', () => reloadList({ page: 0, useApplied: true }));
 
+            // 신규 모달
             btnNew?.addEventListener('click', (e) => {
                 e.preventDefault();
                 openCreateModal();
             });
-
-
         });
     </script>
-
 
 </div>
 </body>
