@@ -2,7 +2,7 @@ package com.example.thymeleaf.user.controller;
 
 import com.example.thymeleaf.common.PageData;
 import com.example.thymeleaf.user.dto.UserDto;
-import com.example.thymeleaf.user.service.UserService;
+import com.example.thymeleaf.user.service.impl.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,22 +51,22 @@ public class UserController {
 
     @GetMapping(path="/{id}/edit", produces = MediaType.TEXT_HTML_VALUE)
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("user", userService.findUser(id));
+        model.addAttribute("user", userService.selectOne(id));
         return "user/form :: form";
     }
 
     // 생성
     @PostMapping(produces = MediaType.TEXT_HTML_VALUE)
     public String create(@ModelAttribute UserDto form, Model model) {
-        UserDto saved = userService.createUser(form);
-        model.addAttribute("u", saved);
+        UserDto userDto = userService.insertOne(form);
+        model.addAttribute("u", userDto);
         return "user/row :: row";
     }
 
     // 수정
     @PutMapping(path="/{id}", produces = MediaType.TEXT_HTML_VALUE)
     public String update(@PathVariable Long id, @ModelAttribute UserDto form, Model model) {
-        UserDto saved = userService.updateUser(id, form);
+        UserDto saved = userService.updateOne(form);
         model.addAttribute("u", saved);
         return "user/row :: row";
     }
@@ -74,7 +74,7 @@ public class UserController {
     // 삭제
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        userService.deleteUser(id);
+        userService.deleteOne(id);
         return ResponseEntity.ok().build();
     }
 }
