@@ -10,39 +10,46 @@
     </div>
 
     <div id="grid">
-        <form class="row g-2 align-items-center mb-3">
-            <div class="col-auto">
-                <div class="input-group">
-                    <select name="by" class="form-select" style="flex:0 0 120px">
-                        <option value="all" th:selected="${by=='all'}">전체</option>
-                        <option value="username" th:selected="${by=='username'}">Username</option>
-                        <option value="email" th:selected="${by=='email'}">Email</option>
-                        <option value="firstName" th:selected="${by=='firstName'}">First</option>
-                        <option value="lastName" th:selected="${by=='lastName'}">Last</option>
-                        <option value="phone" th:selected="${by=='phone'}">Phone</option>
-                    </select>
+        <!-- 검색 폼: th:object + th:field 로 변경 -->
+        <form class="row g-2 align-items-center mb-3" th:object="${req}">
+            <div class="col-12">
+                <div class="row g-2">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <input type="search" class="form-control" placeholder="Username" th:field="*{username}">
+                    </div>
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <input type="search" class="form-control" placeholder="Email" th:field="*{email}">
+                    </div>
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <input type="search" class="form-control" placeholder="First" th:field="*{firstName}">
+                    </div>
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <input type="search" class="form-control" placeholder="Last" th:field="*{lastName}">
+                    </div>
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <input type="search" class="form-control" placeholder="Phone" th:field="*{phone}">
+                    </div>
 
-                    <input name="q"
-                           type="search"
-                           class="form-control"
-                           placeholder="검색"
-                           th:value="${q}">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <select name="size" class="form-select w-auto">
+                            <option th:selected="${size==10}" value="10">10</option>
+                            <option th:selected="${size==20}" value="20">20</option>
+                            <option th:selected="${size==50}" value="50">50</option>
+                        </select>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-auto">
-                <select name="size" class="form-select w-auto">
-                    <option th:selected="${size==10}" value="10">10</option>
-                    <option th:selected="${size==20}" value="20">20</option>
-                    <option th:selected="${size==50}" value="50">50</option>
-                </select>
-            </div>
-
+            <!-- 정렬 상태는 hidden 유지 -->
             <input type="hidden" id="sort" th:value="${sort}">
             <input type="hidden" id="dir" th:value="${dir}">
         </form>
 
         <button class="btn btn-outline-success" data-export="xlsx" data-provider="user">엑셀 출력</button>
+
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <thead id="grid-head">
@@ -64,7 +71,7 @@
         </div>
 
         <nav id="grid-pager"
-             th:insert="~{common/fragment/pagination :: pager(${pageData}, ${sort}, ${dir}, ${q}, ${size})}">
+             th:insert="~{common/fragment/pagination :: pager(${pageData})}">
         </nav>
 
         <div class="modal fade" id="formModal" data-bs-focus="false" tabindex="-1" aria-hidden="true">
@@ -83,7 +90,7 @@
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', () => {
 
-            // 작은 유틸
+            // 작은 유틸 (기존 스타일 유지)
             const $ = (sel, el = document) => el.querySelector(sel);
             const buildUrl = (base, params = {}) => {
                 const u = new URL(base, window.location.origin);
@@ -97,9 +104,7 @@
                 const doc = parseHtml(html);
                 const next = doc.querySelector(selector);
                 const curr = document.querySelector(selector);
-                if (next && curr)
-                    curr.replaceWith(next);
-
+                if (next && curr) curr.replaceWith(next);
             };
 
             const fetchHtml = async (url, opt = {}) => {
@@ -108,16 +113,12 @@
                     cache: 'no-store',
                     ...opt
                 });
-
                 const ct = res.headers.get('content-type') || '';
                 const bodyText = await res.text();
-
                 if (!res.ok) {
                     let payload = null;
                     if (ct.includes('application/json')) {
-                        try {
-                            payload = JSON.parse(bodyText);
-                        } catch {}
+                        try { payload = JSON.parse(bodyText); } catch {}
                     }
                     const message = (payload && payload.message) ? payload.message : `HTTP ${res.status}`;
                     const err = new Error(message);
@@ -128,26 +129,23 @@
                     err.contentType = ct;
                     throw err;
                 }
-
                 return bodyText;
             };
 
             const activePage = () => {
                 const a = $('#grid-pager .active a, #grid-pager [aria-current="page"]');
-                if (!a)
-                    return 0;
+                if (!a) return 0;
                 const u = new URL(a.getAttribute('href') || '', window.location.origin);
                 return parseInt(u.searchParams.get('page') || '0', 10) || 0;
             };
 
             const ensureBootstrapReady = () =>
-                window.bootstrap ?
-                    Promise.resolve() : new Promise(r => (document.readyState === 'complete' ?
-                        r() : window.addEventListener('load', r, {once: true})));
+                window.bootstrap
+                    ? Promise.resolve()
+                    : new Promise(r => (document.readyState === 'complete' ? r() : window.addEventListener('load', r, { once: true })));
 
             const baseUrl = '/user';
             const grid = document.getElementById('grid');
-
             if (!grid) return;
 
             const btnNew = document.getElementById('btn-new');
@@ -155,33 +153,39 @@
             const modalEl = document.getElementById('formModal');
             const modalBody = document.getElementById('modal-body');
             const searchForm = grid.querySelector('form');
-            const selectBy = searchForm?.querySelector('select[name="by"]');
-            const inputQ = searchForm?.querySelector('input[name="q"]');
             const selectSize = searchForm?.querySelector('select[name="size"]');
             const inputSort = document.getElementById('sort');
             const inputDir = document.getElementById('dir');
 
-            const state = (overrides = {}) => ({
-                by: selectBy?.value || 'all',
-                q: inputQ?.value ?? '',
-                size: parseInt(selectSize?.value || '10', 10),
-                sort: inputSort?.value || 'id',
-                dir: inputDir?.value || 'asc',
-                page: 0,
-                ...overrides
-            });
-
+            // 상태 수집: 폼의 모든 인풋(name/value) + 정렬/사이즈
+            const state = (overrides = {}) => {
+                const params = {};
+                if (searchForm) {
+                    const fd = new FormData(searchForm);
+                    for (const [k, v] of fd.entries()) {
+                        if (v != null && String(v).trim() !== '') params[k] = v;
+                    }
+                }
+                return {
+                    size: parseInt(selectSize?.value || '10', 10),
+                    sort: inputSort?.value || 'id',
+                    dir:  inputDir?.value  || 'asc',
+                    page: 0,
+                    ...params,     // username/email/firstName/lastName/phone
+                    ...overrides
+                };
+            };
 
             // 목록 갱신
             let listAbort;
-            async function reloadList({page} = {}) {
+            async function reloadList({ page } = {}) {
                 listAbort?.abort();
                 listAbort = new AbortController();
                 const signal = listAbort.signal;
 
-                const params = state({page: typeof page === 'number' ? page : activePage()});
+                const params = state({ page: typeof page === 'number' ? page : activePage() });
                 try {
-                    const html = await fetchHtml(buildUrl(baseUrl, params), {signal});
+                    const html = await fetchHtml(buildUrl(baseUrl, params), { signal });
                     swap(html, '#grid-tbody');
                     swap(html, '#grid-pager');
                 } catch (e) {
@@ -196,12 +200,10 @@
                 }
             }
 
-            // 모달 도우미
+            // 모달 처리 (기존 스타일 유지)
             let modalInst;
             const modal = () => (modalInst ??= new window.bootstrap.Modal(modalEl));
-            modalEl.addEventListener('hidden.bs.modal', () => {
-                modalBody.innerHTML = '';
-            });
+            modalEl.addEventListener('hidden.bs.modal', () => { modalBody.innerHTML = ''; });
 
             async function openCreateModal() {
                 try {
@@ -222,14 +224,13 @@
                     console.error(e);
                     return;
                 }
-
                 const form = modalBody.querySelector('form');
                 form?.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     try {
                         const fd = new FormData(form);
-                        const result = await fetchHtml(baseUrl, {method: 'POST', body: fd});
-                        await reloadList({page: activePage()});
+                        await fetchHtml(baseUrl, { method: 'POST', body: fd });
+                        await reloadList({ page: activePage() });
                         modal().hide();
                     } catch (err) {
                         if ([400, 409, 422].includes(err.status)) {
@@ -244,8 +245,7 @@
                         alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
                         console.error(err);
                     }
-                }, {once: true});
-
+                }, { once: true });
                 modal().show();
             }
 
@@ -275,25 +275,20 @@
                     e.preventDefault();
                     const fd = new FormData(form);
                     const params = new URLSearchParams();
-                    for (const [k, v] of fd.entries())
-                        params.append(k, v);
+                    for (const [k, v] of fd.entries()) params.append(k, v);
 
                     try {
                         const html = await fetchHtml(`${baseUrl}/${id}`, {
                             method: 'PUT',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                             body: params
                         });
 
                         const temp = document.createElement('tbody');
                         temp.innerHTML = html.trim();
-
                         const newRow = temp.firstElementChild;
                         const oldRow = document.getElementById(`row-${id}`);
-
-                        if (oldRow && newRow)
-                            oldRow.replaceWith(newRow);
-
+                        if (oldRow && newRow) oldRow.replaceWith(newRow);
                         modal().hide();
                     } catch (err) {
                         if ([400, 409, 422].includes(err.status)) {
@@ -308,16 +303,15 @@
                         alert('오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
                         console.error(err);
                     }
-                }, {once: true});
+                }, { once: true });
                 modal().show();
             }
 
             async function onDelete(id) {
-                if (!confirm('해당 행을 삭제하시겠습니까?'))
-                    return;
+                if (!confirm('해당 행을 삭제하시겠습니까?')) return;
                 try {
-                    await fetchHtml(`${baseUrl}/${id}`, {method: 'DELETE'});
-                    await reloadList({page: activePage()});
+                    await fetchHtml(`${baseUrl}/${id}`, { method: 'DELETE' });
+                    await reloadList({ page: activePage() });
                 } catch (e) {
                     if ([400, 409, 422].includes(e.status)) {
                         const msg = (e.payload && e.payload.message) ? e.payload.message : '삭제할 수 없습니다.';
@@ -330,7 +324,6 @@
             }
 
             // 이벤트: 클릭(위임), 정렬, 검색, 사이즈 변경
-            // 페이지 내 대부분 클릭을 grid 컨테이너로 위임 → tbody/pager 교체에도 재바인딩 불필요
             grid.addEventListener('click', (e) => {
                 // 엑셀 내보내기
                 const exportBtn = e.target.closest('button[data-export="xlsx"]');
@@ -338,34 +331,29 @@
                     const provider = exportBtn.dataset.provider;
                     if (!provider) { alert('provider가 지정되지 않았습니다.'); return; }
 
-                    const scope  = grid;
-                    const form   = scope.querySelector('form');
                     const params = new URLSearchParams({ provider });
-
-                    if (form) {
-                        const fd = new FormData(form);
+                    if (searchForm) {
+                        const fd = new FormData(searchForm);
                         for (const [k, v] of fd.entries()) {
                             if (v != null && String(v).trim() !== '') params.set(k, v);
                         }
                     }
-                    const sort = scope.querySelector('#sort')?.value || 'id';
-                    const dir  = scope.querySelector('#dir')?.value || 'asc';
+                    const sort = inputSort?.value || 'id';
+                    const dir  = inputDir?.value || 'asc';
                     params.set('sort', sort);
                     params.set('dir', dir);
-
-                    params.set('size', '100000');
 
                     window.location.href = '/export/xlsx?' + params.toString();
                     return;
                 }
 
                 // 페이저
-                const pagerLink = e.target.closest('#grid-pager a');
+                const pagerLink = e.target.closest('#grid-pager a[data-page]');
                 if (pagerLink) {
                     e.preventDefault();
-                    const u = new URL(pagerLink.getAttribute('href') || '', window.location.origin);
-                    const p = parseInt(u.searchParams.get('page') || '0', 10);
-                    reloadList({page: isNaN(p) ? 0 : p});
+                    const dp = pagerLink.getAttribute('data-page');
+                    const p = parseInt(dp, 10);
+                    reloadList({ page: isNaN(p) ? 0 : p });
                     return;
                 }
 
@@ -386,39 +374,35 @@
 
             head?.addEventListener('click', (e) => {
                 const a = e.target.closest('a[data-sort]');
-                if (!a)
-                    return;
-
+                if (!a) return;
                 e.preventDefault();
 
                 const next = a.dataset.sort;
                 const curr = inputSort?.value || 'id';
                 let dir = inputDir?.value || 'asc';
-
                 dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
 
-                if (inputSort)
-                    inputSort.value = next;
-                if (inputDir)
-                    inputDir.value = dir;
-                reloadList({page: 0});
+                if (inputSort) inputSort.value = next;
+                if (inputDir)  inputDir.value = dir;
+                reloadList({ page: 0 });
             });
 
             searchForm?.addEventListener('submit', (e) => {
                 e.preventDefault();
-                reloadList({page: 0});
+                reloadList({ page: 0 });
             });
 
-            selectSize?.addEventListener('change', () => reloadList({page: 0}));
-            // 초기화 끝
+            selectSize?.addEventListener('change', () => reloadList({ page: 0 }));
 
             btnNew?.addEventListener('click', (e) => {
                 e.preventDefault();
                 openCreateModal();
             });
-        });
 
+
+        });
     </script>
+
 
 </div>
 </body>
