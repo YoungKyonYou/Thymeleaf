@@ -1,0 +1,253 @@
+/* reset.scss */
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  flex-shrink: 1;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  word-break: keep-all;
+}
+
+:lang(ko) {
+  word-break: keep-all;
+  word-wrap: break-word;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+div,
+p,
+address,
+ul,
+ol,
+li,
+dl,
+dt,
+dd,
+table,
+th,
+td,
+form,
+fieldset,
+legend,
+hr {
+  margin: 0;
+  padding: 0;
+}
+
+// html5 display-role reset for older browsers */
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
+  display: block;
+}
+
+// ::selection {
+//   background-color: var(--color-secondary);
+//   color:white;
+// }
+// :focus {outline: 4px solid rgba(0, 0, 255, .6);outline-offset: 1px}
+// :focus[data-focus-method=mouse]:not(input):not(textarea):not(select),
+// :focus[data-focus-method=touch]:not(input):not(textarea):not(select) {outline: none}
+::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+html {
+  ::-webkit-scrollbar {
+    /* 스크롤 바(배경)의 너비 */
+    width: 8px;
+    height: 8px;
+    /* 스크롤 바의 배경색 */
+    background-color: #f6f6f6;
+  }
+
+  /* 스크롤 바의 색상 지정 */
+  ::-webkit-scrollbar-thumb {
+    /* 스크롤 바의 색상 */
+    background-color: #5A5A5A;
+    border-radius: 4px;
+  }
+
+  /* 스크롤 바 호버 시 색상 지정 */
+  ::-webkit-scrollbar-thumb:hover {
+    // background-color: #c4c4c4;
+    /* 스크롤 바의 색상 */
+  }
+
+  // ::-webkit-scrollbar-button {
+  //   width: 20px;
+  //   height: 16px;
+  // }
+
+  // ::-webkit-scrollbar-button:start {
+  //   background: url('../../../images/icon/icon-scrollbar-top.svg') no-repeat center /
+  //     cover;
+  // }
+  // ::-webkit-scrollbar-button:end {
+  //   background: url('../../../images/icon/icon-scrollbar-bottom.svg') no-repeat center /
+  //     cover;
+  // }
+}
+
+body {
+  // color: var(--font-color-darken);
+  // font-family: var(--default-font-family);
+  // font-size: var(--default-font-size);
+  // font-weight: var(--default-font-weight);
+  // font-style: var(--default-font-style);
+  // line-height: var(--default-line-height);
+  // letter-spacing: var(--default-letter-spacing);
+  color: var(--color-darken);
+  font-family: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: none;
+}
+
+caption,
+legend {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+}
+
+table {
+  // border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+picture {
+  display: inline-block;
+}
+
+picture > img {
+  display: block;
+}
+
+img,
+picture,
+video,
+canvas {
+  max-width: 100%;
+  border: none;
+}
+
+img {
+  vertical-align: top;
+}
+
+hr {
+  &.type-dashed {
+    border-top-style: dashed;
+  }
+
+  &.type-hide {
+    display: none;
+  }
+}
+
+ol,
+ul,
+li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+dl,
+dt,
+dd {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  display: inline-block;
+  text-decoration: none;
+  text-underline-position: under;
+  color: var(--color-darken);
+}
+
+button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  overflow: visible;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  outline: none;
+  // font-size: var(--default-font-size);
+  // font-family: var(--default-font-family);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #000 !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+svg {
+  fill: transparent;
+}

@@ -1,0 +1,146 @@
+#aside {
+  width: 250px;
+  background: var(--gray-200);
+  color: var(--color-white);
+  grid-area: aside;
+  border-right: 1px solid var(--gray-600);
+  
+  h1 {
+    padding: 20px;
+    border-bottom: 1px solid var(--gray-600);
+    a {
+      display: block;
+      height: 35px;
+      margin: 0 auto;
+      text-align: center;
+      &::after {
+        content: '';
+        width: 100%;
+        height: 100%;
+        display: block;
+        background-image: url('../../images/logo-t-money.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+      }
+    }
+  }
+}
+
+.aside-nav {
+  height: calc(100vh - 75px);
+  overflow-y: auto;
+
+  ul {
+    li {
+      /* 1Depth */
+      .depth1 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--color-darken);
+        font-size: 18px;
+        border-radius: 5px;
+
+        img {
+          filter: brightness(0) saturate(100%) invert(50%) sepia(0%) saturate(1059%) hue-rotate(174deg) brightness(87%) contrast(81%);
+        }
+      }
+
+      /* 2Depth */
+      .depth2 {
+        background-color: var(--bg-darken);
+        display: none;
+        overflow: hidden;
+        border-radius: 0 0 5px 5px;
+        
+        /* 2뎁스 아이템 */
+        > .depth2-item {
+          position: relative;
+
+          /* 2뎁스 링크 */
+          > a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 12px 30px;
+            font-size: 16px;
+            color: var(--color-white);
+            border-radius: 5px;
+            transition: background-color .2s ease, color .2s ease;
+
+            &:hover {
+              background: var(--bg-secondary);
+            }
+            &[aria-expanded="true"] {
+              background: var(--bg-secondary);
+            }
+          }
+
+          /* 3Depth */
+          > .depth3 {
+            display: none; // JS에서 slideDown/Up 처리
+            background: var(--bg-darken);
+            padding: 6px 0 10px;
+            border-top: 1px solid rgba(255, 255, 255, .06);
+            border-radius: 0 0 5px 5px;
+
+            &:empty {
+              display: none !important;
+            }
+
+            > li > a {
+              display: block;
+              padding: 10px 44px; // 2뎁스보다 더 들여쓰기
+              font-size: 15px;
+              color: var(--color-white);
+              opacity: .9;
+              border-radius: 4px;
+              transition: background-color .2s ease, opacity .2s ease;
+
+              &:hover {
+                background: var(--bg-secondary);
+                opacity: 1;
+              }
+
+              &.is-active {
+                background: #1f1f1f;
+                opacity: 1;
+                font-weight: 700;
+                border-left: 3px solid var(--bg-primary);
+                padding-left: 41px; // border 보정
+              }
+            }
+          }
+        }
+
+        /* 2뎁스 아이템 구분선 */
+        > .depth2-item + .depth2-item {
+          border-top: 1px solid rgba(255, 255, 255, .04);
+        }
+      }
+
+      /* Hover & Active 상태 */
+      &:hover,
+      &.active {
+        .depth1 {
+          background: var(--bg-primary);
+          font-weight: 700;
+          color: var(--color-white);
+
+          img {
+            filter: brightness(0) saturate(100%) invert(100%) sepia(11%) saturate(7500%) hue-rotate(198deg) brightness(111%) contrast(110%);
+          }
+        }
+      }
+
+      &.active {
+        .depth1 {
+          border-radius: 5px 5px 0 0;
+        }
+      }
+    }
+  }
+}
