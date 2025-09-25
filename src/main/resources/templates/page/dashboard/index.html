@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
+<!--~는 Thymeleaf에서 템플릿 경로를 표현할 때 사용-->
+<!--::content는 현재 템플릿 파일에서 정의된 th:fragment="content"를 참조합니다.-->
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
 
