@@ -19,4 +19,25 @@ public class TestController {
     public String test3(){
         return "component/aside";
     }
+
+    @GetMapping("/test4")
+    public String test4(){
+        return "page/guide/guide";
+    }
+
+    @GetMapping("/test5")
+    public String test5(){
+        return "page/guide/modal";
+    }
+
+    @GetMapping("/test6")
+    public String test6(){
+        return "page/guide/page1";
+    }
+
+
+    @GetMapping("/test7")
+    public String test7(){
+        return "page/menu1/menu1";
+    }
 }
