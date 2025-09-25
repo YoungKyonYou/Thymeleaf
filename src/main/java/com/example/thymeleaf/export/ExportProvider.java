@@ -6,6 +6,6 @@ import java.util.stream.Stream;
 
 public interface ExportProvider<T> {
     String name();                                  // 예: "user"
-    List<ExportColumn<T>> columns();                // 헤더/추출 정의
-    Stream<T> stream(Map<String, String> params);   // 데이터 스트림 (필터/정렬/사이즈 반영)
+    List<ExportColumn<T>> columns();                // 헤더 정의
+    Stream<T> stream(Map<String, String> params);   // 검색 조건 (Map으로 받음)
 }

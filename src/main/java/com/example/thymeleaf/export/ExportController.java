@@ -26,9 +26,24 @@ public class ExportController {
         this.registry = registry;
     }
 
+    /**
+     * 프론트에서 호출할 때
+     * 검색 api 호출하는 것처럼 requestParam 붙여서 호출할 것!
+     * 예시 : http://localhost:8080/export/xlsx?provider=user&size=10&sort=id&dir=asc&page=0
+     * 또다른 예시 : http://localhost:8080/export/xlsx?provider=user&username=user0&email=user01&size=10&sort=id&dir=asc&page=0
+     */
     @GetMapping("/xlsx")
     public ResponseEntity<StreamingResponseBody> exportXlsx(
             @RequestParam String provider,
+            /**
+             * allParams에는
+             * provider : ExportProvider를 구현할 때 name으로 썼던 값
+             * size : 10
+             * sort : 디폴트 컬럼 또는 현재 sort
+             * dir : 디폴트(asc) 또는 현재 dir
+             * page : 무조건 0
+             * ...search_column_name : ...arg
+             */
             @RequestParam Map<String, String> allParams
     ) {
         String title = capitalize(provider);

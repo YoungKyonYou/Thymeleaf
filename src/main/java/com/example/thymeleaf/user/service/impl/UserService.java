@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface UserService {
 
-    PageData<UserDto> search(UserSearchRequest req, int page, int size, String sort, String dir);
+    PageData<UserDto> search(UserSearchRequest req);
 
     long count(UserSearchRequest req);
 

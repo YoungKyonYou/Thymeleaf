@@ -30,11 +30,12 @@
                         <input type="search" class="form-control" placeholder="Phone" th:field="*{phone}">
                     </div>
 
+                    <!-- size 선택 -->
                     <div class="col-sm-6 col-md-4 col-lg-3">
-                        <select name="size" class="form-select w-auto">
-                            <option th:selected="${size==10}" value="10">10</option>
-                            <option th:selected="${size==20}" value="20">20</option>
-                            <option th:selected="${size==50}" value="50">50</option>
+                        <select th:field="*{size}" class="form-select w-auto">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
                         </select>
                     </div>
 
@@ -46,8 +47,10 @@
             </div>
 
             <!-- 정렬 상태는 hidden 유지 -->
-            <input type="hidden" id="sort" th:value="${sort}">
-            <input type="hidden" id="dir" th:value="${dir}">
+            <input type="hidden" th:field="*{sort}">
+            <input type="hidden" th:field="*{dir}">
+            <!-- page도 hidden으로 같이 관리 -->
+            <input type="hidden" th:field="*{page}">
         </form>
 
         <button class="btn btn-outline-success" data-export="xlsx" data-provider="user">엑셀 출력</button>

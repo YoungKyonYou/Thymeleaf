@@ -28,22 +28,14 @@ public class UserController {
     // 전체 페이지
     @GetMapping
     public String page(
-            @ModelAttribute UserSearchRequest req,                 // q, email, firstName, lastName, username, phone
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort,
-            @RequestParam(defaultValue = "asc") String dir,
+            @ModelAttribute UserSearchRequest req,
             Model model
     ) {
-        PageData<UserDto> contents = userService.search(req, page, size, sort, dir);
+        PageData<UserDto> contents = userService.search(req);
 
         model.addAttribute("pageData", contents);
         // 화면 유지용
         model.addAttribute("req", req);
-        model.addAttribute("page", page);
-        model.addAttribute("size", size);
-        model.addAttribute("sort", sort);
-        model.addAttribute("dir", dir);
         return "user/index";
     }
 

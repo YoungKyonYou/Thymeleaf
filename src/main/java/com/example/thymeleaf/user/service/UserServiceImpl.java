@@ -16,15 +16,15 @@ public class UserServiceImpl implements UserService {
     private final UserMapper mapper;
 
     @Override
-    public PageData<UserDto> search(UserSearchRequest req, int page, int size, String sort, String dir) {
-        final int offset = page * size;
+    public PageData<UserDto> search(UserSearchRequest req) {
+        final int offset = req.getPage() * req.getSize();
 
         long total = mapper.count(req);
         List<UserDto> content = (total == 0)
                 ? List.of()
-                : mapper.search(req, offset, size, sort, dir);
+                : mapper.search(req, offset, req.getSize(), req.getSort(), req.getDir());
 
-        return new PageData<>(content, page, size, total);
+        return new PageData<>(content, req.getSize(), req.getSize(), total);
     }
 
     @Override

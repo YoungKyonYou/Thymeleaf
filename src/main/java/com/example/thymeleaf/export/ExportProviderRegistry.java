@@ -11,6 +11,7 @@ public class ExportProviderRegistry {
 
     private final Map<String, ExportProvider<?>> providers;
 
+    //여기에 ExportProvider를 구현한 클래스 객체가 쌓임(자동 주입)
     public ExportProviderRegistry(List<ExportProvider<?>> list) {
         this.providers = list.stream()
                 .collect(Collectors.toUnmodifiableMap(ExportProvider::name, p -> p));
