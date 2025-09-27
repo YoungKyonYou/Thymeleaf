@@ -4,7 +4,6 @@ import com.example.thymeleaf.user.dto.UserDto;
 import com.example.thymeleaf.user.dto.UserSearchRequest;
 import com.example.thymeleaf.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -35,21 +34,40 @@ public class UserExportService implements ExportProvider<UserDto> {
 
     @Override
     public Stream<UserDto> stream(Map<String, String> params) {
-        UserSearchRequest req = new UserSearchRequest();
+        // 검색 조건 공통 부분 세팅 (페이지/오프셋만 매 페이지마다 바꿔 끼웁니다)
+        final String sort = params.getOrDefault("sort", "id");
+        final String dir  = params.getOrDefault("dir",  "asc");
 
-        req.setEmail(params.get("email"));
-        req.setFirstName(params.get("firstName"));
-        req.setLastName(params.get("lastName"));
-        req.setUsername(params.get("username"));
-        req.setPhone(params.get("phone"));
-        req.setPage(Integer.parseInt(params.get("page")));
-        req.setSize(LIMIT);
-        req.setSort(params.get("sort"));
-        req.setDir(params.get("dir"));
+        // 페이지 크기: 너무 크면 메모리 압박, 너무 작으면 DB 왕복 많음
+        final int pageSize = parseIntOrDefault(params.get("size"), QUERY_LIMIT);
 
-        final int offset = req.getPage() * req.getSize();
+        final String email      = params.get("email");
+        final String firstName  = params.get("firstName");
+        final String lastName   = params.get("lastName");
+        final String username   = params.get("username");
+        final String phone      = params.get("phone");
 
-        return userMapper.search(req, offset, req.getSize(), req.getSort(), req.getDir()).stream();
+        return PagingStreams.paging(pageSize, page -> {
+            int offset = page * pageSize;
+
+            UserSearchRequest r = new UserSearchRequest();
+            r.setEmail(email);
+            r.setFirstName(firstName);
+            r.setLastName(lastName);
+            r.setUsername(username);
+            r.setPhone(phone);
+            r.setSize(pageSize);
+            r.setSort(sort);
+            r.setDir(dir);
+
+            // Mapper는 원래 쓰던 페이지 쿼리 그대로 재사용
+            return userMapper.search(r, offset, pageSize, sort, dir);
+        });
+    }
+
+    private static int parseIntOrDefault(String s, int def) {
+        try { return (s == null || s.isBlank()) ? def : Integer.parseInt(s); }
+        catch (NumberFormatException e) { return def; }
     }
 
 }
