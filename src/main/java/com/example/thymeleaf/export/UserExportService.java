@@ -1,22 +1,20 @@
 package com.example.thymeleaf.export;
 
-import com.example.thymeleaf.common.PageData;
 import com.example.thymeleaf.user.dto.UserDto;
 import com.example.thymeleaf.user.dto.UserSearchRequest;
 import com.example.thymeleaf.user.mapper.UserMapper;
-import com.example.thymeleaf.user.service.impl.UserService;
-import com.example.thymeleaf.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.springframework.stereotype.Service;
 
 
 @RequiredArgsConstructor
-@Component
-public class UserExportProvider implements ExportProvider<UserDto> {
+@Service
+public class UserExportService implements ExportProvider<UserDto> {
 
     private final UserMapper userMapper;
 
@@ -39,14 +37,13 @@ public class UserExportProvider implements ExportProvider<UserDto> {
     public Stream<UserDto> stream(Map<String, String> params) {
         UserSearchRequest req = new UserSearchRequest();
 
-        int limit =  10_000;
         req.setEmail(params.get("email"));
         req.setFirstName(params.get("firstName"));
         req.setLastName(params.get("lastName"));
         req.setUsername(params.get("username"));
         req.setPhone(params.get("phone"));
         req.setPage(Integer.parseInt(params.get("page")));
-        req.setSize(limit);
+        req.setSize(LIMIT);
         req.setSort(params.get("sort"));
         req.setDir(params.get("dir"));
 
