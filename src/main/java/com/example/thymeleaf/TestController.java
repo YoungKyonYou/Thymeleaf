@@ -1,12 +1,20 @@
 package com.example.thymeleaf;
 
+import com.example.thymeleaf.common.PageData;
+import com.example.thymeleaf.user.dto.UserDto;
+import com.example.thymeleaf.user.dto.UserSearchRequest;
+import com.example.thymeleaf.user.service.impl.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 
+@RequiredArgsConstructor
 @Controller
 public class TestController {
+    private final UserService userService;
     @GetMapping({"/", "/index"})
     public String home() {
         return "page/dashboard/index";
@@ -18,7 +26,12 @@ public class TestController {
     }
 
     @GetMapping("/page/guide/{view}")
-    public String guide(@PathVariable String view) {
+    public String guide(@PathVariable String view, Model model) {
+        UserSearchRequest req =  new UserSearchRequest();
+        PageData<UserDto> contents = userService.search(req, 0, 10, "id", "asc");
+
+        model.addAttribute("pageData", contents);
+
         return "page/guide/" + view;
     }
 

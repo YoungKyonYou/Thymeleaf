@@ -111,17 +111,7 @@
                 </div>
 
                 <div class="mt20">
-                    <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
-                        <button type="button" class="pager-btn prev" aria-label="이전 페이지">Prev</button>
-                        <div class="pager-list">
-                            <button type="button" class="pager-item is-active" aria-current="page">1</button>
-                            <button type="button" class="pager-item">2</button>
-                            <button type="button" class="pager-item">3</button>
-                            <button type="button" class="pager-item">4</button>
-                            <button type="button" class="pager-item">5</button>
-                        </div>
-                        <button type="button" class="pager-btn next" aria-label="다음 페이지">Next</button>
-                    </div>
+                    <th:block th:replace="~{component/yyk/pagination :: pager(pageData=${pageData})}"></th:block>
                 </div>
             </div>
         </section>

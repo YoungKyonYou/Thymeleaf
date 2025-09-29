@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- jQuery-UI 스타일 페이저 (1~10 고정) -->
+<th:block th:fragment="pager(pageData)">
+
+    <div class="mt20">
+        <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
+
+            <!-- Prev -->
+            <button type="button"
+                    class="pager-btn prev"
+                    aria-label="이전 페이지"
+                    th:classappend="${pageData == null || !pageData.hasPrev} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page - 1 : 0}">
+                Prev
+            </button>
+
+            <!-- 숫자 버튼: 1..10 (표시는 1-base, 이동은 0-base) -->
+            <div class="pager-list">
+                <button type="button"
+                        class="pager-item"
+                        th:each="i : ${#numbers.sequence(0, 9)}"
+                        th:classappend="${pageData != null and i == pageData.page} ? ' is-active'"
+                        th:attr="data-page=${i}"
+                        th:aria-current="${pageData != null and i == pageData.page} ? 'page' : null"
+                        th:disabled="${pageData == null || i >= pageData.total}"
+                        th:text="${i + 1}">
+                    1
+                </button>
+            </div>
+
+            <!-- Next -->
+            <button type="button"
+                    class="pager-btn next"
+                    aria-label="다음 페이지"
+                    th:classappend="${pageData == null || !pageData.hasNext} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page + 1 : 0}">
+                Next
+            </button>
+
+        </div>
+    </div>
+
+</th:block>
+
+</body>
+</html>
