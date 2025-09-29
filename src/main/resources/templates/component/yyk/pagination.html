@@ -1,8 +1,11 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pager Fragment</title>
+</head>
 <body>
 
-<!-- jQuery-UI 스타일 페이저 (1~10 고정) -->
 <th:block th:fragment="pager(pageData)">
 
     <div class="mt20">
@@ -17,19 +20,26 @@
                 Prev
             </button>
 
-            <!-- 숫자 버튼: 1..10 (표시는 1-base, 이동은 0-base) -->
-            <div class="pager-list">
+            <!-- 숫자 버튼: 현재 블록만 표시 (blockSize=10) -->
+            <th:block th:if="${pageData != null}"
+                      th:with="
+                      current = ${pageData.page},
+                      totalPages = ${pageData.getTotalPages()},
+                      totalPagesInt = ${T(java.lang.Math).toIntExact(totalPages)},
+                      blockIdx = ${current / 10},
+                      blockStart = ${blockIdx * 10},
+                      blockEnd = ${T(java.lang.Math).min(blockStart + 9, totalPagesInt - 1)}">
+
                 <button type="button"
                         class="pager-item"
-                        th:each="i : ${#numbers.sequence(0, 9)}"
-                        th:classappend="${pageData != null and i == pageData.page} ? ' is-active'"
+                        th:each="i : ${#numbers.sequence(blockStart, blockEnd)}"
+                        th:classappend="${i == pageData.page} ? ' is-active'"
                         th:attr="data-page=${i}"
-                        th:aria-current="${pageData != null and i == pageData.page} ? 'page' : null"
-                        th:disabled="${pageData == null || i >= pageData.total}"
+                        th:aria-current="${i == pageData.page} ? 'page' : null"
                         th:text="${i + 1}">
                     1
                 </button>
-            </div>
+            </th:block>
 
             <!-- Next -->
             <button type="button"
