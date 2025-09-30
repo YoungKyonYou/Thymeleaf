@@ -29,13 +29,13 @@ public class UserController {
     @GetMapping
     public String page(
             @ModelAttribute UserSearchRequest req,                 // q, email, firstName, lastName, username, phone
-            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "1")  int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sort,
             @RequestParam(defaultValue = "asc") String dir,
             Model model
     ) {
-        PageData<UserDto> contents = userService.search(req, page, size, sort, dir);
+        PageData<UserDto> contents = userService.search(req, page-1, size, sort, dir);
 
         model.addAttribute("pageData", contents);
         // 화면 유지용
