@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 
 
@@ -26,9 +27,9 @@ public class TestController {
     }
 
     @GetMapping("/page/guide/{view}")
-    public String guide(@PathVariable String view, Model model) {
+    public String guide(@PathVariable String view,@ModelAttribute UserSearchRequest req2, Model model) {
         UserSearchRequest req =  new UserSearchRequest();
-        PageData<UserDto> contents = userService.search(req, 0, 10, "id", "asc");
+        PageData<UserDto> contents = userService.search(req, req2 == null ? 1 : req2.getPage(), 10, "id", "asc");
 
         model.addAttribute("pageData", contents);
 

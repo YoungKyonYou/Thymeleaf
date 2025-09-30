@@ -35,7 +35,7 @@ public class UserController {
             @RequestParam(defaultValue = "asc") String dir,
             Model model
     ) {
-        PageData<UserDto> contents = userService.search(req, page-1, size, sort, dir);
+        PageData<UserDto> contents = userService.search(req, page, size, sort, dir);
 
         model.addAttribute("pageData", contents);
         // 화면 유지용

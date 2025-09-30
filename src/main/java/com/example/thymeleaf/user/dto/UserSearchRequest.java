@@ -14,6 +14,8 @@ import lombok.Setter;
 @Setter
 @Getter
 public class UserSearchRequest {
+    private int page;
+    private int size;
     private String email;
     private String firstName;
     private String lastName;
