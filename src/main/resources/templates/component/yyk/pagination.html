@@ -61,16 +61,41 @@
             else params.set(key, value);
         }
 
+        async function fetchAndSwap(u) {
+            const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const html = await res.text();
+
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newTbody = doc.querySelector('#grid-tbody');
+            const newPager = doc.querySelector('#pager');
+
+            const curTbody = document.querySelector('#grid-tbody');
+            const curPager = document.querySelector('#pager');
+
+            if (newTbody && curTbody) curTbody.replaceWith(newTbody);
+            if (newPager && curPager) curPager.innerHTML = newPager.innerHTML;
+
+            // 주소창만 갱신 (전체 새로고침 X)
+            history.pushState(null, '', u.toString());
+        }
+
         function bindPagination(url, ...args) {
             const baseUrl  = new URL(url, window.location.origin);
             const baseArgs = Object.assign({}, ...args);
+
+            // 브라우저 뒤로/앞으로 가기 지원
+            window.addEventListener('popstate', () => {
+                fetchAndSwap(new URL(window.location.href)).catch(console.error);
+            });
 
             document.addEventListener('click', function (e) {
                 const btn = e.target.closest('.pagination [data-page]');
                 if (!btn) return;
                 if (btn.classList.contains('disabled')) return;
 
-                // 0-base 그대로 전송
+                e.preventDefault(); // 혹시 모를 기본동작 차단
+
                 const page = Number(btn.dataset.page);
 
                 const u = new URL(baseUrl.toString());
@@ -81,7 +106,7 @@
                 const sort = baseArgs.sort ?? null;   // null/''이면 생략
 
                 putParam(p, 'size', size);
-                putParam(p, 'page', page);
+                putParam(p, 'page', page); // 0-base 그대로
                 putParam(p, 'dir',  dir);
                 if (sort !== null && sort !== undefined && sort !== '') putParam(p, 'sort', sort);
 
@@ -89,7 +114,9 @@
                 Object.entries(baseArgs).forEach(([k,v]) => { if (!skip.has(k)) putParam(p, k, v); });
 
                 u.search = p.toString();
-                window.location.assign(u.toString()); // GET 이동
+
+
+                fetchAndSwap(u).catch(console.error);
             });
         }
     </script>

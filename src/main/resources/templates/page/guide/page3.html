@@ -84,7 +84,32 @@
                             <th scope="col">한도설정</th>
                         </tr>
                         </thead>
-                        <tbody>
+<!--                        <tbody id="grid-tbody">-->
+<!--                        <tr th:each="row, stat : ${pageData.content}">-->
+<!--                            <td th:text="${row.seq}">11</td>-->
+<!--                            <td th:text="${row.serviceId}">SV000001</td>-->
+<!--                            <td th:text="${row.serviceName}">어린이/청소년 교통비 지원사업</td>-->
+<!--                            <td th:text="${row.typeId}">SV000001</td>-->
+<!--                            <td th:text="${row.typeName}"></td>-->
+<!--                            <td>-->
+<!--                                <span th:text="${#temporals.format(row.start, 'yyyy-MM-dd')}">2024-01-02</span>-->
+<!--                                ~-->
+<!--                                <span th:text="${#temporals.format(row.end, 'yyyy-MM-dd')}">2025-12-31</span>-->
+<!--                            </td>-->
+<!--                            <td th:text="${row.useYn}">Y</td>-->
+
+<!--                            &lt;!&ndash; 여기: 버튼 셀을 템플릿에 포함해야 교체 후에도 유지됨 &ndash;&gt;-->
+<!--                            <td>-->
+<!--                                <button type="button"-->
+<!--                                        class="btn btn-dark-line open-modal"-->
+<!--                                        th:attr="data-target=${'#modal-basic' + (stat.index % 2 + 1)}">-->
+<!--                                    한도설정-->
+<!--                                </button>-->
+<!--                            </td>-->
+<!--                        </tr>-->
+<!--                        </tbody>-->
+
+                        <tbody id="grid-tbody">
                         <tr>
                             <td>1</td>
                             <td>SV000001</td>
@@ -110,7 +135,7 @@
                     </table>
                 </div>
 
-                <div class="mt20">
+                <div class="mt20" id="pager">
                     <th:block th:replace="~{component/yyk/pagination :: pager(pageData=${pageData})}"></th:block>
                 </div>
             </div>
