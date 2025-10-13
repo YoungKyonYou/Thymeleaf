@@ -1,115 +1,178 @@
+
 package com.example.thymeleaf.file.service;
 
-import java.io.File;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
+import com.example.thymeleaf.file.domain.Domain;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.nio.file.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
 @Service
 public class FileStorageService {
-    private final Path rootLocation;
-    public static final String ROOT_PATH = System.getProperty("user.dir")+ File.separator + "file";
 
-    public FileStorageService() {
-        this.rootLocation = Paths.get(ROOT_PATH).toAbsolutePath().normalize();
-    }
-    @PostConstruct
-    public void init() {
-        try {
-            Files.createDirectories(rootLocation);
-        } catch (Exception e) {
-            throw new RuntimeException("업로드 디렉토리 생성 실패: " + rootLocation, e);
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final Pattern SEGMENT_SAFE = Pattern.compile("^[A-Za-z0-9_-]+$");
+
+    private final Path baseRoot;
+
+    // 필요하면 기본값도 줄 수 있음: @Value("${file.storage.base-root:/data001/hxz}")
+    public FileStorageService(@Value("${file.storage.base-root}") String baseRootProp) {
+        if (!StringUtils.hasText(baseRootProp)) {
+            throw new IllegalArgumentException("file.storage.base-root 설정이 없습니다.");
         }
+        this.baseRoot = Paths.get(baseRootProp).toAbsolutePath().normalize();
     }
 
-    public String store(MultipartFile file) {
+
+    /** 예: /data001/hxz/{orgCode}/{domain.pathSegment}/{yyyyMMdd}/{UUID}.{ext} */
+    public StoredFile store(MultipartFile file, String orgCode, Domain domain) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("빈 파일은 업로드할 수 없습니다.");
+            throw new IllegalArgumentException("빈 파일은 업로드할 수 없습니다.");
         }
 
-        // 원본 파일명 정리
-        String originalName = StringUtils.cleanPath(file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown");
-
-        // 경로 역참조 방지
+        String originalName = file.getOriginalFilename();
+        if (originalName == null) originalName = "unknown";
+        originalName = StringUtils.cleanPath(originalName);
         if (originalName.contains("..")) {
-            throw new RuntimeException("유효하지 않은 파일명: " + originalName);
+            throw new IllegalArgumentException("유효하지 않은 파일명: " + originalName);
         }
 
-        // 저장 파일명: UUID_원본이름
-        String savedName = UUID.randomUUID() + "_" + originalName;
+        String safeOrg = sanitizeOrgCode(orgCode);
+        String ymd = LocalDate.now(KST).format(DAY);
+
+        Path targetDir = baseRoot
+                .resolve(safeOrg)
+                .resolve(domain.pathSegment())
+                .resolve(ymd)
+                .normalize();
+
+        ensureWithinBaseRoot(targetDir);
+        try {
+            Files.createDirectories(targetDir); // 있으면 통과, 없으면 생성
+        } catch (Exception e) {
+            throw new RuntimeException("저장 디렉터리 생성 실패: " + targetDir, e);
+        }
+
+        String ext = extractExt(originalName);
+        String savedName = UUID.randomUUID() + ext;
+
+        Path destination = targetDir.resolve(savedName).normalize();
+        ensureWithinBaseRoot(destination);
 
         try (InputStream in = file.getInputStream()) {
-            Path destination = rootLocation.resolve(savedName).normalize();
-            // 업로드 루트 밖으로 벗어나는 것 방지
-            if (!destination.startsWith(rootLocation)) {
-                throw new RuntimeException("저장 경로가 업로드 루트를 벗어납니다.");
-            }
             Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
-            return savedName;
         } catch (Exception e) {
-            throw new RuntimeException("파일 저장 실패: " + originalName + " -> " + e.getMessage(), e);
+            throw new RuntimeException("파일 저장 실패: " + originalName, e);
         }
+
+        String relative = "/" + baseRoot.relativize(destination).toString().replace('\\', '/');
+
+        StoredFile result = new StoredFile();
+        result.setOriginalName(originalName);
+        result.setSavedName(savedName);
+        result.setBaseRoot(baseRoot.toString());
+        result.setRelativePath(relative);      // 예) /ORG1/banner/20251013/UUID.png
+        result.setAbsolutePath(destination.toString());
+        result.setSize(file.getSize());
+        return result;
     }
 
-    public String storeAll(MultipartFile file) {
-        if (file != null && !file.isEmpty()) {
-            return store(file);
-        }
-        return "";
-    }
-
-    public Path getUploadRoot() {
-        return rootLocation;
-    }
-
-
-    public Resource loadAsResource(String filename) {
-        // filename은 저장 때 만든 "UUID_원본" 형태가 들어옴
+    /** 상대경로(베이스 기준)로 로드: /ORG1/banner/20251013/UUID.png */
+    public Resource loadAsResource(String relativePath) {
         try {
-            Path file = rootLocation.resolve(filename).normalize();
-            if (!file.startsWith(rootLocation)) throw new RuntimeException("잘못된 경로 접근");
+            if (!StringUtils.hasText(relativePath)) {
+                throw new IllegalArgumentException("relativePath가 비어 있습니다.");
+            }
+            String cleaned = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+            Path file = baseRoot.resolve(cleaned).normalize();
+            ensureWithinBaseRoot(file);
+
             Resource resource = new UrlResource(file.toUri());
-            if (!resource.exists() || !resource.isReadable()) throw new RuntimeException("파일을 읽을 수 없습니다: " + filename);
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("파일을 읽을 수 없습니다: " + relativePath);
+            }
             return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("잘못된 파일 경로: " + filename, e);
+            throw new RuntimeException("잘못된 파일 경로: " + relativePath, e);
         }
     }
 
+    /** 오늘 날짜(서버 기준) 폴더의 파일명 나열 */
+    public Stream<String> listTodayFilenames(String orgCode, Domain domain) {
+        String safeOrg = sanitizeOrgCode(orgCode);
+        String ymd = LocalDate.now(KST).format(DAY);
+        Path dir = baseRoot.resolve(safeOrg).resolve(domain.pathSegment()).resolve(ymd).normalize();
+        ensureWithinBaseRoot(dir);
 
-    public Stream<String> listFilenames() {
         try {
-            // 루트 바로 아래 파일만 나열 (하위 폴더 탐색 X)
-            return Files.list(rootLocation)
-                    .filter(Files::isRegularFile) // 텍스트파일, 이미지파일, 워드파일처럼 데이터가 저장된 파일인지 검사
+            if (!Files.exists(dir)) return Stream.empty();
+            return Files.list(dir)
+                    .filter(Files::isRegularFile)
                     .map(p -> p.getFileName().toString());
         } catch (Exception e) {
-            throw new RuntimeException("파일 목록 조회 실패", e);
+            throw new RuntimeException("파일 목록 조회 실패: " + dir, e);
         }
     }
-    public void clearAll() {
-        try {
-            // 루트 바로 아래 파일만 삭제 (하위 폴더를 쓰고 있다면 walkFileTree로 변경)
-            try (var stream = Files.list(rootLocation)) {
-                stream.filter(Files::isRegularFile).forEach(p -> {
-                    try { Files.deleteIfExists(p); } catch (Exception ignored) {}
-                });
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("업로드 파일 초기화 실패", e);
+
+    // ===== 내부 유틸 =====
+
+    private static String extractExt(String originalName) {
+        int idx = originalName.lastIndexOf('.');
+        if (idx < 0 || idx == originalName.length() - 1) return "";
+        String ext = originalName.substring(idx); // ".png"
+        return (ext.length() <= 10) ? ext : "";
+    }
+
+    private static String sanitizeOrgCode(String seg) {
+        if (!StringUtils.hasText(seg)) {
+            throw new IllegalArgumentException("orgCode는 비어 있을 수 없습니다.");
         }
+        if (!SEGMENT_SAFE.matcher(seg).matches()) {
+            throw new IllegalArgumentException("orgCode에 허용되지 않는 문자가 포함되어 있습니다: " + seg);
+        }
+        return seg;
+    }
+
+    private void ensureWithinBaseRoot(Path path) {
+        if (!path.normalize().startsWith(baseRoot)) {
+            throw new SecurityException("저장 경로가 베이스 루트를 벗어납니다: " + path);
+        }
+    }
+
+    // ===== 결과 DTO (POJO) =====
+    public static class StoredFile {
+        private String originalName;
+        private String savedName;
+        private String baseRoot;
+        private String relativePath;
+        private String absolutePath;
+        private long size;
+
+        public String getOriginalName() { return originalName; }
+        public void setOriginalName(String originalName) { this.originalName = originalName; }
+        public String getSavedName() { return savedName; }
+        public void setSavedName(String savedName) { this.savedName = savedName; }
+        public String getBaseRoot() { return baseRoot; }
+        public void setBaseRoot(String baseRoot) { this.baseRoot = baseRoot; }
+        public String getRelativePath() { return relativePath; }
+        public void setRelativePath(String relativePath) { this.relativePath = relativePath; }
+        public String getAbsolutePath() { return absolutePath; }
+        public void setAbsolutePath(String absolutePath) { this.absolutePath = absolutePath; }
+        public long getSize() { return size; }
+        public void setSize(long size) { this.size = size; }
     }
 }

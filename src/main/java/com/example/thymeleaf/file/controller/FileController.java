@@ -1,6 +1,7 @@
 // src/main/java/com/example/thymeleaf/file/controller/FileController.java
 package com.example.thymeleaf.file.controller;
 
+import com.example.thymeleaf.file.domain.Domain;
 import com.example.thymeleaf.file.service.FileStorageService;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -25,24 +26,25 @@ public class FileController {
 
     private final FileStorageService storageService;
 
-    /** 최초 진입 화면 */
+/*    *//** 최초 진입 화면 *//*
     @GetMapping("/file/upload")
     public String uploadForm(Model model) {
         List<String> existing = storageService.listFilenames().collect(Collectors.toList());
         model.addAttribute("savedFiles", existing);
         model.addAttribute("uploadRoot", storageService.getUploadRoot().toString());
         return "upload/file";
-    }
+    }*/
 
     /** 업로드 (AJAX/일반 둘 다 허용) */
-    @PostMapping("/file/upload")
-    public String handleFileUpload(@RequestParam(name = "file", required = false) MultipartFile file) {
-        storageService.storeAll(file);
-        // AJAX일 땐 JS가 /file/list를 다시 호출 → 여기선 빈 204처럼 동작시키려면 redirect 없이 fragment도 가능
-        return "redirect:/file/upload"; // 일반 폼 제출 대비
+    @PostMapping("/upload")
+    public FileStorageService.StoredFile upload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("orgCode") String orgCode,
+            @RequestParam("domain") Domain domain) {
+        return storageService.store(file, orgCode, domain);
     }
 
-    /** 선택 삭제 (AJAX/일반 둘 다 허용) */
+  /*  *//** 선택 삭제 (AJAX/일반 둘 다 허용) *//*
     @PostMapping("/file/delete")
     public String deleteSelected(@RequestParam(name = "filenames", required = false) List<String> filenames) {
         if (filenames != null) {
@@ -54,13 +56,13 @@ public class FileController {
         return "redirect:/file/upload";
     }
 
-    /** 전체 삭제 (AJAX/일반 둘 다 허용) */
+    *//** 전체 삭제 (AJAX/일반 둘 다 허용) *//*
     @PostMapping("/file/reset")
     public String resetAll() {
         storageService.clearAll();
         return "redirect:/file/upload";
     }
-
+*/
     /** inline 보기 */
     @GetMapping("/file/view/{filename}")
     @ResponseBody
@@ -86,9 +88,9 @@ public class FileController {
                 .contentType(mediaType)
                 .body(file);
     }
-    @GetMapping("/file/list")
+ /*   @GetMapping("/file/list")
     @ResponseBody
     public List<String> listJson() {
         return storageService.listFilenames().collect(Collectors.toList());
-    }
+    }*/
 }
