@@ -1,58 +1,48 @@
 <!-- /templates/fragments/dropdowns.html -->
-<th:block th:fragment="cascadingDropdown(rootId, deptName, subName)">
+<th:block th:fragment="cascadingDropdown(rootId, deptName, subName, mngrId)">
     <div class="cascading-dropdowns"
-         th:attr="id=${rootId}, data-parent-name=${deptName}, data-child-name=${subName}"
+         th:attr="id=${rootId},
+                data-parent-name=${deptName},
+                data-child-name=${subName},
+                data-mngr-id=${mngrId},
+                data-api-url=@{/api/services}"
          style="display:flex; gap:16px; align-items:flex-start;">
 
-        <!-- 1차: 서비스 (label=svcNm, value=tpwSvcId) -->
+        <!-- 1차: 서비스 (value=tpwSvcId, label=svcNm) -->
         <div class="dropdown" th:attr="data-name=${deptName}" style="width:240px">
-            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="서비스 선택 드롭다운">
+            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
+                    aria-label="서비스 선택 드롭다운">
                 <span class="dropdown_value" data-placeholder="서비스 선택">서비스 선택</span>
             </button>
-
-            <ul class="dropdown_list" role="listbox" tabindex="-1">
-                <!-- svcList 로부터 옵션 렌더 -->
-                <li role="option" class="dropdown_option"
-                    th:each="svc : ${svcList}"
-                    th:attr="data-value=${svc.tpwSvcId}"
-                    th:text="${svc.svcNm}">서비스명</li>
-            </ul>
-
+            <ul class="dropdown_list" role="listbox" tabindex="-1"><!-- JS 채움 --></ul>
             <input type="hidden" th:attr="name=${deptName}" value="">
         </div>
 
-        <!-- 2차: 서비스 유형 (label=tpwSvcTypNm, value=tpwSvcTypId) -->
+        <!-- 2차: 서비스 유형 (value=tpwSvcTypId, label=tpwSvcTypNm) -->
         <div class="dropdown" th:attr="data-name=${subName}, data-parent=${deptName}" style="width:240px">
             <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
                     aria-label="서비스 유형 선택 드롭다운" disabled aria-disabled="true">
                 <span class="dropdown_value" data-placeholder="먼저 서비스를 선택">먼저 서비스를 선택</span>
             </button>
-            <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
+            <ul class="dropdown_list" role="listbox" tabindex="-1"><!-- JS 채움 --></ul>
             <input type="hidden" th:attr="name=${subName}" value="">
         </div>
     </div>
 
-    <!-- 2차 옵션 맵핑 JSON 주입: id = {rootId}-data -->
-    <script type="application/json"
-            th:attr="id=${rootId} + '-data'"
-            th:utext="${svcTypeMapJson}">{"SVC001":[{"value":"TYP001","label":"..."}]}</script>
-
-    <script>
+    <!-- rootId를 JS로 안전 주입하기 위해 인라인 활성화 -->
+    <script th:inline="javascript">
         (function(){
-            // 프래그먼트 바로 앞 div를 root로 사용
-            var root = document.currentScript.previousElementSibling.previousElementSibling;
-            // ↑ 위에 JSON script가 하나 더 있으므로 previousElementSibling을 두 번 사용
-
+            var rootId    = /*[[${rootId}]]*/ 'root';
+            var root      = document.getElementById(rootId);
             if (!root) return;
 
-            // JSON 파싱 (tpwSvcId -> [{value, label}, ...])
-            var dataScriptId = root.id + '-data';
-            var dataEl = document.getElementById(dataScriptId);
-            var OPTIONS_BY_SVC = {};
-            if (dataEl) {
-                try { OPTIONS_BY_SVC = JSON.parse(dataEl.textContent || '{}'); }
-                catch(e){ OPTIONS_BY_SVC = {}; }
-            }
+            var parentName = root.getAttribute('data-parent-name');
+            var childName  = root.getAttribute('data-child-name');
+            var mngrId     = root.getAttribute('data-mngr-id') || '';
+            var apiUrl     = root.getAttribute('data-api-url'); // /api/services
+
+            // 메모리 캐시
+            var TYPES_BY_SVC = {};  // { svcId: [{tpwSvcTypId, tpwSvcTypNm}, ...] }
 
             function parts(dd){ return {
                 btn: dd.querySelector('.dropdown_button'),
@@ -65,17 +55,13 @@
             function closeDropdown(dd){ var p=parts(dd); p.btn.setAttribute('aria-expanded','false'); p.list.style.display='none'; }
             function toggleDropdown(dd){ var p=parts(dd); (p.btn.getAttribute('aria-expanded')==='true') ? closeDropdown(dd) : openDropdown(dd); }
 
-            function selectOption(dd, li){
-                var p=parts(dd), value=li.getAttribute('data-value'), label=li.textContent.trim();
-                p.list.querySelectorAll('.dropdown_option[aria-selected="true"]').forEach(function(el){ el.setAttribute('aria-selected','false'); });
-                li.setAttribute('aria-selected','true');
-                p.valueEl.textContent = label;
-                p.hidden.value = value;
-                closeDropdown(dd);
-                var parentName = dd.getAttribute('data-name');
-                if (parentName) updateChildren(parentName, value);
+            function setLoading(listEl, msg){ listEl.innerHTML = '<li class="dropdown_option" aria-disabled="true">'+(msg||'로딩 중...')+'</li>'; }
+            function setError(listEl, msg){ listEl.innerHTML   = '<li class="dropdown_option" aria-disabled="true">'+(msg||'불러오기에 실패했습니다')+'</li>'; }
+            function fillOptions(listEl, items, valueKey, labelKey){
+                listEl.innerHTML = (items||[]).map(function(it){
+                    return '<li role="option" class="dropdown_option" data-value="'+it[valueKey]+'">'+it[labelKey]+'</li>';
+                }).join('');
             }
-
             function resetChild(child){
                 var p=parts(child);
                 p.list.innerHTML=''; p.hidden.value='';
@@ -84,46 +70,61 @@
                 closeDropdown(child);
             }
 
-            function fillChild(child, items, initValue){
-                var p=parts(child);
-                p.list.innerHTML = (items||[]).map(function(it){
-                    return '<li role="option" class="dropdown_option" data-value="'+it.value+'">'+it.label+'</li>';
-                }).join('');
-                p.hidden.value=''; p.btn.disabled=false; p.btn.setAttribute('aria-disabled','false');
-                p.valueEl.textContent = p.valueEl.getAttribute('data-placeholder')||'선택하세요';
-                if (initValue){
-                    var li=p.list.querySelector('.dropdown_option[data-value="'+initValue+'"]');
-                    if (li){ p.valueEl.textContent=li.textContent.trim(); p.hidden.value=initValue; li.setAttribute('aria-selected','true'); }
+            function selectOption(dd, li){
+                var p=parts(dd), value=li.getAttribute('data-value'), label=li.textContent.trim();
+                p.list.querySelectorAll('.dropdown_option[aria-selected="true"]').forEach(function(el){ el.setAttribute('aria-selected','false'); });
+                li.setAttribute('aria-selected','true');
+                p.valueEl.textContent = label;
+                p.hidden.value = value;
+                closeDropdown(dd);
+
+                // 상위 선택이면 하위 채움
+                if (dd.getAttribute('data-name') === parentName) {
+                    var childDD = root.querySelector('.dropdown[data-name="'+childName+'"]');
+                    var c = parts(childDD);
+                    var items = TYPES_BY_SVC[value] || [];
+                    if (!items.length) { resetChild(childDD); return; }
+                    c.btn.disabled = false; c.btn.setAttribute('aria-disabled','false');
+                    c.valueEl.textContent = c.valueEl.getAttribute('data-placeholder') || '선택하세요';
+                    fillOptions(c.list, items, 'tpwSvcTypId', 'tpwSvcTypNm');
                 }
-                closeDropdown(child);
             }
 
-            function updateChildren(parentName, parentValue){
-                root.querySelectorAll('.dropdown[data-parent="'+parentName+'"]').forEach(function(child){
-                    var items = OPTIONS_BY_SVC[parentValue] || [];
-                    if (!items.length) return resetChild(child);
-                    fillChild(child, items, parts(child).hidden.value || null);
-                });
-            }
-
-            // 이벤트 바인딩
-            root.querySelectorAll('.dropdown').forEach(function(dd){
+            function bindDropdown(dd){
                 var p=parts(dd);
                 p.btn && p.btn.addEventListener('click', function(e){ e.stopPropagation(); if(!p.btn.disabled) toggleDropdown(dd); });
-                p.list && p.list.addEventListener('click', function(e){ var li=e.target.closest('.dropdown_option'); if(li) selectOption(dd, li); });
+                p.list && p.list.addEventListener('click', function(e){
+                    var li=e.target.closest('.dropdown_option');
+                    if(li && !li.hasAttribute('aria-disabled')) selectOption(dd, li);
+                });
                 document.addEventListener('click', function(e){ if(!root.contains(e.target)) closeDropdown(dd); });
                 dd.addEventListener('keydown', function(e){
                     if(e.key==='Escape') closeDropdown(dd);
                     if((e.key==='Enter'||e.key===' ') && document.activeElement===p.btn){ e.preventDefault(); if(!p.btn.disabled) toggleDropdown(dd); }
                 });
-            });
+            }
 
-            // 초기: 상위 없으면 하위 비활성
-            var parentName=root.getAttribute('data-parent-name');
-            var childName =root.getAttribute('data-child-name');
-            var parentDD  =root.querySelector('.dropdown[data-name="'+parentName+'"]');
-            var childDD   =root.querySelector('.dropdown[data-name="'+childName+'"]');
-            if (parentDD && childDD) resetChild(childDD);
+            function loadAll(){
+                var parentDD = root.querySelector('.dropdown[data-name="'+parentName+'"]');
+                var childDD  = root.querySelector('.dropdown[data-name="'+childName+'"]');
+                if (childDD) resetChild(childDD);
+
+                var p = parts(parentDD);
+                setLoading(p.list, '서비스 로딩...');
+                var url = apiUrl + (mngrId ? ('?mngrId=' + encodeURIComponent(mngrId)) : '');
+
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
+                    .then(function(payload){
+                        TYPES_BY_SVC = payload.typesBySvcId || {};
+                        fillOptions(p.list, payload.services || [], 'tpwSvcId', 'svcNm');
+                    })
+                    .catch(function(){ setError(p.list, '서비스를 불러오지 못했습니다'); });
+            }
+
+            // 바인딩 & 초기 로드
+            root.querySelectorAll('.dropdown').forEach(bindDropdown);
+            loadAll();
         })();
     </script>
 </th:block>

@@ -1,4 +1,4 @@
-`<!doctype html>
+<!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
@@ -13,12 +13,18 @@
                     <h3 class="section-title">가이드페이지 타이틀</h3>
                 </div>
             </div>
-            <!-- mngrId는 쿼리스트링으로 넘겨 받은 값 (모양만) -->
-            <p>관리자ID: <span th:text="${mngrId} ?: '미지정'">미지정</span></p>
 
-            <!-- 프래그먼트 주입: 1차 name=tpwSvcId, 2차 name=tpwSvcTypId -->
+
+            <p>
+                관리자ID: <span th:text="${mngrId} ?: '미지정'">미지정</span>
+                <input type="hidden" name="mngrId" th:value="${mngrId} ?: ''">
+            </p>
+            <!-- 1세트 -->
             <th:block th:replace="~{page/commonFragment/dropdowns :: cascadingDropdown(
-      'svcPair1', 'tpwSvcId', 'tpwSvcTypId'
+    'svcPair1',
+    'tpwSvcId',
+    'tpwSvcTypId',
+    ${mngrId}
   )}"></th:block>
 
 
@@ -900,4 +906,3 @@
     </th:block>
 </th:block>
 </html>
-`
