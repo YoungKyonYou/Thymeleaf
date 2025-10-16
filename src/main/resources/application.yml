@@ -26,3 +26,6 @@ spring:
       enabled: true
       max-file-size: 100MB
       max-request-size: 200MB
+file:
+  storage:
+    base-root: /data001/hxz   # 고정 루트

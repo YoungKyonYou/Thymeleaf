@@ -1,0 +1,129 @@
+<!-- /templates/fragments/dropdowns.html -->
+<th:block th:fragment="cascadingDropdown(rootId, deptName, subName)">
+    <div class="cascading-dropdowns"
+         th:attr="id=${rootId}, data-parent-name=${deptName}, data-child-name=${subName}"
+         style="display:flex; gap:16px; align-items:flex-start;">
+
+        <!-- 1차: 서비스 (label=svcNm, value=tpwSvcId) -->
+        <div class="dropdown" th:attr="data-name=${deptName}" style="width:240px">
+            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="서비스 선택 드롭다운">
+                <span class="dropdown_value" data-placeholder="서비스 선택">서비스 선택</span>
+            </button>
+
+            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                <!-- svcList 로부터 옵션 렌더 -->
+                <li role="option" class="dropdown_option"
+                    th:each="svc : ${svcList}"
+                    th:attr="data-value=${svc.tpwSvcId}"
+                    th:text="${svc.svcNm}">서비스명</li>
+            </ul>
+
+            <input type="hidden" th:attr="name=${deptName}" value="">
+        </div>
+
+        <!-- 2차: 서비스 유형 (label=tpwSvcTypNm, value=tpwSvcTypId) -->
+        <div class="dropdown" th:attr="data-name=${subName}, data-parent=${deptName}" style="width:240px">
+            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
+                    aria-label="서비스 유형 선택 드롭다운" disabled aria-disabled="true">
+                <span class="dropdown_value" data-placeholder="먼저 서비스를 선택">먼저 서비스를 선택</span>
+            </button>
+            <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
+            <input type="hidden" th:attr="name=${subName}" value="">
+        </div>
+    </div>
+
+    <!-- 2차 옵션 맵핑 JSON 주입: id = {rootId}-data -->
+    <script type="application/json"
+            th:attr="id=${rootId} + '-data'"
+            th:utext="${svcTypeMapJson}">{"SVC001":[{"value":"TYP001","label":"..."}]}</script>
+
+    <script>
+        (function(){
+            // 프래그먼트 바로 앞 div를 root로 사용
+            var root = document.currentScript.previousElementSibling.previousElementSibling;
+            // ↑ 위에 JSON script가 하나 더 있으므로 previousElementSibling을 두 번 사용
+
+            if (!root) return;
+
+            // JSON 파싱 (tpwSvcId -> [{value, label}, ...])
+            var dataScriptId = root.id + '-data';
+            var dataEl = document.getElementById(dataScriptId);
+            var OPTIONS_BY_SVC = {};
+            if (dataEl) {
+                try { OPTIONS_BY_SVC = JSON.parse(dataEl.textContent || '{}'); }
+                catch(e){ OPTIONS_BY_SVC = {}; }
+            }
+
+            function parts(dd){ return {
+                btn: dd.querySelector('.dropdown_button'),
+                valueEl: dd.querySelector('.dropdown_value'),
+                list: dd.querySelector('.dropdown_list'),
+                hidden: dd.querySelector('input[type="hidden"]')
+            };}
+
+            function openDropdown(dd){ var p=parts(dd); p.btn.setAttribute('aria-expanded','true'); p.list.style.display='block'; p.list.focus(); }
+            function closeDropdown(dd){ var p=parts(dd); p.btn.setAttribute('aria-expanded','false'); p.list.style.display='none'; }
+            function toggleDropdown(dd){ var p=parts(dd); (p.btn.getAttribute('aria-expanded')==='true') ? closeDropdown(dd) : openDropdown(dd); }
+
+            function selectOption(dd, li){
+                var p=parts(dd), value=li.getAttribute('data-value'), label=li.textContent.trim();
+                p.list.querySelectorAll('.dropdown_option[aria-selected="true"]').forEach(function(el){ el.setAttribute('aria-selected','false'); });
+                li.setAttribute('aria-selected','true');
+                p.valueEl.textContent = label;
+                p.hidden.value = value;
+                closeDropdown(dd);
+                var parentName = dd.getAttribute('data-name');
+                if (parentName) updateChildren(parentName, value);
+            }
+
+            function resetChild(child){
+                var p=parts(child);
+                p.list.innerHTML=''; p.hidden.value='';
+                p.btn.disabled=true; p.btn.setAttribute('aria-disabled','true');
+                p.valueEl.textContent=p.valueEl.getAttribute('data-placeholder')||'선택하세요';
+                closeDropdown(child);
+            }
+
+            function fillChild(child, items, initValue){
+                var p=parts(child);
+                p.list.innerHTML = (items||[]).map(function(it){
+                    return '<li role="option" class="dropdown_option" data-value="'+it.value+'">'+it.label+'</li>';
+                }).join('');
+                p.hidden.value=''; p.btn.disabled=false; p.btn.setAttribute('aria-disabled','false');
+                p.valueEl.textContent = p.valueEl.getAttribute('data-placeholder')||'선택하세요';
+                if (initValue){
+                    var li=p.list.querySelector('.dropdown_option[data-value="'+initValue+'"]');
+                    if (li){ p.valueEl.textContent=li.textContent.trim(); p.hidden.value=initValue; li.setAttribute('aria-selected','true'); }
+                }
+                closeDropdown(child);
+            }
+
+            function updateChildren(parentName, parentValue){
+                root.querySelectorAll('.dropdown[data-parent="'+parentName+'"]').forEach(function(child){
+                    var items = OPTIONS_BY_SVC[parentValue] || [];
+                    if (!items.length) return resetChild(child);
+                    fillChild(child, items, parts(child).hidden.value || null);
+                });
+            }
+
+            // 이벤트 바인딩
+            root.querySelectorAll('.dropdown').forEach(function(dd){
+                var p=parts(dd);
+                p.btn && p.btn.addEventListener('click', function(e){ e.stopPropagation(); if(!p.btn.disabled) toggleDropdown(dd); });
+                p.list && p.list.addEventListener('click', function(e){ var li=e.target.closest('.dropdown_option'); if(li) selectOption(dd, li); });
+                document.addEventListener('click', function(e){ if(!root.contains(e.target)) closeDropdown(dd); });
+                dd.addEventListener('keydown', function(e){
+                    if(e.key==='Escape') closeDropdown(dd);
+                    if((e.key==='Enter'||e.key===' ') && document.activeElement===p.btn){ e.preventDefault(); if(!p.btn.disabled) toggleDropdown(dd); }
+                });
+            });
+
+            // 초기: 상위 없으면 하위 비활성
+            var parentName=root.getAttribute('data-parent-name');
+            var childName =root.getAttribute('data-child-name');
+            var parentDD  =root.querySelector('.dropdown[data-name="'+parentName+'"]');
+            var childDD   =root.querySelector('.dropdown[data-name="'+childName+'"]');
+            if (parentDD && childDD) resetChild(childDD);
+        })();
+    </script>
+</th:block>
