@@ -8,7 +8,7 @@
                 data-api-url=@{/api/services}"
          style="display:flex; gap:16px; align-items:flex-start;">
 
-        <!-- 1차: 서비스 (value=tpwSvcId, label=svcNm) -->
+        <!-- 1차: 서비스 -->
         <div class="dropdown" th:attr="data-name=${deptName}" style="width:240px">
             <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
                     aria-label="서비스 선택 드롭다운">
@@ -18,7 +18,7 @@
             <input type="hidden" th:attr="name=${deptName}" value="">
         </div>
 
-        <!-- 2차: 서비스 유형 (value=tpwSvcTypId, label=tpwSvcTypNm) -->
+        <!-- 2차: 서비스 유형 -->
         <div class="dropdown" th:attr="data-name=${subName}, data-parent=${deptName}" style="width:240px">
             <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
                     aria-label="서비스 유형 선택 드롭다운" disabled aria-disabled="true">
@@ -29,11 +29,115 @@
         </div>
     </div>
 
-    <!-- rootId를 JS로 안전 주입하기 위해 인라인 활성화 -->
+    <!-- rootId를 JS로 안전 주입 -->
     <script th:inline="javascript">
         (function(){
-            var rootId    = /*[[${rootId}]]*/ 'root';
-            var root      = document.getElementById(rootId);
+            // static/js/http.js
+
+// ────────────────────────────────────────────────────────────────
+// Low-level fetch wrapper
+// ────────────────────────────────────────────────────────────────
+            async function send(url, {
+                method = 'POST',
+                data = null,
+                headers = {},
+                signal,
+                expect = 'json', // 'json' | 'text'
+            } = {}) {
+
+                const init = {
+                    method,
+                    // 가능한 application/json을 주고 text/plain 그리고 그 외 아무거나
+                    headers: { 'Accept': 'application/json, text/plain;q=0.9', ...headers },
+                    cache: 'no-store',
+                    credential: 'same-origin', // (스크린샷 그대로 반영)
+                    signal,
+                };
+
+                if (data != null) {
+                    if (data instanceof FormData) {
+                        init.body = data; // Content-Type 자동
+                    } else if (data instanceof URLSearchParams) {
+                        init.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8;';
+                        init.body = data.toString();
+                    } else if (headers['Content-Type'] === 'application/x-www-form-urlencoded;charset=UTF-8;') {
+                        init.body = new URLSearchParams(data).toString();
+                    } else {
+                        init.headers['Content-Type'] = 'application/json;charset=UTF-8;';
+                        init.body = JSON.stringify(data);
+                    }
+                }
+
+                // show(); // (로딩 UI 쓰면 여기)
+
+                const res  = await fetch(url, init);
+                const ct   = res.headers.get('content-type') || '';
+                const text = await res.text();
+
+                if (!res.ok) {
+                    let payload = null;
+                    if (ct.includes('application/json')) {
+                        try { payload = JSON.parse(text); } catch {}
+                    }
+                    const err = new Error((payload && payload.message) ? payload.message : `HTTP ${res.status}`);
+                    err.name        = 'FetchJsonError';
+                    err.status      = res.status;
+                    err.payload     = payload;
+                    err.body        = text;
+                    err.contentType = ct;
+                    throw err;
+                }
+
+                if (expect === 'text' || !ct.includes('application/json')) {
+                    try { return JSON.parse(text); } catch { return text; }
+                }
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    return text;
+                }
+            }
+
+
+// ────────────────────────────────────────────────────────────────
+            /** High-level safe wrapper with UX handling */
+            async function sendSafe(
+                url,
+                {
+                    method = 'POST',
+                    data = null,
+                    signal,
+                    headers,
+                    expect = 'json',
+                    clientErrorMsg = '요청을 처리할 수 없습니다',
+                    otherErrorMsg  = '요청에 실패했습니다.',
+                } = {}
+            ) {
+                try {
+                    const out = await send(url, { method, data, headers, signal, expect });
+                    return { ok: true, data: out };
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        return { ok: false, aborted: true, error: e };
+                    }
+
+                    if ([400, 409, 422].includes(e.status)) {
+                        const msg = (e.payload && e.payload.message) ? e.payload.message : clientErrorMsg;
+                        alert(msg);
+                        return { ok: false, status: e.status, error: e };
+                    }
+
+                    alert(otherErrorMsg);
+                    console.error(e);
+                    return { ok: false, status: e.status, error: e };
+                } finally {
+                    // hide();
+                }
+            }
+
+
+            var rootId = /*[[${rootId}]]*/ 'root';
+            var root   = document.getElementById(rootId);
             if (!root) return;
 
             var parentName = root.getAttribute('data-parent-name');
@@ -41,8 +145,8 @@
             var mngrId     = root.getAttribute('data-mngr-id') || '';
             var apiUrl     = root.getAttribute('data-api-url'); // /api/services
 
-            // 메모리 캐시
-            var TYPES_BY_SVC = {};  // { svcId: [{tpwSvcTypId, tpwSvcTypNm}, ...] }
+            // 메모리 캐시: { svcId: [{tpwSvcTypId, tpwSvcTypNm}, ...] }
+            var TYPES_BY_SVC = {};
 
             function parts(dd){ return {
                 btn: dd.querySelector('.dropdown_button'),
@@ -78,7 +182,6 @@
                 p.hidden.value = value;
                 closeDropdown(dd);
 
-                // 상위 선택이면 하위 채움
                 if (dd.getAttribute('data-name') === parentName) {
                     var childDD = root.querySelector('.dropdown[data-name="'+childName+'"]');
                     var c = parts(childDD);
@@ -104,22 +207,26 @@
                 });
             }
 
-            function loadAll(){
+            async function loadAll(){
                 var parentDD = root.querySelector('.dropdown[data-name="'+parentName+'"]');
                 var childDD  = root.querySelector('.dropdown[data-name="'+childName+'"]');
                 if (childDD) resetChild(childDD);
 
                 var p = parts(parentDD);
                 setLoading(p.list, '서비스 로딩...');
+
                 var url = apiUrl + (mngrId ? ('?mngrId=' + encodeURIComponent(mngrId)) : '');
 
-                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(function(res){ if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); })
-                    .then(function(payload){
-                        TYPES_BY_SVC = payload.typesBySvcId || {};
-                        fillOptions(p.list, payload.services || [], 'tpwSvcId', 'svcNm');
-                    })
-                    .catch(function(){ setError(p.list, '서비스를 불러오지 못했습니다'); });
+                // ✅ 공통함수 사용
+                const res = await sendSafe(url, { method: 'GET', expect: 'json' });
+
+                if (res.ok) {
+                    var payload = res.data || {};
+                    TYPES_BY_SVC = payload.typesBySvcId || {};
+                    fillOptions(p.list, payload.services || [], 'tpwSvcId', 'svcNm');
+                } else {
+                    setError(p.list, '서비스를 불러오지 못했습니다');
+                }
             }
 
             // 바인딩 & 초기 로드
