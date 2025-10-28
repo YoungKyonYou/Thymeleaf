@@ -61,8 +61,8 @@
       background: currentColor; /* 아이콘 색상 = 글자색 */
     }
     &.prev {
-      -webkit-mask-image: url(../../images/icon/icon-arrow-left.svg);
-      mask-image: url(../../images/icon/icon-arrow-left.svg);
+      -webkit-mask-image: url(../images/icon/icon-arrow-left.svg);
+      mask-image: url(../images/icon/icon-arrow-left.svg);
     }
     &.next {
       -webkit-mask-image: url(../../images/icon/icon-arrow-right.svg);

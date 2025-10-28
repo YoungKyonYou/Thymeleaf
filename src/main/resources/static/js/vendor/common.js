@@ -546,18 +546,18 @@ $(document).ready(function () {
 
 
 // date-field 어디를 눌러도 date picker 열기
-$(document).on('click', '.date-field', function (e) {
-  const input = $(this).find('input[type="date"]')[0];
-  // input 이외의 지점을 클릭했을 때도 picker 열기
-  if (e.target !== input) {
-    if (input.showPicker) {       // Chrome/Edge/새 사파리
-      input.showPicker();
-    } else {                      // 구형 브라우저 폴백
-      input.focus();
-      input.click();              // FF 등
-    }
-  }
-});
+//$(document).on('click', '.date-field', function (e) {
+//  const input = $(this).find('input[type="date"]')[0];
+//  // input 이외의 지점을 클릭했을 때도 picker 열기
+//  if (e.target !== input) {
+//    if (input.showPicker) {       // Chrome/Edge/새 사파리
+//      input.showPicker();
+//    } else {                      // 구형 브라우저 폴백
+//      input.focus();
+//      input.click();              // FF 등
+//    }
+//  }
+//});
 
 
 // modal

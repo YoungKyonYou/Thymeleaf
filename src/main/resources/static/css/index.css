@@ -204,16 +204,12 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   box-shadow: 0 0 0px 1000px #fff inset !important;
 }
 
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active {
   -webkit-text-fill-color: #000 !important;
-  /* 노란 배경 덮기 */
-  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-  box-shadow: 0 0 0 1000px #fff inset !important;
-  /* 일부 브라우저에서 배경 색상 유지 트릭 */
-  transition: background-color 9999s ease-out 0s;
+  box-shadow: 0 0 0px 1000px #fff inset !important;
 }
 
 svg {
@@ -675,7 +671,7 @@ input {
   position: absolute;
   right: 15px;
   color: var(--color-error);
-  background-image: url("../images/icon/icon-error.svg");
+  background-image: url("../images/icon-error.svg");
   background-size: contain;
   background-repeat: no-repeat;
 }
@@ -1251,6 +1247,18 @@ input {
   background-size: contain;
   background-position: center;
 }
+.icon.icon-minus:before {
+  background-image: url(../images/icon/icon-minus.svg);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+.icon.icon-plus:before {
+  background-image: url(../images/icon/icon-plus.svg);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
 
 .chip {
   display: inline-flex;
@@ -1402,7 +1410,7 @@ input {
   position: absolute;
   right: 15px;
   color: var(--color-error);
-  background-image: url("../images/icon/icon-error.svg");
+  background-image: url("../images/icon-error.svg");
   background-size: contain;
   background-repeat: no-repeat;
 }
@@ -1949,6 +1957,9 @@ input {
 .modal .box-wrap .box .flex * {
   min-width: 0;
 }
+.modal .box-wrap .box.col1 {
+  grid-column: span 1;
+}
 .modal .box-wrap .box.col2 {
   grid-column: span 2;
 }
@@ -1957,6 +1968,9 @@ input {
 }
 .modal .box-wrap .box.col4 {
   grid-column: span 4;
+}
+.modal .box-wrap + .box-wrap {
+  margin-top: 24px;
 }
 
 /* 바디 스크롤 잠금 */
@@ -2121,6 +2135,232 @@ input {
   transform: translateY(-50%);
 }
 
+.datepicker {
+  position: relative;
+  padding-right: 44px; /* 버튼 자리 확보 */
+  /* 버튼 활성 강조 */
+  /* 에러/비활성 상태 */
+  /* size 연동 */
+}
+.datepicker.is-open {
+  overflow: visible;
+}
+.datepicker .dp-input {
+  height: 100%;
+  width: 100%;
+  background: transparent;
+}
+.datepicker .dp-btn {
+  right: 8px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  background-image: url("../images/icon/icon-calander.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.datepicker .dp-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary), #fff 70%);
+}
+.datepicker:hover .dp-btn, .datepicker:focus-within .dp-btn {
+  background-color: color-mix(in srgb, var(--color-primary), #fff 85%);
+}
+.datepicker [data-dp-toggle][aria-expanded=true] {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary), #fff 60%);
+}
+.datepicker.error .dp-btn {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.datepicker:disabled .dp-btn {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.datepicker.size-lg {
+  padding-right: 56px;
+}
+.datepicker.size-lg .dp-btn {
+  width: 36px;
+  height: 36px;
+  right: 12px;
+}
+.datepicker.size-md .dp-btn {
+  width: 32px;
+  height: 32px;
+  right: 10px;
+}
+.datepicker.size-md .dp-input {
+  font-size: 18px;
+  font-weight: 600;
+}
+.datepicker.size-sm .dp-btn {
+  width: 28px;
+  height: 28px;
+  right: 8px;
+}
+.datepicker.size-sm .dp-input {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* DatePicker Popup (전역/분리 영역) */
+/* 팝업 박스 */
+.dp-pop {
+  position: fixed; /* 래퍼 내부에 넣는다면 absolute로 변경 */
+  z-index: 9999;
+  width: 328px;
+  padding: 10px;
+  background: var(--color-white);
+  border: 1px solid var(--border-darken);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  animation: dp-fade 0.12s ease-out;
+}
+
+/* 위로 펼칠 때 */
+.dp-pop.flipY {
+  transform-origin: bottom center;
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+/* 등장 애니메이션 */
+@keyframes dp-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* 헤더 */
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.dp-head .title {
+  font: 600 14px/1.2 system-ui;
+  color: var(--color-darken);
+}
+.dp-head .nav {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-darken);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+.dp-head .nav:hover {
+  background: var(--gray-200);
+  border-color: var(--color-primary);
+}
+.dp-head .nav:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary), #fff 70%);
+}
+
+/* 요일 행 */
+.dp-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 6px 0 4px;
+}
+.dp-week span {
+  font: 600 12px/1 system-ui;
+  color: var(--gray-600);
+  text-align: center;
+}
+
+/* 날짜 그리드 */
+.dp-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+/* 날짜 셀 */
+.dp-day {
+  height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font: 600 13px/1 system-ui;
+  color: var(--color-darken);
+  cursor: pointer;
+  outline: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.dp-day:hover {
+  background: var(--gray-200);
+}
+.dp-day:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary), #fff 70%);
+}
+.dp-day[data-out="1"] {
+  color: var(--gray-500);
+}
+
+/* 선택 & 범위 */
+.dp-day.is-selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.dp-day.in-range {
+  background: color-mix(in srgb, var(--color-primary), #fff 85%);
+}
+
+.dp-day.range-start {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.dp-day.range-end {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* 다크 모드 */
+[data-theme=dark] .dp-pop {
+  background: #121212;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme=dark] .dp-week span {
+  color: #a9adc0;
+}
+
+[data-theme=dark] .dp-day {
+  color: #e6e8f0;
+}
+
+[data-theme=dark] .dp-day:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme=dark] .dp-day.in-range {
+  background: rgba(108, 124, 255, 0.18);
+}
+
 .section-header {
   border-radius: 10px;
   background-color: var(--color-white);
@@ -2276,7 +2516,7 @@ body.modal-open {
 }
 .theme-switch-wrapper .theme-switch input:checked + .slider::before {
   transform: translateX(48px);
-  background-image: url(../images/icon/icon-theme-dark.svg);
+  background-image: url(../../assets/images/icon/icon-theme-dark.svg);
   background-repeat: no-repeat;
 }
 
@@ -2429,22 +2669,26 @@ body.modal-open {
 }
 
 /* space */
+.mt0 {
+  margin-top: 0px !important;
+}
+
 .mt10 {
-  margin-top: 10px;
+  margin-top: 10px !important;
 }
 
 .mt20 {
-  margin-top: 20px;
+  margin-top: 20px !important;
 }
 
 .mt30 {
-  margin-top: 30px;
+  margin-top: 30px !important;
 }
 
 .mt40 {
-  margin-top: 40px;
+  margin-top: 40px !important;
 }
 
 .mt50 {
-  margin-top: 50px;
+  margin-top: 50px !important;
 }

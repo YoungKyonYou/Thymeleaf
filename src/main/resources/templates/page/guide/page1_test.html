@@ -9,8 +9,6 @@
                 <div class="title-wrap">
                     <h3 class="section-title">지급금신청내역관리</h3>
                 </div>
-                <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed}"></th:block>
-
 
                 <div class="box-wrap">
                     <div class="box">
@@ -49,6 +47,67 @@
                             <input type="hidden" name="state" value="">
                         </div>
                     </div>
+
+
+
+
+
+                    <div class="flex align-center col-2">
+                        <div class="text-field datepicker" style="width: 200px">
+                            <label for="startDatenew2" class="sr-only">시작일</label>
+                            <input
+                                    id="startDatenew2"
+                                    type="text"
+                                    class="dp-input"
+                                    placeholder="YYYY-MM-DD"
+                                    inputmode="numeric"
+                                    pattern="\d{4}-\d{2}-\d{2}"
+                                    autocomplete="off"
+                                    data-role="start"
+                                    data-dp-group="booking"
+                                    aria-describedby="startDateHelp2"
+                            />
+                            <button
+                                    type="button"
+                                    class="dp-btn"
+                                    data-dp-toggle
+                                    aria-label="달력 열기"
+                                    aria-haspopup="dialog"
+                                    aria-expanded="false"
+                                    aria-controls="dp-pop"
+                            ></button>
+                            <span id="startDateHelp2" class="sr-only">형식: YYYY-MM-DD. 예: 2025-10-12</span>
+                        </div>
+                        <span>~</span>
+                        <div class="text-field datepicker" style="width: 200px">
+                            <label for="startDatenew3" class="sr-only">시작일</label>
+                            <input
+                                    id="startDatenew3"
+                                    type="text"
+                                    class="dp-input"
+                                    placeholder="YYYY-MM-DD"
+                                    inputmode="numeric"
+                                    pattern="\d{4}-\d{2}-\d{2}"
+                                    autocomplete="off"
+                                    data-role="start"
+                                    data-dp-group="booking"
+                                    aria-describedby="startDateHelp3"
+                            />
+                            <button
+                                    type="button"
+                                    class="dp-btn"
+                                    data-dp-toggle
+                                    aria-label="달력 열기"
+                                    aria-haspopup="dialog"
+                                    aria-expanded="false"
+                                    aria-controls="dp-pop"
+                            ></button>
+                            <span id="startDateHelp3" class="sr-only">형식: YYYY-MM-DD. 예: 2025-10-12</span>
+                        </div>
+                    </div>
+
+
+
                 </div>
 
                 <div class="btn-wrap">
@@ -127,19 +186,25 @@
             <div class="section-content">
                 <div class="title-wrap"><h3 class="section-title">신청현황</h3></div>
 
-                <!-- 일별 -->
+                <!-- 월별 -->
                 <div class="table-wrap mt20">
                     <table class="table">
-                        <caption class="blind">신청현황 테이블</caption>
+                        <caption class="blind">지원금지급현황 통계</caption>
                         <colgroup>
                             <col width="160px"><col width="100px" span="30">
                         </colgroup>
                         <tbody>
                         <tr>
-                            <th scope="row">일</th>
-                            <td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td>
-                            <td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td>
-                            <td>20</td><td>21</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
+                            <th scope="row">월</th>
+                            <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
+                            <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
+                            <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">전체사용자 수</th>
+                            <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
+                            <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
+                            <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
                         </tr>
                         <tr>
                             <th scope="row">신청자 수</th>
@@ -147,28 +212,14 @@
                             <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
                             <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
                         </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 월별 -->
-                <div class="table-wrap mt20">
-                    <table class="table">
-                        <caption class="blind">신청현황 테이블</caption>
-                        <colgroup>
-                            <col width="160px"><col width="100px" span="30">
-                        </colgroup>
-                        <tbody>
                         <tr>
-                            <th scope="row">일</th>
-                            <td>2023-07</td><td>2023-08</td><td>2023-09</td><td>2023-10</td><td>2023-11</td><td>2023-12</td>
-                            <td>2024-01</td><td>2024-02</td><td>2024-03</td><td>2024-04</td><td>2024-05</td><td>2024-06</td>
-                            <td>2024-07</td><td>2024-08</td><td>2024-09</td><td>2024-10</td><td>2024-11</td><td>2024-12</td>
-                            <td>2025-01</td><td>2025-02</td><td>2025-03</td><td>2025-04</td><td>2025-05</td><td>2025-06</td>
-                            <td>2025-07</td><td>2025-08</td><td>2025-09</td><td>2025-10</td><td>2025-11</td><td>2025-12</td>
+                            <th scope="row">지급자 수</th>
+                            <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
+                            <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
+                            <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
                         </tr>
                         <tr>
-                            <th scope="row">신청자 수</th>
+                            <th scope="row">합계(일)</th>
                             <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
                             <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
                             <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
@@ -186,22 +237,6 @@
                 </div>
             </div>
         </section>
-        <script>
-            // jQuery UI로 입력 초기화
-            $("#periodStart, #periodEnd").datepicker({
-              dateFormat: "yy-mm-dd",
-              changeMonth: true,
-              changeYear: true,
-              showOn: "focus"      // 버튼은 우리가 수동으로 열게 할 거라 focus로만 열리게
-            });
-
-            // 아이콘 버튼 클릭 시 해당 인풋의 달력 열기
-            document.querySelectorAll(".ui-datepicker-trigger").forEach(btn => {
-              const input = btn.previousElementSibling; // 버튼 바로 앞 input
-              btn.addEventListener("click", () => $(input).datepicker("show"));
-            });
-        </script>
-
 
         <script>
             document.addEventListener('DOMContentLoaded', function () {

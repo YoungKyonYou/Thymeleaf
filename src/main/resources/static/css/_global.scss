@@ -65,7 +65,7 @@ body {
         width: 40px;
         left: 5px;
         bottom: 4px;
-        background-image: url(../../assets/images/icon/icon-theme-light.svg);
+        background-image: url(../images/icon/icon-theme-light.svg);
         background-size: contain;
         background-repeat: no-repeat;
         transition: 0.4s;
@@ -79,7 +79,7 @@ body {
 
       &::before {
         transform: translateX(48px);
-        background-image: url(../../assets/images/icon/icon-theme-dark.svg);
+        background-image: url(../images/icon/icon-theme-dark.svg);
         background-repeat: no-repeat;
       }
     }

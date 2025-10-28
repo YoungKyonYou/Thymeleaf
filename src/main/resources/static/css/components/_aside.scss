@@ -4,7 +4,7 @@
   color: var(--color-white);
   grid-area: aside;
   border-right: 1px solid var(--gray-600);
-  
+
   h1 {
     padding: 20px;
     border-bottom: 1px solid var(--gray-600);
@@ -18,7 +18,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        background-image: url('../../images/logo-t-money.png');
+        background-image: url('../images/logo-t-money.png');
         background-size: contain;
         background-repeat: no-repeat;
       }
@@ -54,7 +54,7 @@
         display: none;
         overflow: hidden;
         border-radius: 0 0 5px 5px;
-        
+
         /* 2뎁스 아이템 */
         > .depth2-item {
           position: relative;

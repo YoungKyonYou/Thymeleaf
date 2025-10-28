@@ -16,6 +16,7 @@
     <link rel="stylesheet" th:href="@{/css/vendor/jquery-ui.css}"/>
     <link rel="stylesheet" th:href="@{/css/vendor/aos.css}"/>
     <link rel="stylesheet" th:href="@{/css/index.css}" />
+    <link rel="stylesheet" th:href="@{/css/components.css}" />
 
     <!-- JS (로컬/순서 중요: jQuery → UI → 나머지) -->
     <script th:src="@{/js/vendor/jquery-3.6.0.min.js}"></script>
@@ -24,6 +25,8 @@
     <script th:src="@{/js/theme.js}"></script>
     <script th:src="@{/js/vendor/common.js}"></script>
     <script th:src="@{/js/vendor/aos.js}"></script>
+    <script defer th:src="@{/js/datepicker.js}"></script>
+
 
     <!-- AOS init -->
     <script>
@@ -36,7 +39,6 @@
     </script>
 </head>
 <body>
-
 <!-- 테마 적용(IIFE) -->
 <script>
     (function() {
@@ -60,7 +62,9 @@
     <main id="contents">
         <div class="container">
             <!-- 🔽 페이지에서 넘겨줄 본문 슬롯 -->
-            <th:block th:replace="${content}"></th:block>
+            <th:block th:replace="${content}">
+
+            </th:block>
         </div>
     </main>
 </div>
