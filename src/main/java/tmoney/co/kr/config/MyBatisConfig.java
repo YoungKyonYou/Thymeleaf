@@ -2,11 +2,13 @@ package tmoney.co.kr.config;
 
 import javax.sql.DataSource;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.annotation.MapperScan;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -14,11 +16,12 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+@RequiredArgsConstructor
 @Configuration
 // Mapper 인터페이스 패키지 (UserMapper가 있는 위치)
 @MapperScan(basePackages = "tmoney.co.kr.hxz", annotationClass = HxzDb.class, sqlSessionFactoryRef = "sqlSessionFactory")
 public class MyBatisConfig {
-
+    private final ApplicationContext applicationContext;
 
     @Bean
     public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
@@ -30,7 +33,10 @@ public class MyBatisConfig {
 
         // XML 매퍼들
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        factoryBean.setMapperLocations(resolver.getResources("classpath*:mapper/*.xml"));
+        factoryBean.setConfigLocation(applicationContext.getResource("classpath:mybatis/mybatis-config.xml"));
+        factoryBean.setMapperLocations(
+                resolver.getResources("classpath*:mapper/hxz/**/*.xml")
+        );
 
 
         return factoryBean.getObject();
