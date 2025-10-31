@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.srptpolimng.polimnginf.mapper.SprtLmtMapper">
+
+    <select id="readSprtLmtPtList"
+            parameterType="tmoney.co.kr.hxz.srptpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO"
+            resultType="tmoney.co.kr.hxz.srptpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO">
+        /* sql_id : readSprtLmtPtList */
+
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 지원 한도 내역 조회
+        * 3. 작성자/작성명 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.15 - 최종억 : 최초작성
+        */
+
+        select
+        sprt.tpw_svc_id       as tpwSvcId      /* 서비스ID */
+        , sprt.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
+        , sprt.tpw_svc_typ_nm   as tpwSvcTypNm   /* 서비스유형명 */
+        , sprt.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */
+        , sprt.spfn_lmt_sno     as spfnLmtSno    /* 지원금한도일련번호 */
+        , sprt.tpw_lmt_dvs_cd   as tpwLmtDvsCd   /* 교통복지한도구분코드 */
+        , sprt.tpw_lmt_typ_cd   as tpwLmtTypCd   /* 교통복지한도유형코드 */
+        , sprt.lmt_stt_ym       as lmtSttYm      /* 한도시작년월 */
+        , sprt.lmt_end_ym       as lmtEndYm      /* 한도종료년월 */
+        , sprt.min_cndt_val     as minCndtVal    /* 최소조건값 */
+        , sprt.max_cndt_val     as maxCndtVal    /* 최대조건값 */
+        , sprt.use_yn           as useYn         /* 이용여부 */
+        from (
+        select
+        max(d208.tpw_svc_id)      as tpw_svc_id     /* 서비스ID */
+        , max(m201.tpw_svc_nm)      as tpw_svc_nm     /* 서비스명 */
+        , d208.tpw_svc_typ_id       as tpw_svc_typ_id /* 서비스유형ID */
+        , max(m202.tpw_svc_typ_nm)  as tpw_svc_typ_nm /* 서비스유형명 */
+        , max(d208.spfn_lmt_mng_no) as spfn_lmt_mng_no/* 지원금한도관리번호 */
+        , max(d208.spfn_lmt_sno)    as spfn_lmt_sno   /* 지원금한도일련번호 */
+        , max(d208.tpw_lmt_dvs_cd)  as tpw_lmt_dvs_cd /* 교통복지한도구분코드 */
+        , max(d208.tpw_lmt_typ_cd)  as tpw_lmt_typ_cd /* 교통복지한도유형코드 */
+        , min(d208.lmt_stt_ym)      as lmt_stt_ym     /* 한도시작년월 */
+        , max(d208.lmt_end_ym)      as lmt_end_ym     /* 한도종료년월 */
+        , min(d208.min_cndt_val)    as min_cndt_val   /* 최소조건값 */
+        , max(d208.max_cndt_val)    as max_cndt_val   /* 최대조건값 */
+        , max(d208.tgt_adpt_val)    as tgt_adpt_val   /* 대상조건값 */
+        , max(d208.use_yn)          as use_yn         /* 이용여부 */
+        from tbhxzd208 d208
+        join tbhxzm201 m201
+        on d208.tpw_svc_id = m201.tpw_svc_id
+        join tbhxzm202 m202
+        on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
+        where 1 = 1
+        <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
+            and lower(m201.tpw_svc_nm) like concat('%', lower(#{req.tpwSvcNm}), '%')
+        </if>
+        <if test="req.useYn != null and req.useYn != ''">
+            and lower(d208.use_yn) = lower(#{req.useYn})
+        </if>
+        <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
+            and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
+        </if>
+        group by d208.tpw_svc_typ_id
+        ) sprt
+        order by sprt.${req.sort} ${req.dir}
+        limit #{req.size}
+        offset #{req.page}
+    </select>
+
+    <select id="readSprtLmtPtListCnt"
+            parameterType="tmoney.co.kr.hxz.srptpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO"
+            resultType="long">
+        /* sql_id : readSprtLmtPtListCnt */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 지원 한도 내역 카운트 조회
+        * 3. 작성자/작성명 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.15 - 최종혁 : 최초 작성
+        */
+
+        select count(*)
+        from (
+        select d208.tpw_svc_typ_id
+        from tbhxzd208 d208
+        join tbhxzm201 m201
+        on d208.tpw_svc_id = m201.tpw_svc_id
+        join tbhxzm202 m202
+        on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
+        where 1 = 1
+        <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
+            and lower(m201.tpw_svc_nm) like concat('%', lower(#{req.tpwSvcNm}), '%')
+        </if>
+        <if test="req.useYn != null and req.useYn != ''">
+            and lower(d208.use_yn) = lower(#{req.useYn})
+        </if>
+        <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
+            and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
+        </if>
+        group by d208.tpw_svc_typ_id
+        having 1 = 1
+        ) sprt
+    </select>
+
+    <select id="readSprtLmtDtlByTpwSvcTypId"
+            parameterType="String"
+            resultType="tmoney.co.kr.hxz.srptpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO">
+        /* sql_id : readSprtLmtDtlByTpwSvcTypId */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 지원 한도 상세 조회
+        * 3. 작성자 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.15 - 최종작성 : 최초작성
+        */
+
+        select
+        d208.tpw_svc_id       as tpwSvcId      /* 서비스ID */
+        , d208.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
+        , d208.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */
+        , d208.spfn_lmt_sno     as spfnLmtSno    /* 지원금한도일련번호 */
+        , d208.tpw_lmt_dvs_cd   as tpwLmtDvsCd   /* 교통복지한도구분코드 */
+        , d208.tpw_lmt_typ_cd   as tpwLmtTypCd   /* 교통복지한도유형코드 */
+        , d208.lmt_stt_ym       as lmtSttYm      /* 한도시작년월 */
+        , d208.lmt_end_ym       as lmtEndYm      /* 한도종료년월 */
+        , d208.min_cndt_val     as minCndtVal    /* 최소조건값 */
+        , d208.max_cndt_val     as maxCndtVal    /* 최대조건값 */
+        , d208.tgt_adpt_val     as tgtAdptVal    /* 대상조건값 */
+        , d208.use_yn           as useYn         /* 사용여부 */
+        from tbhxzd208 d208
+        where 1 = 1
+        <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
+            and d208.tpw_svc_typ_id = #{tpwSvcTypId}
+        </if>
+        <if test="useYn != null and useYn != ''">
+            and lower(d208.use_yn) = lower(#{useYn})
+        </if>
+    </select>
+
+    <insert id="insertSprtLmt" parameterType="list">
+        /* sql_id : insertSprtLmt */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 지원 한도 내역 생성
+        * 3. 작성자 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.22 - 최종혁 : 최초작성
+        */
+        <foreach collection="req" item="u" separator=";">
+            insert
+            into tbhxzd208
+            (
+            tpw_svc_id
+            , tpw_svc_typ_id
+            , spfn_lmt_mng_no
+            , spfn_lmt_sno
+            , tpw_lmt_dvs_cd
+            , tpw_lmt_typ_cd
+            , lmt_stt_ym
+            , lmt_end_ym
+            , min_cndt_val
+            , max_cndt_val
+            , tgt_adpt_val
+            , use_yn
+            , rgsr_id
+            , rgt_dtm
+            , updr_id
+            , upd_dtm
+            )
+            values
+            (
+            #{u.tpwSvcId}
+            , #{u.tpwSvcTypId}
+            , (to_char(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01'), 'FM0000000000'))
+            , #{u.spfnLmtSno}
+            , #{u.tpwLmtDvsCd}
+            , #{u.tpwLmtTypCd}
+            , #{u.lmtSttYm}
+            , #{u.lmtEndYm}
+            , #{u.minCndtVal}
+            , #{u.maxCndtVal}
+            , #{u.tgtAdptVal}
+            , upper('y')
+            , 'system'
+            , to_char(now(), 'YYYYMMDDHH24MISS')
+            , 'system'
+            , to_char(now(), 'YYYYMMDDHH24MISS')
+            )
+        </foreach>
+    </insert>
+
+    <update id="updatePrevSprtLmt" parameterType="list">
+        /* sql_id : updatePrevSprtLmt */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 이전 지원 한도 내역 수정
+        * 3. 작성자 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.20 - 최종혁 : 최초작성
+        */
+        <foreach collection="req" item="u" separator=";">
+            update tbhxzd208 d208
+            set use_yn = upper('n')
+            where spfn_lmt_mng_no = #{u}
+        </foreach>
+    </update>
+
+    <insert id="insertNextSprtLmt" parameterType="list">
+        /* sql_id : insertNextSprtLmt */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 지원 한도 내역 추가 생성
+        * 3. 작성자 : 최종혁
+        * 4. 변경이력 :
+        * 2025.10.20 - 최종혁 : 최초작성
+        */
+        <foreach collection="req" item="u" separator=";">
+            insert
+            into tbhxzd208
+            (
+            tpw_svc_id
+            , tpw_svc_typ_id
+            , spfn_lmt_mng_no
+            , spfn_lmt_sno
+            , tpw_lmt_dvs_cd
+            , tpw_lmt_typ_cd
+            , lmt_stt_ym
+            , lmt_end_ym
+            , min_cndt_val
+            , max_cndt_val
+            , tgt_adpt_val
+            , use_yn
+            , rgsr_id
+            , rgt_dtm
+            , updr_id
+            , upd_dtm
+            )
+            values
+            (
+            #{u.tpwSvcId}
+            , #{u.tpwSvcTypId}
+            , #{u.spfnLmtMngNo}
+            , #{u.spfnLmtSno}
+            , #{u.tpwLmtDvsCd}
+            , #{u.tpwLmtTypCd}
+            , #{u.lmtSttYm}
+            , #{u.lmtEndYm}
+            , cast(#{u.minCndtVal} as integer)
+            , cast(#{u.maxCndtVal} as integer)
+            , cast(#{u.tgtAdptVal} as integer)
+            , upper('y')
+            , 'system'
+            , to_char(now(), 'YYYYMMDDHH24MISS')
+            , 'system'
+            , to_char(now(), 'YYYYMMDDHH24MISS')
+            )
+        </foreach>
+    </insert>
+
+    <select id="readSpfnLmtMngNoNextVal" resultType="String">
+        select nextval('sq_tbhxzd208_spfn_lmt_mng_no_01')
+    </select>
+
+    <select id="readSpfnLmtSnoNextVal" parameterType="String" resultType="String">
+        select lpad((coalesce(max(cast(#{spfnLmtSno} as integer)),0)+1)::text,10,'0')
+    </select>
+
+</mapper>

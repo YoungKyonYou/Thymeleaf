@@ -4,10 +4,13 @@
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
 
-        <!-- 페이지 전용 CSS (필요 시) -->
+        <script th:src="@{/js/datepicker.js}"></script>
+        <!-- 페이지 전용 CSS -->
+        <link rel="stylesheet" th:href="@{/css/index.css}" />
+        <link rel="stylesheet" th:href="@{/css/components.css}" />
         <link rel="stylesheet" th:href="@{/css/page/page.css}" />
 
-        <section class="section">
+        <section class="section" id="grid">
             <div class="section-header">
                 <div class="title-wrap">
                     <h3 class="section-title">지원한도내역조회</h3>
@@ -26,8 +29,8 @@
                                 <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
                             </button>
                             <ul class="dropdown_list" role="listbox" tabindex="-1">
-                                <li role="option" class="dropdown_option" data-value="amount">Y</li>
-                                <li role="option" class="dropdown_option" data-value="number">N</li>
+                                <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                <li role="option" class="dropdown_option" data-value="N">N</li>
                             </ul>
                             <input type="hidden" name="state" value="">
                         </div>
@@ -93,7 +96,7 @@
                             <td>어린이/청소년 교통비 지원사업</td>
                             <td>SV000001</td>
                             <td></td>
-                            <td>2024-01-02 ~ 2025-13-31</td>
+                            <td>2024-01-02 ~ 2025-12-31</td>
                             <td>0</td>
                             <td>30,000</td>
                             <td>Y</td>
@@ -136,125 +139,66 @@
                             <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-1" id="tab-1">분기</button>
                             <button class="tab" role="tab" aria-selected="false" aria-controls="panel-2" id="tab-2">월</button>
                         </div>
-                        <div class="flex col-">
-                            <button type="button" class="btn btn-dark-line">행추가</button>
-                            <button type="button" class="btn btn-dark-line">행삭제</button>
-                        </div>
+                        <!-- 요청대로 행추가/행삭제 버튼 제거 -->
                     </div>
 
                     <div class="tab-panels">
-                        <!-- 분기 -->
+                        <!-- 분기: 날짜도 전부 편집 가능, 금액도 인풋으로 변경 -->
                         <div class="tab-panel is-active" role="tabpanel" id="panel-1" aria-labelledby="tab-1">
                             <div class="table-wrap">
-                                <table class="table">
+                                <table class="table" data-quarter-grid data-rows="4">
                                     <caption class="blind">지급금 신청 테이블</caption>
-                                    <colgroup><col width="100px"><col><col width="150px"></colgroup>
+                                    <colgroup><col width="100px"><col width="250px"><col width="150px"></colgroup>
                                     <thead>
                                     <tr><th scope="col">순번</th><th scope="col">한도 시작, 종료 기간(분기)</th><th scope="col">한도금액(원)</th></tr>
                                     </thead>
                                     <tbody>
-                                    <tr>
-                                        <td>1</td>
+                                    <tr th:each="row,stat : ${#numbers.sequence(1,4)}">
+                                        <td th:text="${stat.count}">1</td>
                                         <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate" class="text-field date-text" value="2025-01-10"></div>
+                                            <th:block th:replace="~{page/commonFragment/month-pickers :: monthRange(${ 'q'+stat.count }, ${'quarters['+stat.count+'].from'}, ${'quarters['+stat.count+'].to'})}"></th:block>
+                                        </td>
+                                        <td>
+                                            <div class="text-field" style="width: 150px">
+                                                <input
+                                                        type="text"
+                                                        class="amount-input"
+                                                        inputmode="numeric"
+                                                        pattern="[0-9,]*"
+                                                        th:value="${stat.count == 1 ? '10,000' : (stat.count == 2 ? '20,000' : (stat.count == 3 ? '80,000' : '10,000'))}" />
                                             </div>
                                         </td>
-                                        <td>10,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate1" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate1" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>20,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate2" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate2" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>80,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate3" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate3" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>10,000</td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- 월 -->
+                        <!-- 월: 날짜는 readonly(달력 버튼 비활성), 금액은 모두 편집 가능 -->
                         <div class="tab-panel" role="tabpanel" id="panel-2" aria-labelledby="tab-2">
                             <div class="table-wrap">
-                                <table class="table">
+                                <table class="table" data-month-grid data-rows="12">
                                     <caption class="blind">지급금 신청 테이블</caption>
-                                    <colgroup><col width="100px"><col><col width="150px"></colgroup>
+                                    <colgroup><col width="100px"><col width="150px"><col width="150px"></colgroup>
                                     <thead>
-                                    <tr><th scope="col">순번</th><th scope="col">한도 시작, 종료 기간(월)</th><th scope="col">한도금액(원)</th></tr>
+                                    <tr><th scope="col">순번</th><th scope="col">한도 시작 기간(월)</th><th scope="col">한도금액(원)</th></tr>
                                     </thead>
                                     <tbody>
-                                    <tr>
-                                        <td>1</td>
+                                    <tr th:each="row,stat : ${#numbers.sequence(1,12)}">
+                                        <td th:text="${stat.count}">1</td>
                                         <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate4" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate4" class="text-field date-text" value="2025-01-10"></div>
+                                            <th:block th:replace="~{page/commonFragment/month-pickers :: monthSingle(${ 'm'+stat.count }, ${'months['+stat.count+']'})}"></th:block>
+                                        </td>
+                                        <td>
+                                            <div class="text-field" style="width: 150px">
+                                                <input
+                                                        type="text"
+                                                        class="amount-input"
+                                                        inputmode="numeric"
+                                                        pattern="[0-9,]*"
+                                                        th:value="${stat.count == 1 ? '10,000' : (stat.count == 2 ? '20,000' : (stat.count == 3 ? '80,000' : '10,000'))}" />
                                             </div>
                                         </td>
-                                        <td>10,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate5" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate5" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>20,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate6" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate6" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>80,000</td>
-                                    </tr>
-                                    <tr>
-                                        <td>4</td>
-                                        <td>
-                                            <div class="flex align-center col-2">
-                                                <div class="date-field" style="width: 200px"><input type="text" id="startDate7" class="text-field date-text" value="2025-01-10"></div>
-                                                <span>~</span>
-                                                <div class="date-field" style="width: 200px"><input type="text" id="endDate7" class="text-field date-text" value="2025-01-10"></div>
-                                            </div>
-                                        </td>
-                                        <td>10,000</td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -262,28 +206,84 @@
                         </div>
 
                     </div>
-                </div>
 
-                <footer class="modal-footer">
-                    <button type="button" class="btn btn-dark-line" data-dismiss>취소</button>
-                    <button type="button" class="btn btn-blue">저장</button>
-                </footer>
+                    <footer class="modal-footer">
+                        <button type="button" class="btn btn-dark-line" data-dismiss>취소</button>
+                        <button type="button" class="btn btn-blue">저장</button>
+                    </footer>
+                </div>
             </div>
         </div>
 
+        <!-- === 바닐라 JS: 자동 채움 & 버튼 동기화 정책 === -->
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var ids = [
-                    'startDate','endDate',
-                    'startDate1','endDate1','startDate2','endDate2','startDate3','endDate3',
-                    'startDate4','endDate4','startDate5','endDate5','startDate6','endDate6','startDate7','endDate7'
-                ];
-                for (var i = 0; i < ids.length; i++) {
-                    var el = document.getElementById(ids[i]);
-                    if (el) el.type = 'date'; // 브라우저 기본 날짜 피커 사용
+            (function () {
+              'use strict';
+
+              // --- 아주 최소한의 유틸 ---
+              function pad2(n){ return (n < 10 ? '0' : '') + n; }
+              function toYYYYMM(dashed){
+                var m = /^(\d{4})-(\d{2})$/.exec(String(dashed||'').trim());
+                if (!m) return '';
+                var y = +m[1], mm = +m[2];
+                return (y >= 1900 && mm >= 1 && mm <= 12) ? (m[1] + m[2]) : '';
+              }
+              function toDashed(yyyymm){
+                var s = String(yyyymm||'').replace(/\D+/g,'');
+                if (s.length !== 6) return '';
+                var y = +s.slice(0,4), m = +s.slice(4,6);
+                return (y >= 1900 && m >= 1 && m <= 12) ? (y + '-' + pad2(m)) : '';
+              }
+
+              // --- 입력값 → data-yyyymm 동기화 ---
+              function syncAttrFromValue(input){
+                var yyyymm = toYYYYMM(input.value);
+                if (yyyymm) input.setAttribute('data-yyyymm', yyyymm);
+                else input.removeAttribute('data-yyyymm');
+              }
+
+              // --- data-yyyymm → 입력값 동기화 ---
+              function syncValueFromAttr(input){
+                var dashed = toDashed(input.getAttribute('data-yyyymm'));
+                input.value = dashed;
+                // 필요하면 검증/연쇄 로직을 위해 이벤트 발생
+                input.dispatchEvent(new Event('input',  { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              // --- 전역 리스너: 사용자가 타이핑할 때 attr 갱신 ---
+              document.addEventListener('input', function(e){
+                var t = e.target;
+                if (t && t.classList && t.classList.contains('dp-input')) syncAttrFromValue(t);
+              }, true);
+              document.addEventListener('change', function(e){
+                var t = e.target;
+                if (t && t.classList && t.classList.contains('dp-input')) syncAttrFromValue(t);
+              }, true);
+
+              // --- MutationObserver: 개발자모드에서 data-yyyymm 수정 시 값 갱신 ---
+              var mo = new MutationObserver(function(list){
+                for (var i=0;i<list.length;i++){
+                  var m = list[i];
+                  if (m.type === 'attributes' && m.attributeName === 'data-yyyymm') {
+                    var el = m.target;
+                    if (el.classList && el.classList.contains('dp-input')) syncValueFromAttr(el);
+                  }
                 }
-            });
+              });
+              mo.observe(document.documentElement, { attributes:true, attributeFilter:['data-yyyymm'], subtree:true });
+
+              // --- 초기 정렬: 값이 있으면 값→attr, 아니고 attr이 있으면 attr→값 ---
+              (function init(){
+                document.querySelectorAll('.dp-input').forEach(function(inp){
+                  if (inp.value) syncAttrFromValue(inp);
+                  else if (inp.hasAttribute('data-yyyymm')) syncValueFromAttr(inp);
+                });
+              })();
+            })();
         </script>
+
+
 
         <!-- 공통 푸터 -->
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>

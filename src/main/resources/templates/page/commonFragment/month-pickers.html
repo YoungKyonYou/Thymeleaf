@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- (A) from ~ to (월 범위) -->
+<th:block th:fragment="monthRange(idPrefix, nameFrom, nameTo)">
+    <div class="flex align-center col-2">
+        <div class="text-field datepicker" style="width: 200px">
+            <input th:attr="id=${idPrefix + '-from'}"
+                   type="text" class="dp-input" placeholder="YYYY-MM"
+                   data-dp-type="month" autocomplete="off"
+                   th:attrappend="name=${nameFrom != null ? nameFrom : null}" />
+            <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
+        </div>
+        <span>~</span>
+        <div class="text-field datepicker" style="width: 200px">
+            <input th:attr="id=${idPrefix + '-to'}"
+                   type="text" class="dp-input" placeholder="YYYY-MM"
+                   data-dp-type="month" autocomplete="off"
+                   th:attrappend="name=${nameTo != null ? nameTo : null}" />
+            <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
+        </div>
+    </div>
+</th:block>
+
+<!-- (B) from 단건 (월 단일) -->
+<th:block th:fragment="monthSingle(idValue, nameValue)">
+    <div class="text-field datepicker" style="width: 200px">
+        <input th:attr="id=${idValue}"
+               type="text" class="dp-input" placeholder="YYYY-MM"
+               data-dp-type="month" autocomplete="off"
+               th:attrappend="name=${nameValue != null ? nameValue : null}" />
+        <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
+    </div>
+</th:block>
+
+</body>
+</html>

@@ -1,22 +1,21 @@
 /* ========================================================================
  * datepick.js (Vanilla JS)
  * - 타입: data-dp-type="date|month|year"  (기본: date)
- * - date: YYYY-MM-DD / month: MM / year: YYYY
+ * - date: YYYY-MM-DD / month: YYYY-MM / year: YYYY
  * - 버튼([data-dp-toggle])으로만 팝업 열기/닫기
  * - date 타입에서 단일/범위 선택 지원(data-dp="range", data-role="start|end", data-dp-group)
  * - 팝업은 body 포털 + position:fixed, flipY/clamp 배치
  * - Alt+↓로 열기, ESC/바깥 클릭으로 닫기
- * - 스크롤해도 닫히지 않도록 KEEP_OPEN_ON_SCROLL 적용
+ * - 스크롤해도 닫지 않도록 KEEP_OPEN_ON_SCROLL 적용
  * - 키보드 내비 지원
  * ======================================================================== */
 (function () {
-  /* ---------- 옵션 ---------- */
-  const KEEP_OPEN_ON_SCROLL = true; // 스크롤해도 닫지 않음(위치만 재배치)
+  const KEEP_OPEN_ON_SCROLL = true;
 
   /* ---------- 유틸 ---------- */
   const pad = (n) => String(n).padStart(2, "0");
   const fmtDate  = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const fmtMonth = (d) => `${pad(d.getMonth() + 1)}`; // ✅ 월만(mm)
+  const fmtMonth = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;   // YYYY-MM
   const fmtYear  = (d) => `${d.getFullYear()}`;
 
   const parseDate = (s) => {
@@ -26,14 +25,26 @@
     if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
     return d;
   };
-  // ✅ MM만 허용(01~12), 내부 계산용으로 임의년(2000) 부여하되 값에는 쓰지 않음
+
+  // YYYY-MM 또는 MM 허용(MM은 현재 연도로 보정)
   const parseMonth = (s) => {
-    const m = /^(\d{2})$/.exec((s || "").trim());
-    if (!m) return null;
-    const mon = +m[1] - 1;
-    if (mon < 0 || mon > 11) return null;
-    return new Date(2000, mon, 1);
+    const t = (s || "").trim();
+    let m = /^(\d{4})-(\d{2})$/.exec(t);
+    if (m) {
+      const y = +m[1], mon = +m[2] - 1;
+      if (mon < 0 || mon > 11) return null;
+      return new Date(y, mon, 1);
+    }
+    m = /^(\d{2})$/.exec(t);
+    if (m) {
+      const mon = +m[1] - 1;
+      if (mon < 0 || mon > 11) return null;
+      const y = new Date().getFullYear();
+      return new Date(y, mon, 1);
+    }
+    return null;
   };
+
   const parseYear = (s) => {
     const m = /^(\d{4})$/.exec((s || "").trim());
     if (!m) return null;
@@ -43,36 +54,28 @@
     return d;
   };
 
-  const sameDay = (a, b) =>
-    !!a && !!b &&
+  const sameDay = (a, b) => !!a && !!b &&
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
   const cmp = (a, b) => a.getTime() - b.getTime();
-  const today = () => {
-    const t = new Date();
-    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
-  };
+  const today = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
   const getType = (input) => {
     const t = (input?.dataset.dpType || 'date').toLowerCase();
     return (t === 'month' || t === 'year') ? t : 'date';
   };
 
-  /* ---------- 전역 상태 ---------- */
+  /* ---------- 상태 ---------- */
   let activeInput = null;
   let activeField = null;
   let suppressOpenByPointer = false;
   let viewYM = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; })();
   const rangeStore = new Map();
-
-  // 팝업(단일 인스턴스)
   const pop = window.__DP_POP__ || createPopupOnce();
   window.__DP_POP__ = pop;
-
-  // 스크롤 부모 추적
   let scrollParents = [];
 
-  /* ---------- 스크롤 유틸 ---------- */
+  /* ---------- 스크롤 ---------- */
   function getScrollParents(el) {
     const res = [];
     if (!el) return res;
@@ -96,7 +99,7 @@
     scrollParents.forEach(sp => sp.addEventListener('scroll', onRelayout, { passive: true }));
   }
   function cleanupScrollParents() {
-    if (!scrollParents || !scrollParents.length) return;
+    if (!scrollParents?.length) return;
     scrollParents.forEach(sp => sp.removeEventListener('scroll', onRelayout));
     scrollParents = [];
   }
@@ -121,25 +124,24 @@
         <button class="nav next" type="button" aria-label="다음">&#x203A;</button>
       </div>
       <div class="dp-grid">
-        <div class="dp-week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="dp-week"><span>일</span><span>월</span><span>화</span><span>목</span><span>금</span><span>토</span></div>
         <div class="dp-days" role="rowgroup"></div>
       </div>
     `;
     document.body.appendChild(el);
     el.style.position = "fixed";
 
-    // prev/next: 타입에 따라 동작 분기 (month 타입은 버튼 비활성화/무동작)
     el.querySelector(".prev").addEventListener("click", () => {
       const tp = getType(window.__DP_ACTIVE_INPUT__);
       if (tp === 'date') shiftMonth(-1);
       else if (tp === 'year') shiftYearPage(-12);
-      // month: no-op
+      else if (tp === 'month') shiftYearPage(-1);
     });
     el.querySelector(".next").addEventListener("click", () => {
       const tp = getType(window.__DP_ACTIVE_INPUT__);
       if (tp === 'date') shiftMonth(+1);
       else if (tp === 'year') shiftYearPage(+12);
-      // month: no-op
+      else if (tp === 'month') shiftYearPage(+1);
     });
     return el;
   }
@@ -173,11 +175,11 @@
         el.setAttribute('maxlength','10');
         el.setAttribute('pattern','\\d{4}-\\d{2}-\\d{2}');
       } else if (tp === 'month'){
-        const digits = (after||'').replace(/\D/g,'').slice(0,2);
-        after = digits;
-        el.setAttribute('maxlength','2');     // ✅ MM
-        el.setAttribute('pattern','\\d{2}');
-      } else { // year
+        const digits = (after||'').replace(/\D/g,'').slice(0,6);
+        after = digits.length <= 4 ? digits : digits.slice(0,4)+'-'+digits.slice(4,6);
+        el.setAttribute('maxlength','7');
+        el.setAttribute('pattern','\\d{4}-\\d{2}');
+      } else {
         const digits = (after||'').replace(/\D/g,'').slice(0,4);
         after = digits;
         el.setAttribute('maxlength','4');
@@ -195,18 +197,15 @@
       const tp = getType(el);
       const txt = (e.clipboardData || window.clipboardData).getData('text') || '';
       let after = txt;
-
       if (tp === 'date'){
-        const digits = txt.replace(/\D/g,'').slice(0,8);
-        if (digits.length <= 4) after = digits;
-        else if (digits.length <= 6) after = digits.slice(0,4)+'-'+digits.slice(4);
-        else after = digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6);
+        const d = txt.replace(/\D/g,'').slice(0,8);
+        after = d.length <= 4 ? d : d.length <= 6 ? d.slice(0,4)+'-'+d.slice(4) : d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6);
       } else if (tp === 'month'){
-        after = txt.replace(/\D/g,'').slice(0,2); // ✅ MM
+        const dig = txt.replace(/\D/g,'').slice(0,6);
+        after = dig.length <= 4 ? dig : dig.slice(0,4)+'-'+dig.slice(4,6);
       } else {
         after = txt.replace(/\D/g,'').slice(0,4);
       }
-
       e.preventDefault();
       el.value = after;
       try { el.setSelectionRange(after.length, after.length); } catch(_) {}
@@ -232,7 +231,7 @@
     document.addEventListener('keydown', onKeydown, true);
   })();
 
-  /* ---------- 포인터 캡처 ---------- */
+  /* ---------- 토글/닫기 ---------- */
   document.addEventListener("mousedown", (e) => {
     const field = e.target.closest(".text-field.datepicker");
     if (!field) return;
@@ -243,7 +242,6 @@
     document.addEventListener(ev, () => setTimeout(() => (suppressOpenByPointer = false), 0), true)
   );
 
-  /* ---------- 토글/닫기 ---------- */
   document.addEventListener("click", (e) => {
     const toggle = e.target.closest("[data-dp-toggle]");
     if (toggle) {
@@ -255,8 +253,7 @@
       return;
     }
     const clickInsidePop = !!e.target.closest(".dp-pop");
-    const clickInsideActiveField =
-      !!activeField && !!e.target.closest(".text-field.datepicker") && activeField.contains(e.target);
+    const clickInsideActiveField = !!activeField && !!e.target.closest(".text-field.datepicker") && activeField.contains(e.target);
     if (!clickInsidePop && !clickInsideActiveField) closePop();
   });
 
@@ -267,7 +264,7 @@
     if (e.key === "Escape") closePop();
   });
 
-  /* ---------- 열기/닫기/위치 ---------- */
+  /* ---------- 열기/닫기 ---------- */
   function openFor(input) {
     if (suppressOpenByPointer) return;
     const field = input.closest(".text-field.datepicker");
@@ -287,9 +284,9 @@
 
     const tp = getType(input);
     let d;
-    if (tp === 'date')      d = parseDate(input.value)  || today();
-    else if (tp === 'month') d = parseMonth(input.value) || today(); // 내부 계산용 mm→Date
-    else                     d = parseYear(input.value)  || today();
+    if (tp === 'date') d = parseDate(input.value) || today();
+    else if (tp === 'month') d = parseMonth(input.value) || today();
+    else d = parseYear(input.value) || today();
     viewYM = { y: d.getFullYear(), m: d.getMonth() };
 
     render();
@@ -298,10 +295,7 @@
     const focusBtn =
       pop.querySelector('.dp-day.is-selected') ||
       pop.querySelector('.dp-month.is-selected') ||
-      pop.querySelector('.dp-year.is-selected') ||
-      pop.querySelector('.dp-day,[tabindex="0"]') ||
-      pop.querySelector('.dp-month,[tabindex="0"]') ||
-      pop.querySelector('.dp-year,[tabindex="0"]');
+      pop.querySelector('.dp-year.is-selected');
     focusBtn?.focus();
 
     window.addEventListener("resize", onRelayout, { passive: true });
@@ -358,7 +352,6 @@
     const daysWrap = pop.querySelector(".dp-days");
     daysWrap.innerHTML = "";
 
-    // ✅ 타입별 grid 컬럼 변경
     if (tp === "year") {
       daysWrap.style.display = "grid";
       daysWrap.style.gridTemplateColumns = "repeat(5, 1fr)";
@@ -370,10 +363,8 @@
       daysWrap.style.gridTemplateColumns = "repeat(7, 1fr)";
     }
 
-    // 주 헤더는 date 타입에서만 표시
     pop.querySelector(".dp-week").style.display = (tp === 'date') ? '' : 'none';
 
-    // 타이틀 & 네비 버튼 표시 제어
     const titleEl = pop.querySelector(".title");
     const prevEl  = pop.querySelector(".prev");
     const nextEl  = pop.querySelector(".next");
@@ -381,15 +372,15 @@
       titleEl.textContent = `${y}년 ${m + 1}월`;
       prevEl.style.visibility = nextEl.style.visibility = '';
     } else if (tp === 'month') {
-      titleEl.textContent = `월 선택`;          // ✅ 년도 정보 제거
-      prevEl.style.visibility = nextEl.style.visibility = 'hidden'; // ✅ 네비 숨김
+      titleEl.textContent = `${y}년`;     // YYYY-MM 모드: 연도만 표시
+      prevEl.style.visibility = nextEl.style.visibility = ''; // 연도 네비 표시
     } else { // year
       const base = Math.floor(y / 12) * 12;
       titleEl.textContent = `${base}–${base + 11}년`;
       prevEl.style.visibility = nextEl.style.visibility = '';
     }
 
-    if (tp === 'date')      renderDays(y, m, daysWrap);
+    if (tp === 'date')       renderDays(y, m, daysWrap);
     else if (tp === 'month') renderMonths(daysWrap);
     else                     renderYears(y, daysWrap);
   }
@@ -420,17 +411,18 @@
     cells.forEach(c => wrap.appendChild(c));
   }
 
-  // ✅ Month 렌더 (년도 없음, 1~12만)
+  // Month 렌더(1~12)
   function renderMonths(wrap){
     const curr = parseMonth(activeInput?.value);
     for (let i=0; i<12; i++){
-      const d = new Date(2000, i, 1); // 내부 계산용
+      const d = new Date(viewYM.y, i, 1); // viewYM.y 사용
       const btn = document.createElement('button');
       btn.type='button';
       btn.className = 'dp-month';
       btn.setAttribute('role','gridcell');
       btn.textContent = (i+1) + '월';
-      if (curr && curr.getMonth()===d.getMonth()){
+      const isSel = !!curr && curr.getFullYear()===d.getFullYear() && curr.getMonth()===d.getMonth();
+      if (isSel){
         btn.classList.add('is-selected');
         btn.setAttribute('tabindex','0');
       } else {
@@ -442,7 +434,7 @@
     }
   }
 
-  // Year 렌더 (12개 묶음)
+  // Year 렌더(12개 묶음)
   function renderYears(y, wrap){
     const base = Math.floor(y/12)*12;
     const curr = parseYear(activeInput?.value);
@@ -509,9 +501,8 @@
     if (state.start && state.end) closePop(); else render();
   }
 
-  // ✅ month: MM만 세팅
   function onPickMonth(date){
-    activeInput.value = fmtMonth(date); // "MM"
+    activeInput.value = fmtMonth(date); // YYYY-MM
     activeInput.dispatchEvent(new Event("change"));
     closePop();
   }
@@ -557,7 +548,7 @@
       else if (k === 'ArrowDown') d.setMonth(d.getMonth()+3);
       else if (k === 'Home') d.setMonth(0);
       else if (k === 'End') d.setMonth(11);
-      else if (k === 'Enter' || k === ' ') { onPickMonth(baseDate); return; }
+      else if (k === 'Enter' || k === ' ') { onPickMonth(d); return; }
       else return;
       e.preventDefault();
       viewYM = { y: d.getFullYear(), m: d.getMonth() };
@@ -607,8 +598,8 @@
 
     if (!d) { inp.value = ""; return; }
 
-    if (tp === 'date')      inp.value = fmtDate(d);
-    else if (tp === 'month') inp.value = fmtMonth(d); // ✅ "MM"로 정규화
+    if (tp === 'date')       inp.value = fmtDate(d);
+    else if (tp === 'month') inp.value = fmtMonth(d); // YYYY-MM
     else                     inp.value = fmtYear(d);
 
     // date-range 상호관계 갱신
