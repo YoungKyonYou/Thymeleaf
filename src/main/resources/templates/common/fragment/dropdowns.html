@@ -1,10 +1,9 @@
 <!-- /templates/fragments/dropdowns.html -->
-<th:block th:fragment="cascadingDropdown(rootId, deptName, subName, mngrId)">
+<th:block th:fragment="cascadingDropdown(rootId, deptName, subName)">
     <div class="cascading-dropdowns"
          th:attr="id=${rootId},
                 data-parent-name=${deptName},
                 data-child-name=${subName},
-                data-mngr-id=${mngrId},
                 data-api-url=@{/api/services}"
          style="display:flex; gap:16px; align-items:flex-start;">
 
@@ -142,7 +141,6 @@
 
             var parentName = root.getAttribute('data-parent-name');
             var childName  = root.getAttribute('data-child-name');
-            var mngrId     = root.getAttribute('data-mngr-id') || '';
             var apiUrl     = root.getAttribute('data-api-url'); // /api/services
 
             // 메모리 캐시: { svcId: [{tpwSvcTypId, tpwSvcTypNm}, ...] }

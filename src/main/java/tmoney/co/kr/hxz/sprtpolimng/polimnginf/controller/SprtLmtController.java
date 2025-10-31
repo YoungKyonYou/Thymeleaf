@@ -55,7 +55,7 @@ public class SprtLmtController {
         model.addAttribute("pageData", contents);
         model.addAttribute("req", req);
 
-        return "/hxz/sprtpolimng/polimnginf/sprtLmtPt";
+        return "hxz/sprtpolimng/polimnginf/sprtLmtPt";
     }
 
     /**
@@ -84,7 +84,7 @@ public class SprtLmtController {
         model.addAttribute("mon", mon);
         model.addAttribute("amtQt", new AmtLstVO(qt));
         model.addAttribute("amtMon", new AmtLstVO(mon));
-        return "/hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
+        return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
     }
 
     /**
@@ -105,7 +105,7 @@ public class SprtLmtController {
         model.addAttribute("ncnt", new NcntLstVO(arr, ""));
         model.addAttribute("arr", arr);
 
-        return "/hxz/sprtpolimng/polimnginf/sprtLmtPt :: ncnt-modal";
+        return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: ncnt-modal";
     }
 
     /**
