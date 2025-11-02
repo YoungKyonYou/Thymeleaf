@@ -1128,7 +1128,7 @@
             method,
             headers,
             cache: 'no-store',
-            credential: 'same-origin',
+            credentials: 'same-origin',
             signal: signal || undefined  // signal이 제공되면 사용, 아니면 생략
         };
 
