@@ -1,5 +1,3 @@
-<!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
@@ -44,27 +42,28 @@
                             <input type="hidden" name="state" value="" th:field="*{useYn}">
                         </div>
                     </div>
-                </div>
-
-                <div class="box">
-                    <p class="field-title">한도구분</p>
-                    <div class="dropdown" data-name="limit">
-                        <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
-                                aria-label="한도구분 드롭다운">
-                            <span class="dropdown_value" data-placeholder="금액">선택하세요</span>
-                        </button>
-                        <ul class="dropdown_list" role="listbox" tabindex="-1">
-                            <li role="option" class="dropdown_option" data-value="01">금액</li>
-                            <li role="option" class="dropdown_option" data-value="02">건수</li>
-                        </ul>
-                        <input type="hidden" name="limit" value="" th:field="*{tpwLmtDvsCd}">
+                    <div class="box">
+                        <p class="field-title">한도구분</p>
+                        <div class="dropdown" data-name="limit">
+                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
+                                    aria-label="한도구분 드롭다운">
+                                <span class="dropdown_value" data-placeholder="금액">선택하세요</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" data-value="01">금액</li>
+                                <li role="option" class="dropdown_option" data-value="02">건수</li>
+                            </ul>
+                            <input type="hidden" name="limit" value="" th:field="*{tpwLmtDvsCd}">
+                        </div>
                     </div>
                 </div>
 
+
+
                 <div class="btn-wrap">
                     <button type="button" class="btn btn-dark-line open-modal" id="new-modal"
-                            data-target="#modal-manager"
-                            sec:authorize="hasPermission('지원한도내역조회', 'WRITE')">신규 한도 설정</button>
+                            data-target="#modal-manager" sec:authorize="hasPermission('지원한도내역조회', 'WRITE')">신규 한도
+                        설정</button>
 
                     <button type="button" class="btn btn-primary btn-icon-left" data-export="xlsx"
                             data-provider="지원한도내역조회">
@@ -78,13 +77,12 @@
                 </div>
 
                 <input th:field="*{sort}" type="hidden" id="sort">
-                <input th:field="*{dir}"  type="hidden" id="dir">
+                <input th:field="*{dir}" type="hidden" id="dir">
             </form>
 
             <div class="section-content">
                 <div class="title-wrap" id="grid-title">
-                    <h3 class="section-title"
-                        th:text="${req.tpwLmtDvsCd == '01' ? '한도구분(금액)' : '한도구분(건수)'}"></h3>
+                    <h3 class="section-title" th:text="${req.tpwLmtDvsCd == '01' ? '한도구분(금액)' : '한도구분(건수)'}"></h3>
                 </div>
 
                 <div class="flex justify-space-between" id="grid-header" th:object="${pageData}">
@@ -129,10 +127,8 @@
                                 <td th:text="*{useYn}"></td>
                                 <td>
                                     <button class="btn btn-dark-line open-modal" type="button"
-                                            data-target="#modal-manager"
-                                            th:data-id="*{tpwSvcTypId}"
-                                            th:data-dvs-code="*{tpwLmtDvsCd}"
-                                            th:use-yn="*{useYn}"
+                                            data-target="#modal-manager" th:data-id="*{tpwSvcTypId}"
+                                            th:data-dvs-code="*{tpwLmtDvsCd}" th:use-yn="*{useYn}"
                                             sec:authorize="hasPermission('지원한도내역조회', 'UPDATE')">
                                         설정하기
                                     </button>
@@ -141,7 +137,7 @@
                         </th:block>
                         <th:block th:unless="${pageData != null and pageData.total > 0}">
                             <tr>
-                                <td aria-live="polite" class="empty" colspan="9">조회 결과가 없습니다.</td>
+                                <td aria-live="polite" class="empty" colspan="11">조회 결과가 없습니다.</td>
                             </tr>
                         </th:block>
                         </tbody>
@@ -154,286 +150,6 @@
             </div>
         </section>
 
-        <script th:inline="javascript" type="text/javascript">
-            (function () {
-              const baseUrl   = '/sprtpolimng/polimnginf/sprtlmtPt.do';
-              const grid      = document.getElementById('grid');
-              const head      = document.getElementById('grid-head');
-              const searchForm= grid.querySelector('form');
-              const selectSize= searchForm?.querySelector('select[name="size"]');
-              const inputSort = document.getElementById('sort');
-              const inputDir  = document.getElementById('dir');
-
-              // excel export 대상 이벤트 등록
-              const exportHandler = (e) => {
-                const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                if (!exportBtn) return;
-                Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'tpwSvcTypId');
-              };
-              grid.addEventListener('click', exportHandler);
-
-              // bindPagination event 등록 (초기 화면에서 페이징 되도록 하기 위함)
-              bindPagination(baseUrl, {
-                size: parseInt(selectSize?.value || '10', 10),
-                dir:  inputDir?.value || 'asc',
-                sort: inputSort?.value || 'tpwSvcTypId',
-              });
-
-              // 헤더 컬럼 클릭 시 정렬
-              head.addEventListener('click', (e) => {
-                const a = e.target.closest('a[data-sort]');
-                if (!a) return;
-                e.preventDefault();
-                const next = a.dataset.sort;
-                const curr = inputSort?.value || 'tpw_svc_typ_id';
-                let dir    = inputDir?.value || 'asc';
-                dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
-
-                if (inputSort) inputSort.value = next;
-                if (inputDir)  inputDir.value  = dir;
-                e.preventDefault();
-                const applied = Common.collectFromForm(searchForm);
-                Common.reloadList({
-                  page: 0,
-                  defaultSortColumn: 'tpw_svc_typ_id',
-                  swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-                  selectSize: selectSize,
-                  baseUrl:    baseUrl,
-                  inputSort:  inputSort,
-                  inputDir:   inputDir,
-                  applied:    applied
-                });
-              });
-
-              // 폼 submit 시 이벤트 처리
-              searchForm?.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const applied = Common.collectFromForm(searchForm);
-                Common.reloadList({
-                  page: 0,
-                  defaultSortColumn: 'tpw_svc_typ_id',
-                  swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-                  selectSize: selectSize,
-                  baseUrl:    baseUrl,
-                  inputSort:  inputSort,
-                  inputDir:   inputDir,
-                  applied:    applied
-                });
-              });
-
-              // 상세 모달 이동
-              const modal = document.getElementById('modal-manager');
-              const panel1 = document.getElementById('mon');
-              const panel2 = document.getElementById('qt');
-              const ncnt1  = document.getElementById('modal-manager');
-              document.addEventListener('click', function (e) {
-                const btn = e.target.closest('.open-modal');
-                if (!btn) return;
-                const tpwSvcTypId = btn.getAttribute('data-id') || '';
-                const useYn = btn.getAttribute('data-use-yn') || 'Y';
-                openModal(tpwSvcTypId, useYn);
-              });
-
-              async function openModal(tpwSvcTypId, useYn) {
-                if (!tpwSvcTypId) {
-                  const cas = document.getElementById('svcPair1').getSelectedObjects('svcPair1');
-                  if (cas.child.trdNcntLnAdptYn === 'N') {
-                    const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/amt');
-                    const container = document.querySelector('#modal-manager .modal-container');
-                    container.innerHTML = html;
-                  } else if (cas.child.trdNcntLnAdptYn === 'Y') {
-                    const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/ncnt');
-                    const container = document.querySelector('#modal-manager .modal-container');
-                    container.innerHTML = html;
-                  } else {
-                    Common.modalShow({
-                      message: '서비스 유형을 선택하여 신규 설정이 가능합니다.',
-                      title: '알림',
-                      buttons: 'close',
-                    });
-                    return;
-                  }
-                  document.getElementById('newAddRow')
-                          .addEventListener('click', () => addRow('newNcntTable', 'list'));
-                  document.getElementById('newRemoveRow')
-                          .addEventListener('click', () => removeLastRow('newNcntTable'));
-                } else {
-                  const html = await Common.fetchHtml(
-                    '/sprtpolimng/polimnginf/sprtlmtDtI/' + encodeURIComponent(useYn) + '/' + encodeURIComponent(tpwSvcTypId)
-                  );
-                  const container = document.querySelector('#modal-manager .modal-container');
-                  container.innerHTML = html;
-                }
-              }
-
-              // 버튼 클릭(저장 등)
-              document.addEventListener('click', async function (e) {
-                const btn = e.target.closest('button.btn');
-                if (!btn) return;
-
-                const label = (btn.textContent || '').trim();
-                if (label === '저장') {
-                  const tpwSvcTypId = btn.getAttribute('data-typ-id');
-                  const dvsCd = document.getElementById('dvsCd').value;
-                  try {
-                    if (dvsCd == '01') {
-                      const amountForm = modal.querySelector('form');
-                      const applied = Common.collectAsJson(amountForm);
-                      console.log(applied);
-                      console.log(JSON.stringify(applied));
-                      const url = '/sprtpolimng/polimnginf/sprtlmt/amt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
-                      e.preventDefault();
-                      const res = await Common.sendSafe(url, {
-                        method: 'POST',
-                        data: applied.list
-                      });
-                      Common.closeModal(modal);
-                      resModal(res);
-                    } else if (dvsCd == '02') {
-                      const amountForm = modal.querySelector('form');
-                      const applied = Common.collectAsJson(amountForm);
-                      console.log(applied);
-                      console.log(JSON.stringify(applied));
-                      const url = '/sprtpolimng/polimnginf/sprtlmt/ncnt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
-                      e.preventDefault();
-                      const res = await Common.sendSafe(url, {
-                        method: 'POST',
-                        data: applied.list
-                      });
-                      Common.closeModal(modal);
-                      resModal(res);
-                    } else {
-                      const res = await Common.sendSafe(/* 스샷상 이전 분기 마무리 */);
-                      Common.closeModal(modal);
-                      resModal(res);
-                    }
-                  } catch (ex) {
-                    console.error(ex);
-                  }
-                } else {
-                  const cas = document.getElementById('svcPair1').getSelectedObjects('svcPair1');
-                  const tpwLmtDvsCd = btn.dataset.dvsCd;
-                  if (tpwLmtDvsCd === '01') {
-                    const amtPanelForm = modal.querySelector('form');
-                    const applied = Common.collectAsJson(amtPanelForm);
-                    const url = '/sprtpolimng/polimnginf/sprtlmt/amt';
-                    e.preventDefault();
-                    applied.tpwSvcId     = cas.child.tpwSvcId;
-                    applied.tpwSvcTypId  = cas.child.tpwSvcTypId;
-                    applied.tpwLmtDvsCd  = '01';
-                    applied.tpwLmtTypCd  = '01';
-                    const res = Common.sendSafe(url, {
-                      method: 'POST',
-                      data: applied
-                    });
-                    Common.closeModal(modal);
-                    resModal(res);
-                            } else if (tpwLmtDvsCd === "02") {
-                  // 신규 탭 수집(건수)
-                  const ncntForm = modal.querySelector('form');
-                  const applied = Common.collectAsJson(ncntForm);
-                  const url = '/sprtpolimng/polimnginf/sprtlmt/ncnt';
-                  applied.tpwSvcId = cas.child.tpwSvcId;
-                  applied.tpwSvcTypId = cas.child.tpwSvcTypId;
-                  applied.tpwLmtDvsCd = "02";
-                  applied.tpwLmtTypCd = "01";
-                  e.preventDefault();
-                  const res = Common.sendSafe(
-                    url,
-                    {
-                      method: 'POST',
-                      data: applied
-                    }
-                  );
-                  Common.closeModal(modal);
-                  resModal(res);
-                } else {
-                  Common.modalShow(
-                    {
-                      message: '서비스 유형을 선택하여 신규 설정이 가능합니다.',
-                      title: '알림',
-                      buttons: 'close',
-                    }
-                  );
-                  return;
-                }
-              } catch (err) {
-                console.error(err);
-                alert(err.message || '처리 중 오류가 발생했습니다.');
-              }
-            } else if (label === '취소') {
-              Common.closeModal(modal);
-            } else if (label === '행추가') {
-              addRow('newNcntTable', 'list');
-            } else if (label === '행삭제') {
-              removeLastRow('newNcntTable');
-            }
-          });
-
-          function resModal(res) {
-            if (res.ok) {
-              Common.modalShow(
-                {
-                  message: '저장이 완료되었습니다.',
-                  title: '알림',
-                  buttons: 'close',
-                }
-              );
-            } else {
-              Common.modalShow(
-                {
-                  message: '저장에 실패 하였습니다.',
-                  title: '알림',
-                  buttons: 'close',
-                }
-              );
-            }
-            applied = Common.collectFromForm(searchForm);
-            Common.reloadList({
-              page: 0,
-              defaultSortColumn: 'tpw_svc_typ_id',
-              swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-              selectSize: selectSize,
-              baseUrl: baseUrl,
-              inputSort: inputSort,
-              inputDir: inputDir,
-              applied: applied
-            });
-          }
-
-          // 행 추가
-          function addRow(tableId, listName) {
-            const tbody = document.querySelector(`#${tableId} tbody`);
-            const index = tbody.querySelectorAll("tr").length;
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td><input type="text" class="text-field date-text"
-                         name="${listName}[${index}].minCndtVal" /></td>
-              <td><input type="text" class="text-field date-text"
-                         name="${listName}[${index}].maxCndtVal" /></td>
-              <td><input type="text" class="text-field date-text"
-                         name="${listName}[${index}].tgtAdptVal" /></td>
-            `;
-            tbody.appendChild(row);
-          }
-
-          // 행 삭제
-          function removeLastRow(tableId) {
-            const tbody = document.querySelector(`#${tableId} tbody`);
-            const rows = tbody.querySelectorAll("tr");
-            console.log("234");
-            if (rows.length > 0) {
-              rows[rows.length > 0].remove();
-            }
-          }
-
-          document.querySelector(".modal-body").addEventListener("click", () => {
-            console.log("242");
-            addRow("ncntTable", "list")
-          });
-        })();
-        </script>
 
         <!-- Modal (쉘만, 내용은 프래그먼트 주입) -->
         <div aria-hidden="true" aria-labelledby="modal-title-basic" aria-modal="true" class="modal modal-lg"
@@ -448,12 +164,12 @@
 
         <th:block th:fragment="modal-detail">
             <header class="modal-header">
-                <h3 class="modal-title" id="modal-title-basic"
-                    th:text="${dvsCd == '01'} ? '한도(금액) 설정' : '한도(건수) 설정'"></h3>
+                <h3 class="modal-title" id="modal-title-basic" th:text="${dvsCd == '01'} ? '한도(금액) 설정' : '한도(건수) 설정'">
+                </h3>
                 <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
             </header>
-            <input id="dvsCd" th:value="${dvsCd}" type="hidden"/>
-            <input id="typCd" th:value="${typCd}" type="hidden"/>
+            <input id="dvsCd" th:value="${dvsCd}" type="hidden" />
+            <input id="typCd" th:value="${typCd}" type="hidden" />
             <form th:object="${form}">
                 <div class="modal-body" th:if="${dvsCd == '01'}">
                     <div class="flex align-center justify-space-between">
@@ -481,38 +197,28 @@
                                 </thead>
                                 <tbody>
                                 <tr th:each="u, stat : ${sprtLmtDtIList}">
-                                    <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden"/>
+                                    <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                     <td th:text="${stat.count}"></td>
                                     <td>
                                         <div class="flex align-center col-2">
                                             <!-- 시작일 -->
                                             <div class="text-field datepicker" style="width: 200px">
-                                                <input autocomplete="off"
-                                                       class="date-text"
-                                                       data-role="end"
-                                                       inputmode="numeric"
-                                                       pattern="\d{4}-\d{2}"
-                                                       placeholder="YYYY-MM"
-                                                       th:field="*{list[__${stat.index}__].lmtSttYm}"
-                                                       type="text"/>
+                                                <input autocomplete="off" class="date-text" data-role="end"
+                                                       inputmode="numeric" pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
+                                                       th:field="*{list[__${stat.index}__].lmtSttYm}" type="text" />
                                                 <!-- <label th:for="|startDate-${stat.index}|"></label> -->
                                             </div>
                                             <span>~</span>
                                             <div class="text-field datepicker" style="width: 200px">
-                                                <input autocomplete="off"
-                                                       class="date-text"
-                                                       data-role="end"
-                                                       inputmode="numeric"
-                                                       pattern="\d{4}-\d{2}"
-                                                       placeholder="YYYY-MM"
-                                                       th:field="*{list[__${stat.index}__].lmtEndYm}"
-                                                       type="text"/>
+                                                <input autocomplete="off" class="date-text" data-role="end"
+                                                       inputmode="numeric" pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
+                                                       th:field="*{list[__${stat.index}__].lmtEndYm}" type="text" />
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <input class="text-field" maxlength="15" pattern="^[0-9]+$" th:field="*{list[__${stat.index}__].tgtAdptVal}"
-                                               type="number"/>
+                                        <input class="text-field" maxlength="15" pattern="^[0-9]+$"
+                                               th:field="*{list[__${stat.index}__].tgtAdptVal}" type="number" />
                                     </td>
                                 </tr>
                                 </tbody>
@@ -542,21 +248,20 @@
                                 </thead>
                                 <tbody>
                                 <tr th:each="u, stat : ${sprtLmtDtIList}">
-                                    <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden"/>
+                                    <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                     <td>
-                                        <input class="text-field date-text" disabled maxlength="15" pattern="^[0-9]+$"
-                                               th:field="*{list[__${stat.index}__].minCndtVal}"
-                                               type="number"/>
+                                        <input class="text-field date-text" disabled maxlength="15"
+                                               pattern="^[0-9]+$" th:field="*{list[__${stat.index}__].minCndtVal}"
+                                               type="number" />
                                     </td>
                                     <td>
-                                        <input class="text-field date-text" disabled maxlength="15" pattern="^[0-9]+$"
-                                               th:field="*{list[__${stat.index}__].maxCndtVal}"
-                                               type="number"/>
+                                        <input class="text-field date-text" disabled maxlength="15"
+                                               pattern="^[0-9]+$" th:field="*{list[__${stat.index}__].maxCndtVal}"
+                                               type="number" />
                                     </td>
                                     <td>
                                         <input class="text-field date-text" max="100" min="0" pattern="^[0-9]+$"
-                                               th:field="*{list[__${stat.index}__].tgtAdptVal}"
-                                               type="number"/>
+                                               th:field="*{list[__${stat.index}__].tgtAdptVal}" type="number" />
                                     </td>
                                 </tr>
                                 </tbody>
@@ -580,7 +285,8 @@
             <div class="modal-body">
                 <div class="flex align-center justify-space-between">
                     <div class="tabs" role="tablist">
-                        <button aria-controls="panel-1" aria-selected="true" class="tab is-active" id="tab-1" role="tab">
+                        <button aria-controls="panel-1" aria-selected="true" class="tab is-active" id="tab-1"
+                                role="tab">
                             분기
                         </button>
                         <button aria-controls="panel-2" aria-selected="false" class="tab" id="tab-2" role="tab">
@@ -604,38 +310,32 @@
                                     </thead>
                                     <tbody>
                                     <tr th:each="u, stat : ${qt}">
-                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden"/>
+                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                         <td th:text="${stat.count}"></td>
                                         <td>
                                             <div class="flex align-center col-2">
                                                 <!-- 시작일 -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off"
-                                                           class="date-text"
-                                                           data-role="end"
-                                                           inputmode="numeric"
-                                                           pattern="\d{4}-\d{2}"
+                                                    <input autocomplete="off" class="date-text" data-role="end"
+                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
                                                            placeholder="YYYY-MM"
                                                            th:field="*{list[__${stat.index}__].lmtSttYm}"
-                                                           type="text"/>
+                                                           type="text" />
                                                     <!-- <label th:for="|startDate-${stat.index}|"></label> -->
                                                 </div>
                                                 <span>~</span>
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off"
-                                                           class="date-text"
-                                                           data-role="end"
-                                                           inputmode="numeric"
-                                                           pattern="\d{4}-\d{2}"
+                                                    <input autocomplete="off" class="date-text" data-role="end"
+                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
                                                            placeholder="YYYY-MM"
                                                            th:field="*{list[__${stat.index}__].lmtEndYm}"
-                                                           type="text"/>
+                                                           type="text" />
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <input class="text-field" maxlength="15" pattern="^[0-9]+$" th:field="*{list[__${stat.index}__].tgtAdptVal}"
-                                                   type="number"/>
+                                            <input class="text-field" maxlength="15" pattern="^[0-9]+$"
+                                                   th:field="*{list[__${stat.index}__].tgtAdptVal}" type="number" />
                                         </td>
                                     </tr>
                                     </tbody>
@@ -659,38 +359,32 @@
                                     </thead>
                                     <tbody>
                                     <tr th:each="u, stat : ${mon}">
-                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden"/>
+                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                         <td th:text="${stat.count}"></td>
                                         <td>
                                             <div class="flex align-center col-2">
                                                 <!-- 시작일 -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off"
-                                                           class="date-text"
-                                                           data-role="end"
-                                                           inputmode="numeric"
-                                                           pattern="\d{4}-\d{2}"
+                                                    <input autocomplete="off" class="date-text" data-role="end"
+                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
                                                            placeholder="YYYY-MM"
                                                            th:field="*{list[__${stat.index}__].lmtSttYm}"
-                                                           type="text"/>
+                                                           type="text" />
                                                     <!-- <label th:for="|startDate-${stat.index}|"></label> -->
                                                 </div>
                                                 <span>~</span>
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off"
-                                                           class="date-text"
-                                                           data-role="end"
-                                                           inputmode="numeric"
-                                                           pattern="\d{4}-\d{2}"
+                                                    <input autocomplete="off" class="date-text" data-role="end"
+                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
                                                            placeholder="YYYY-MM"
                                                            th:field="*{list[__${stat.index}__].lmtEndYm}"
-                                                           type="text"/>
+                                                           type="text" />
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <input class="text-field" maxlength="15" pattern="^[0-9]+$" th:field="*{list[__${stat.index}__].tgtAdptVal}"
-                                                   type="number"/>
+                                            <input class="text-field" maxlength="15" pattern="^[0-9]+$"
+                                                   th:field="*{list[__${stat.index}__].tgtAdptVal}" type="number" />
                                         </td>
                                     </tr>
                                     </tbody>
@@ -738,18 +432,15 @@
                                 <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                 <td>
                                     <input class="text-field date-text" maxlength="15" pattern="^[0-9]+$"
-                                           th:field="*{list[__${stat.index}__].minCndtVal}"
-                                           type="number" />
+                                           th:field="*{list[__${stat.index}__].minCndtVal}" type="number" />
                                 </td>
                                 <td>
                                     <input class="text-field date-text" maxlength="15" pattern="^[0-9]+$"
-                                           th:field="*{list[__${stat.index}__].maxCndtVal}"
-                                           type="number" />
+                                           th:field="*{list[__${stat.index}__].maxCndtVal}" type="number" />
                                 </td>
                                 <td>
                                     <input class="text-field date-text" max="100" min="0" pattern="^[0-9]+$"
-                                           th:field="*{list[__${stat.index}__].tgtAdptVal}"
-                                           type="number" />
+                                           th:field="*{list[__${stat.index}__].tgtAdptVal}" type="number" />
                                 </td>
                             </tr>
                             </tbody>
@@ -763,8 +454,281 @@
                 </footer>
             </form>
         </th:block>
+        <script th:inline="javascript" type="text/javascript">
+            (function () {
+                const baseUrl = '/sprtpolimng/polimnginf/sprtlmtPt.do';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-head');
+                const searchForm = grid.querySelector('form');
+                const selectSize = searchForm?.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
 
+                // excel export 대상 이벤트 등록
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    if (!exportBtn) return;
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'tpwSvcTypId');
+                };
+                grid.addEventListener('click', exportHandler);
+
+                // bindPagination event 등록 (초기 화면에서 페이징 되도록 하기 위함)
+                bindPagination(baseUrl, {
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir?.value || 'asc',
+                    sort: inputSort?.value || 'tpwSvcTypId',
+                });
+
+                // 헤더 컬럼 클릭 시 정렬
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('a[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort?.value || 'tpw_svc_typ_id';
+                    let dir = inputDir?.value || 'asc';
+                    dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'tpw_svc_typ_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+
+                // 폼 submit 시 이벤트 처리
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'tpw_svc_typ_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+
+                // 상세 모달 이동
+                const modal = document.getElementById('modal-manager');
+                const panel1 = document.getElementById('mon');
+                const panel2 = document.getElementById('qt');
+                const ncnt1 = document.getElementById('modal-manager');
+                document.addEventListener('click', function (e) {
+                    const btn = e.target.closest('.open-modal');
+                    if (!btn) return;
+                    const tpwSvcTypId = btn.getAttribute('data-id') || '';
+                    const useYn = btn.getAttribute('data-use-yn') || 'Y';
+                    openModal(tpwSvcTypId, useYn);
+                });
+
+                async function openModal(tpwSvcTypId, useYn) {
+                    if (!tpwSvcTypId) {
+                        const cas = document.getElementById('svcPair1').getSelectedObjects('svcPair1');
+                        if (cas.child.trdNcntLnAdptYn === 'N') {
+                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/amt');
+                            const container = document.querySelector('#modal-manager .modal-container');
+                            container.innerHTML = html;
+                        } else if (cas.child.trdNcntLnAdptYn === 'Y') {
+                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/ncnt');
+                            const container = document.querySelector('#modal-manager .modal-container');
+                            container.innerHTML = html;
+                        } else {
+                            Common.modalShow({
+                                message: '서비스 유형을 선택하여 신규 설정이 가능합니다.',
+                                title: '알림',
+                                buttons: 'close',
+                            });
+                            return;
+                        }
+                        document.getElementById('newAddRow')
+                            .addEventListener('click', () => addRow('newNcntTable', 'list'));
+                        document.getElementById('newRemoveRow')
+                            .addEventListener('click', () => removeLastRow('newNcntTable'));
+                    } else {
+                        const html = await Common.fetchHtml(
+                            '/sprtpolimng/polimnginf/sprtlmtDtI/' + encodeURIComponent(useYn) + '/' + encodeURIComponent(tpwSvcTypId)
+                        );
+                        const container = document.querySelector('#modal-manager .modal-container');
+                        container.innerHTML = html;
+                    }
+                }
+
+                // 버튼 클릭(저장 등)
+                document.addEventListener('click', async function (e) {
+                    const btn = e.target.closest('button.btn');
+                    if (!btn) return;
+
+                    const label = (btn.textContent || '').trim();
+                    if (label === '저장') {
+                        const tpwSvcTypId = btn.getAttribute('data-typ-id');
+                        const dvsCd = document.getElementById('dvsCd').value;
+                        try {
+                            if (dvsCd == '01') {
+                                const amountForm = modal.querySelector('form');
+                                const applied = Common.collectAsJson(amountForm);
+                                console.log(applied);
+                                console.log(JSON.stringify(applied));
+                                const url = '/sprtpolimng/polimnginf/sprtlmt/amt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
+                                e.preventDefault();
+                                const res = await Common.sendSafe(url, {
+                                    method: 'POST',
+                                    data: applied.list
+                                });
+                                Common.closeModal(modal);
+                                resModal(res);
+                            } else if (dvsCd == '02') {
+                                const amountForm = modal.querySelector('form');
+                                const applied = Common.collectAsJson(amountForm);
+                                console.log(applied);
+                                console.log(JSON.stringify(applied));
+                                const url = '/sprtpolimng/polimnginf/sprtlmt/ncnt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
+                                e.preventDefault();
+                                const res = await Common.sendSafe(url, {
+                                    method: 'POST',
+                                    data: applied.list
+                                });
+                                Common.closeModal(modal);
+                                resModal(res);
+                            } else {
+                                const cas = document.getElementById('svcPair1').getSelectedObjects('svcPair1');
+                                const tpwLmtDvsCd = btn.dataset.dvsCd;
+
+                                if (tpwLmtDvsCd === '01') {
+                                    const amtPanelForm = modal.querySelector('form');
+                                    const applied = Common.collectAsJson(amtPanelForm);
+                                    const url = '/sprtpolimng/polimnginf/sprtlmt/amt';
+                                    e.preventDefault();
+                                    applied.tpwSvcId = cas.child.tpwSvcId;
+                                    applied.tpwSvcTypId = cas.child.tpwSvcTypId;
+                                    applied.tpwLmtDvsCd = '01';
+                                    applied.tpwLmtTypCd = '01';
+                                    const res = Common.sendSafe(url, {
+                                        method: 'POST',
+                                        data: applied
+                                    });
+                                    Common.closeModal(modal);
+                                    resModal(res);
+                                } else if (tpwLmtDvsCd === "02") {
+                                    // 신규 탭 수집(건수)
+                                    const ncntForm = modal.querySelector('form');
+                                    const applied = Common.collectAsJson(ncntForm);
+                                    const url = '/sprtpolimng/polimnginf/sprtlmt/ncnt';
+                                    applied.tpwSvcId = cas.child.tpwSvcId;
+                                    applied.tpwSvcTypId = cas.child.tpwSvcTypId;
+                                    applied.tpwLmtDvsCd = "02";
+                                    applied.tpwLmtTypCd = "01";
+                                    e.preventDefault();
+                                    const res = Common.sendSafe(
+                                        url,
+                                        {
+                                            method: 'POST',
+                                            data: applied
+                                        }
+                                    );
+                                    Common.closeModal(modal);
+                                    resModal(res);
+                                } else {
+                                    Common.modalShow(
+                                        {
+                                            message: '서비스 유형을 선택하여 신규 설정이 가능합니다.',
+                                            title: '알림',
+                                            buttons: 'close',
+                                        }
+                                    );
+                                    return;
+                                }
+                            }
+
+                        } catch (err) {
+                            console.error(err);
+                            alert(err.message || '처리 중 오류가 발생했습니다.');
+                        }
+
+                    } else if (label === '취소') {
+                        Common.closeModal(modal);
+                    } else if (label === '행추가') {
+                        addRow('newNcntTable', 'list');
+                    } else if (label === '행삭제') {
+                        removeLastRow('newNcntTable');
+                    }
+                });
+
+                function resModal(res) {
+                    if (res.ok) {
+                        Common.modalShow(
+                            {
+                                message: '저장이 완료되었습니다.',
+                                title: '알림',
+                                buttons: 'close',
+                            }
+                        );
+                    } else {
+                        Common.modalShow(
+                            {
+                                message: '저장에 실패 하였습니다.',
+                                title: '알림',
+                                buttons: 'close',
+                            }
+                        );
+                    }
+                    applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'tpw_svc_typ_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                }
+
+                // 행 추가
+                function addRow(tableId, listName) {
+                    const tbody = document.querySelector(`#${tableId} tbody`);
+                    const index = tbody.querySelectorAll("tr").length;
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+              <td><input type="text" class="text-field date-text"
+                         name="${listName}[${index}].minCndtVal" /></td>
+              <td><input type="text" class="text-field date-text"
+                         name="${listName}[${index}].maxCndtVal" /></td>
+              <td><input type="text" class="text-field date-text"
+                         name="${listName}[${index}].tgtAdptVal" /></td>
+            `;
+                    tbody.appendChild(row);
+                }
+
+                // 행 삭제
+                function removeLastRow(tableId) {
+                    const tbody = document.querySelector(`#${tableId} tbody`);
+                    const rows = tbody.querySelectorAll("tr");
+                    console.log("234");
+                    if (rows.length > 0) {
+                        rows[rows.length > 0].remove();
+                    }
+                }
+
+                document.querySelector(".modal-body").addEventListener("click", () => {
+                    console.log("242");
+                    addRow("ncntTable", "list")
+                });
+            })();
+        </script>
     </th:block>
 </th:block>
-
-</html>

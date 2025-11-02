@@ -1,109 +1,135 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pager Fragment</title>
+</head>
 <body>
 
-<!-- 그대로 include해서 쓰는 프래그먼트 -->
-<div th:fragment="pager">
-    <div id="pagination">
-        <button class="btn-pgn first">
-            <em class="icon icon-doublearrow"></em>
-        </button>
-        <button class="btn-pgn prev">
-            <em class="icon icon-arrow-right"></em>
-        </button>
-        <ul class="num-list">
-            <li class="active"><a href="#url" class="">1</a></li>
-            <li><a href="#url" class="">2</a></li>
-            <li><a href="#url" class="">3</a></li>
-            <li><a href="#url" class="">4</a></li>
-            <li><a href="#url" class="">5</a></li>
-        </ul>
-        <button class="btn-pgn next">
-            <em class="icon icon-arrow-right"></em>
-        </button>
-        <button class="btn-pgn last">
-            <em class="icon icon-doublearrow"></em>
-        </button>
+<th:block th:fragment="pager(pageData)">
+
+    <div class="mt20">
+        <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
+
+            <!-- Prev: data-page = 현재(0-base) - 1 -->
+            <button type="button"
+                    class="pager-btn prev"
+                    aria-label="이전 페이지"
+                    th:classappend="${(pageData == null) or !pageData.hasPrev} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page - 1 : 0}">
+                Prev
+            </button>
+
+            <!-- 숫자 버튼: data-page = 0-base(i), 표시는 i+1, 활성 비교 = pageData.page(0-base) -->
+            <th:block th:if="${pageData != null and pageData.total > 0}"
+                      th:with="
+                  current=${pageData.page},
+                  totalPages=${pageData.getTotalPages()},
+                  totalPagesInt=${T(java.lang.Math).toIntExact(totalPages)},
+                  blockIdx=${current / 10},
+                  blockStart=${blockIdx * 10},
+                  blockEnd=${T(java.lang.Math).min(blockStart + 9, totalPagesInt - 1)}
+                ">
+
+                <button type="button"
+                        class="pager-item"
+                        th:each="i : ${#numbers.sequence(blockStart, blockEnd)}"
+                        th:classappend="${i == pageData.page} ? ' is-active'"
+                        th:attr="data-page=${i}"
+                        th:aria-current="${i == pageData.page} ? 'page' : null"
+                        th:text="${i + 1}">
+                </button>
+            </th:block>
+
+            <!-- Next: data-page = 현재(0-base) + 1 -->
+            <button type="button"
+                    class="pager-btn next"
+                    aria-label="다음 페이지"
+                    th:classappend="${(pageData == null) or !pageData.hasNext} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page + 1 : 0}">
+                Next
+            </button>
+
+        </div>
     </div>
 
+    <!-- 사용 예: bindPagination('/user', { dir: 'asc', email: 'kim@test.com', username: 'young' }) -->
     <script>
-        // pagination.js (vanilla JS 버전)
-        function createPagination({ container, totalItems, itemsPerPage, currentPage = 1, onPageChange }) {
-            const totalPages = Math.max(1, Math.ceil((+totalItems || 0) / (+itemsPerPage || 1)));
-            const root = (typeof container === 'string') ? document.querySelector(container) : container;
-            if (!root) return console.warn('createPagination: container not found:', container);
+        function putParam(params, key, value) {
+          if (value === null || value === undefined || value === '') return;
+          if (Array.isArray(value)) value.forEach(v => putParam(params, key, v));
+          else params.set(key, value);
+        }
 
-            const numList = root.querySelector('.num-list');
-            if (!numList) return console.warn('createPagination: .num-list not found in container');
+        async function fetchAndSwap(u) {
+          const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const html = await res.text();
 
-            // 버튼들을 깔끔히 재바인딩하기 위해 clone 방식 사용(기존 리스너 제거 효과)
-            function resetButton(selector) {
-                const btn = root.querySelector(selector);
-                if (!btn) return null;
-                const clone = btn.cloneNode(true);
-                btn.parentNode.replaceChild(clone, btn);
-                return clone;
-            }
+          const doc = new DOMParser().parseFromString(html, 'text/html');
 
-            // 숫자 목록(ul)도 위임 한 번만 걸면 render마다 리스너 중복이 없음
-            function clearChildren(el) {
-                while (el.firstChild) el.removeChild(el.firstChild);
-            }
+          const newHead  = doc.querySelector('#grid-header');
+          const newTbody = doc.querySelector('#grid-tbody');
+          const newPager = doc.querySelector('#grid-pager');
+          const newTitle = doc.querySelector('#grid-title');
+          const newTHead = doc.querySelector('#grid-head');
 
-            function render() {
-                clearChildren(numList);
-                for (let i = 1; i <= totalPages; i++) {
-                    const li = document.createElement('li');
-                    if (i === currentPage) li.classList.add('active');
-                    const a = document.createElement('a');
-                    a.setAttribute('href', '#');
-                    a.textContent = String(i);
-                    li.appendChild(a);
-                    numList.appendChild(li);
-                }
+          const curHead  = document.querySelector('#grid-header');
+          const curTbody = document.querySelector('#grid-tbody');
+          const curPager = document.querySelector('#grid-pager');
+          const curTitle = document.querySelector('#grid-title');
+          const curTHead = document.querySelector('#grid-head');
 
-                // 상단/하단 네비 버튼 리스너 재바인딩(중복 방지)
-                const first = resetButton('.first');
-                const prev  = resetButton('.prev');
-                const next  = resetButton('.next');
-                const last  = resetButton('.last');
+          if (newTbody && curTbody) curTbody.replaceWith(newTbody);
+          if (newPager && curPager) curPager.innerHTML = newPager.innerHTML;
+          if (newHead  && curHead)  curHead.replaceWith(newHead);
+          if (newTitle && curTitle) curTitle.replaceWith(newTitle);
+          if (newTHead && curTHead) curTHead.replaceWith(newTHead);
 
-                if (first) first.addEventListener('click', () => changePage(1));
-                if (prev)  prev.addEventListener('click',  () => changePage(Math.max(1, currentPage - 1)));
-                if (next)  next.addEventListener('click',  () => changePage(Math.min(totalPages, currentPage + 1)));
-                if (last)  last.addEventListener('click',  () => changePage(totalPages));
-            }
+          // 주소창만 갱신 (전체 새로고침 X)
+          history.pushState(null, '', u.toString());
+        }
 
-            // 숫자 클릭은 이벤트 위임(중복 리스너 방지)
-            if (!numList.__bound) {
-                numList.addEventListener('click', (e) => {
-                    const a = e.target.closest('a');
-                    if (!a) return;
-                    e.preventDefault();
-                    const li = a.closest('li');
-                    if (!li) return;
-                    const index = Array.prototype.indexOf.call(numList.children, li) + 1; // 1-based
-                    changePage(index);
-                });
-                numList.__bound = true;
-            }
+        function bindPagination(url, ...args) {
+          const baseUrl  = new URL(url, window.location.origin);
+          const baseArgs = Object.assign({}, ...args);
 
-            function changePage(newPage) {
-                if (newPage === currentPage) return;
-                currentPage = newPage;
-                render();
-                try {
-                    if (typeof onPageChange === 'function') onPageChange(currentPage);
-                } catch (err) {
-                    console.error('onPageChange error:', err);
-                }
-            }
+          // 브라우저 뒤로/앞으로 가기 지원
+          window.addEventListener('popstate', () => {
+            fetchAndSwap(new URL(window.location.href)).catch(console.error);
+          });
 
-            render(); // 초기 렌더
+          document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.pagination [data-page]');
+            if (!btn) return;
+
+            if (btn.classList.contains('disabled')) return;
+            e.preventDefault(); // 혹시 모를 기본동작 차단
+
+            const page = Number(btn.dataset.page);
+
+            const u = new URL(baseUrl.toString());
+            const p = new URLSearchParams(u.search);
+
+            const size = baseArgs.size ?? null; // null이면 생략
+            const dir  = baseArgs.dir  ?? 'asc';
+            const sort = baseArgs.sort ?? null; // null/''이면 생략
+
+            putParam(p, 'size', size);
+            putParam(p, 'page', page); // 0-base 그대로
+            putParam(p, 'dir',  dir);
+            if (sort !== null && sort !== undefined && sort !== '') putParam(p, 'sort', sort);
+
+            const skip = new Set(['size','page','dir','sort']);
+            Object.entries(baseArgs).forEach(([k, v]) => { if (!skip.has(k)) putParam(p, k, v); });
+
+            u.search = p.toString();
+
+            fetchAndSwap(u).catch(console.error);
+          });
         }
     </script>
-</div>
+</th:block>
 
 </body>
-
 </html>

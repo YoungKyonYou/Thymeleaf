@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.common.tpwsvc.mapper.TpwSvcMapper">
+    <select id="readTpwSvcInfList" parameterType="String" resultType="tmoney.co.kr.hxz.common.tpwsvc.vo.TpwSvcInfVO">
+        /* sql_id : readTpwSvcInfList */
+
+        select m201.org_cd         as orgCd,
+        m201.tpw_svc_id     as tpwSvcId,
+        m201.tpw_svc_nm     as tpwSvcNm,
+        m201.tpw_svc_stt_dt as tpwSvcSttDt,
+        m201.tpw_svc_end_dt as tpwSvcEndDt,
+        m201.tpw_svc_ctt    as tpwSvcCtt,
+        m201.krn_chec_yn    as krnChecYn,
+        m201.use_yn         as tpwSvcUseYn,
+        m201.acng_trdp_no   as acngTrdpNo,
+        m201.bnk_trn_ctt    as bnkTrnCtt,
+
+        m202.tpw_svc_typ_id     as tpwSvcTypId,
+        m202.tpw_svc_typ_sno    as tpwSvcTypSno,
+        m202.tpw_svc_typ_nm     as tpwSvcTypNm,
+        m202.tpw_svc_typ_stt_dt as tpwSvcTypSttDt,
+        m202.tpw_svc_typ_end_dt as tpwSvcTypEndDt,
+        m202.tpw_svc_typ_ctt    as tpwSvcTypCtt,
+        m202.tpw_mbrs_typ_cd    as tpwMbrsTypCd,
+        m202.tpw_mntn_cd        as tpwMntnCd,
+        m202.tpw_stlm_cyc_dvs_cd as tpwStlmCycDvsCd,
+        m202.tpw_stlm_ctg_cd    as tpwStlmCtgCd,
+        m202.stlm_ctg_adpt_val  as stlmCtgAdptVal,
+        m202.trns_trd_req_yn    as trnsTrdReqYn,
+        m202.ldgr_trd_req_yn    as ldgrTrdReqYn,
+        m202.taxi_trd_req_yn    as taxiTrdReqYn,
+        m202.area_trd_req_yn    as areaTrdReqYn,
+        m202.tpw_stlm_act_dvs_cd as tpwStlmActDvsCd,
+        m202.tpw_rsdc_auth_cyc_cd as tpwRsdcAuthCycCd,
+        m202.tpw_crov_dvs_cd    as tpwCrovDvsCd,
+        m202.sprt_dplc_yn       as sprtDplcYn,
+        m202.tpw_trd_org_cd     as tpwTrdOrgCd,
+        m202.trns_trd_mlpr_ex_yn as trnsTrdMlprExYn,
+        m202.aut_apl_yn         as autAplYn,
+        m202.evdn_yn            as evdnYn,
+        m202.frgn_sprt_yn       as frgnSprtYn,
+        m202.trd_ncnt_ltn_adpt_yn as trdNcntLtnAdptYn,
+        m202.use_yn             as tpwSvcTypUseYn
+        from tbhxzm201 m201
+        join tbhxzm202 m202 on m201.tpw_svc_id = m202.tpw_svc_id
+        where 1=1
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd = #{orgCd}
+        </if>
+    </select>
+</mapper>

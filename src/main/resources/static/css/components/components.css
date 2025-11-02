@@ -21,7 +21,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  background-image: url("../images/logo-t-money.png");
+  background-image: url("../../images/logo-t-money.png");
   background-size: contain;
   background-repeat: no-repeat;
 }
@@ -150,7 +150,7 @@
   height: 30px;
 }
 #header .user .icon::before {
-  background-image: url(../images/icon/icon-user.svg);
+  background-image: url(../../images/icon/icon-user.svg);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -243,43 +243,43 @@
   height: 100%;
 }
 .attachment-list .file-item .file-icon.pdf:before {
-  background-image: url(../images/icon/icon-pdf.svg);
+  background-image: url(../../images/icon/icon-pdf.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.xls:before {
-  background-image: url(../images/icon/icon-xls.svg);
+  background-image: url(../../images/icon/icon-xls.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.doc:before {
-  background-image: url(../images/icon/icon-doc.svg);
+  background-image: url(../../images/icon/icon-doc.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.jpg:before {
-  background-image: url(../images/icon/icon-jpg.svg);
+  background-image: url(../../images/icon/icon-jpg.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.png:before {
-  background-image: url(../images/icon/icon-png.svg);
+  background-image: url(../../images/icon/icon-png.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.hwp:before {
-  background-image: url(../images/icon/icon-hwp.svg);
+  background-image: url(../../images/icon/icon-hwp.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
 }
 .attachment-list .file-item .file-icon.zip:before {
-  background-image: url(../images/icon/icon-zip.svg);
+  background-image: url(../../images/icon/icon-zip.svg);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -369,8 +369,8 @@
 }
 .pagination .pager-btn.prev,
 .pagination .pager-item.prev {
-  -webkit-mask-image: url(../images/icon/icon-arrow-left.svg);
-  mask-image: url(../images/icon/icon-arrow-left.svg);
+  -webkit-mask-image: url(../../images/icon/icon-arrow-left.svg);
+  mask-image: url(../../images/icon/icon-arrow-left.svg);
 }
 .pagination .pager-btn.next,
 .pagination .pager-item.next {
@@ -702,7 +702,7 @@
   display: block;
   width: 24px;
   height: 24px;
-  background-image: url(../images/icon/icon-clock.svg);
+  background-image: url(../../images/icon/icon-clock.svg);
   background-size: contain;
   background-repeat: no-repeat;
   position: absolute;
@@ -737,7 +737,7 @@
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  background-image: url("../images/icon/icon-calander.svg");
+  background-image: url("../../images/icon/icon-calander.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
