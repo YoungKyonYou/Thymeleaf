@@ -301,6 +301,11 @@
                             <form id="qt" th:object="${amtQt}">
                                 <table class="table">
                                     <caption class="blind">지급금 신청 테이블</caption>
+                                    <colgroup>
+                                        <col width="150px">
+                                        <col width="300px">
+                                        <col width="150px">
+                                    </colgroup>
                                     <thead>
                                     <tr>
                                         <th scope="col">순번</th>
@@ -537,12 +542,12 @@
                 async function openModal(tpwSvcTypId, useYn) {
                     if (!tpwSvcTypId) {
                         const cas = document.getElementById('svcPair1').getSelectedObjects('svcPair1');
-                        if (cas.child.trdNcntLnAdptYn === 'N') {
-                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/amt');
+                        if (cas.child.trdNcntLtnAdptYn === 'N') {
+                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/amt');
                             const container = document.querySelector('#modal-manager .modal-container');
                             container.innerHTML = html;
-                        } else if (cas.child.trdNcntLnAdptYn === 'Y') {
-                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtlmtDtI/new/ncnt');
+                        } else if (cas.child.trdNcntLtnAdptYn === 'Y') {
+                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/ncnt');
                             const container = document.querySelector('#modal-manager .modal-container');
                             container.innerHTML = html;
                         } else {
