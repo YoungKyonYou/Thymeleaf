@@ -58,8 +58,6 @@
                     </div>
                 </div>
 
-
-
                 <div class="btn-wrap">
                     <button type="button" class="btn btn-dark-line open-modal" id="new-modal"
                             data-target="#modal-manager" sec:authorize="hasPermission('지원한도내역조회', 'WRITE')">신규 한도
@@ -150,7 +148,6 @@
             </div>
         </section>
 
-
         <!-- Modal (쉘만, 내용은 프래그먼트 주입) -->
         <div aria-hidden="true" aria-labelledby="modal-title-basic" aria-modal="true" class="modal modal-lg"
              id="modal-manager" role="dialog">
@@ -162,6 +159,7 @@
         <!-- 공통 푸터 -->
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
 
+        <!-- (A) 상세 모달: dvsCd == '01'(금액)에서 사용되는 테이블 입력들 - publisher 마크업으로 교체 -->
         <th:block th:fragment="modal-detail">
             <header class="modal-header">
                 <h3 class="modal-title" id="modal-title-basic" th:text="${dvsCd == '01'} ? '한도(금액) 설정' : '한도(건수) 설정'">
@@ -201,18 +199,30 @@
                                     <td th:text="${stat.count}"></td>
                                     <td>
                                         <div class="flex align-center col-2">
-                                            <!-- 시작일 -->
+                                            <!-- 시작(월) -->
                                             <div class="text-field datepicker" style="width: 200px">
-                                                <input autocomplete="off" class="date-text" data-role="end"
-                                                       inputmode="numeric" pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
-                                                       th:field="*{list[__${stat.index}__].lmtSttYm}" type="text" />
-                                                <!-- <label th:for="|startDate-${stat.index}|"></label> -->
+                                                <input
+                                                        th:attr="id=|detail-start-${stat.index}|"
+                                                        class="dp-input"
+                                                        type="text"
+                                                        placeholder="YYYY-MM"
+                                                        data-dp-type="month"
+                                                        autocomplete="off"
+                                                        th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                             </div>
                                             <span>~</span>
+                                            <!-- 종료(월) -->
                                             <div class="text-field datepicker" style="width: 200px">
-                                                <input autocomplete="off" class="date-text" data-role="end"
-                                                       inputmode="numeric" pattern="\d{4}-\d{2}" placeholder="YYYY-MM"
-                                                       th:field="*{list[__${stat.index}__].lmtEndYm}" type="text" />
+                                                <input
+                                                        th:attr="id=|detail-end-${stat.index}|"
+                                                        class="dp-input"
+                                                        type="text"
+                                                        placeholder="YYYY-MM"
+                                                        data-dp-type="month"
+                                                        autocomplete="off"
+                                                        th:field="*{list[__${stat.index}__].lmtEndYm}" />
+                                                <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                             </div>
                                         </div>
                                     </td>
@@ -228,8 +238,7 @@
 
                     <div class="modal-body" th:if="${dvsCd == '02'}">
                         <div class="flex align-center justify-end">
-                            <div class="tabs" role="tablist">
-                            </div>
+                            <div class="tabs" role="tablist"></div>
                         </div>
                         <div class="flex col-">
                             <button class="btn btn-dark-line" id="addRow" type="button">행추가</button>
@@ -277,6 +286,7 @@
             </form>
         </th:block>
 
+        <!-- (B) 금액 모달(amt-modal) - publisher 마크업으로 교체 -->
         <th:block th:fragment="amt-modal">
             <header class="modal-header">
                 <h3 class="modal-title">한도(금액) 설정</h3>
@@ -285,13 +295,8 @@
             <div class="modal-body">
                 <div class="flex align-center justify-space-between">
                     <div class="tabs" role="tablist">
-                        <button aria-controls="panel-1" aria-selected="true" class="tab is-active" id="tab-1"
-                                role="tab">
-                            분기
-                        </button>
-                        <button aria-controls="panel-2" aria-selected="false" class="tab" id="tab-2" role="tab">
-                            월
-                        </button>
+                        <button aria-controls="panel-1" aria-selected="true" class="tab is-active" id="tab-1" role="tab">분기</button>
+                        <button aria-controls="panel-2" aria-selected="false" class="tab" id="tab-2" role="tab">월</button>
                     </div>
                 </div>
                 <div class="tab-panels">
@@ -319,22 +324,30 @@
                                         <td th:text="${stat.count}"></td>
                                         <td>
                                             <div class="flex align-center col-2">
-                                                <!-- 시작일 -->
+                                                <!-- 시작(월) -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off" class="date-text" data-role="end"
-                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
-                                                           placeholder="YYYY-MM"
-                                                           th:field="*{list[__${stat.index}__].lmtSttYm}"
-                                                           type="text" />
-                                                    <!-- <label th:for="|startDate-${stat.index}|"></label> -->
+                                                    <input
+                                                            th:attr="id=|qt-start-${stat.index}|"
+                                                            class="dp-input"
+                                                            type="text"
+                                                            placeholder="YYYY-MM"
+                                                            data-dp-type="month"
+                                                            autocomplete="off"
+                                                            th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                                 </div>
                                                 <span>~</span>
+                                                <!-- 종료(월) -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off" class="date-text" data-role="end"
-                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
-                                                           placeholder="YYYY-MM"
-                                                           th:field="*{list[__${stat.index}__].lmtEndYm}"
-                                                           type="text" />
+                                                    <input
+                                                            th:attr="id=|qt-end-${stat.index}|"
+                                                            class="dp-input"
+                                                            type="text"
+                                                            placeholder="YYYY-MM"
+                                                            data-dp-type="month"
+                                                            autocomplete="off"
+                                                            th:field="*{list[__${stat.index}__].lmtEndYm}" />
+                                                    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                                 </div>
                                             </div>
                                         </td>
@@ -368,22 +381,30 @@
                                         <td th:text="${stat.count}"></td>
                                         <td>
                                             <div class="flex align-center col-2">
-                                                <!-- 시작일 -->
+                                                <!-- 시작(월) -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off" class="date-text" data-role="end"
-                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
-                                                           placeholder="YYYY-MM"
-                                                           th:field="*{list[__${stat.index}__].lmtSttYm}"
-                                                           type="text" />
-                                                    <!-- <label th:for="|startDate-${stat.index}|"></label> -->
+                                                    <input
+                                                            th:attr="id=|mon-start-${stat.index}|"
+                                                            class="dp-input"
+                                                            type="text"
+                                                            placeholder="YYYY-MM"
+                                                            data-dp-type="month"
+                                                            autocomplete="off"
+                                                            th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                                 </div>
                                                 <span>~</span>
+                                                <!-- 종료(월) -->
                                                 <div class="text-field datepicker" style="width: 200px">
-                                                    <input autocomplete="off" class="date-text" data-role="end"
-                                                           inputmode="numeric" pattern="\d{4}-\d{2}"
-                                                           placeholder="YYYY-MM"
-                                                           th:field="*{list[__${stat.index}__].lmtEndYm}"
-                                                           type="text" />
+                                                    <input
+                                                            th:attr="id=|mon-end-${stat.index}|"
+                                                            class="dp-input"
+                                                            type="text"
+                                                            placeholder="YYYY-MM"
+                                                            data-dp-type="month"
+                                                            autocomplete="off"
+                                                            th:field="*{list[__${stat.index}__].lmtEndYm}" />
+                                                    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
                                                 </div>
                                             </div>
                                         </td>
@@ -407,6 +428,7 @@
             </div>
         </th:block>
 
+        <!-- (C) 건수 모달(ncnt-modal) - 날짜 입력 없음(변경 없음) -->
         <th:block th:fragment="ncnt-modal">
             <header class="modal-header">
                 <h3 class="modal-title">한도(건수) 설정</h3>
@@ -459,6 +481,7 @@
                 </footer>
             </form>
         </th:block>
+
         <script th:inline="javascript" type="text/javascript">
             (function () {
                 const baseUrl = '/sprtpolimng/polimnginf/sprtlmtPt.do';
@@ -719,7 +742,7 @@
                     tbody.appendChild(row);
                 }
 
-                // 행 삭제
+                // 행 삭제 (현 로직 유지)
                 function removeLastRow(tableId) {
                     const tbody = document.querySelector(`#${tableId} tbody`);
                     const rows = tbody.querySelectorAll("tr");
