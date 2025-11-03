@@ -144,7 +144,7 @@
     // expect: 응답 형식 기대값 (기본값: 'json')
     // clientErrorMsg: 클라이언트 에러 메시지 (기본값: '요청에 실패했습니다.')
     // otherErrorMsg: 기타 에러 메시지 (기본값: '오류가 발생했습니다.')
-    async function sendSafe(url, method = 'POST', data = null, signal, headers, expect = 'json', clientErrorMsg = '요청에 실패했습니다.', otherErrorMsg = '오류가 발생했습니다.') {
+    async function sendSafe(url, {method = 'POST', data = null, signal, headers, expect = 'json', clientErrorMsg = '요청에 실패했습니다.', otherErrorMsg = '오류가 발생했습니다.'}={}) {
         // send 함수 호출 결과를 out 변수에 저장
         try {
             const out = await send(url, method, data, headers, signal, expect);
@@ -1627,6 +1627,7 @@
 
         // 모달 닫기 함수 (closeModal)
         closeModal,
+        openModal,
 
         // JSON 수집 함수 (collectAsJson)
         collectAsJson,

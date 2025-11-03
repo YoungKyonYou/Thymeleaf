@@ -12,6 +12,28 @@
 
     <title th:text="${pageTitle} ?: 'Tmoney CMS'">Tmoney CMS</title>
 
+    <div aria-hidden="true" aria-labelledby="modal-title-basic" aria-modal="true"
+         class="modal" id="modal-common" role="dialog" th:fragment="modal-basic">
+        <div class="modal-overlay" data-dismiss></div>
+
+        <div class="modal-container" role="document" tabindex="-1">
+            <header class="modal-header">
+                <!-- 모달 타이틀 -->
+                <h3 class="modal-title" id="modal-title-basic"></h3>
+                <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
+            </header>
+
+            <!-- 모달 내용 영역입니다. 폼·테이블·문구 등을 배치하세요. -->
+            <div class="modal-body">
+            </div>
+
+            <footer class="modal-footer">
+                <!-- 취소 -->
+                <button class="btn btn-dark-line" data-dismiss type="button"></button>
+                <button class="btn btn-blue" type="button"></button>
+            </footer>
+        </div>
+    </div>
     <!-- CSS (로컬) -->
     <link rel="stylesheet" th:href="@{/css/vendor/jquery-ui.css}"/>
     <link rel="stylesheet" th:href="@{/css/vendor/aos.css}"/>
