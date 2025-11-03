@@ -220,7 +220,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="u, stat : ${sprtLmtDtIList}">
+                                    <tr th:each="u, stat : ${sprtLmtDtlList}">
                                         <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                         <td th:text="${stat.count}"></td>
                                         <td>
