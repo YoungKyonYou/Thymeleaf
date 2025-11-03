@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <section class="section">
+            <div class="section-header">
+                <div class="title-wrap">
+                    <h3 class="section-title">배치작업내역조회</h3>
+                </div>
+
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">작업기간</p>
+                        <div class="text-field datepicker">
+                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
+                                   name="startDate" value="${req.startDate}"
+                            >
+                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                        </div>
+                    </div>
+                    <div class="box">
+                        <p class="field-title">&nbsp;</p>
+                        <div class="text-field datepicker">
+                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
+                                   name="endDate" value="${req.endDate}"
+                            >
+                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-wrap">
+                    <button type="button" class="btn btn-primary">검색</button>
+                </div>
+            </div>
+
+            <div class="section-content">
+                <div class="flex justify-space-between">
+                    <b>검색결과: 10건</b>
+                    <div class="flex col-">
+                        <button type="button" class="btn btn-primary btn-icon-left">
+                            엑셀 다운로드 <i class="icon icon-save"></i>
+                        </button>
+                        <button type="button" class="btn btn-dark-line">목록</button>
+                    </div>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table class="table">
+                        <caption class="blind">배치작업내역조회 테이블</caption>
+                        <colgroup>
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="80px">
+                            <col width="150px">
+                        </colgroup>
+                        <thead>
+                        <tr>
+                            <!--<th class="sort-header" scope="col"><a data-sort="tpw_svc_id">서비스 ID</a></th> -->
+                            <th scope="col">순번</th>
+                            <th scope="col">작업일자</th>
+                            <th scope="col">배치작업ID</th>
+                            <th scope="col">배치작업명</th>
+                            <th scope="col">시작일시</th>
+                            <th scope="col">종료일시</th>
+                            <th scope="col">상태</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>2</td>
+                            <td>3</td>
+                            <td>4</td>
+                            <td>5</td>
+                            <td>1</td>
+                            <td>2</td>
+                        </tr>
+                        <!-- ... -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt20">
+                    <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
+                        <button type="button" class="pager-btn prev" aria-label="이전 페이지">Prev</button>
+                        <div class="pager-list">
+                            <button type="button" class="pager-item is-active" aria-current="page">1</button>
+                            <button type="button" class="pager-item">2</button>
+                            <button type="button" class="pager-item">3</button>
+                            <button type="button" class="pager-item">4</button>
+                            <button type="button" class="pager-item">5</button>
+                        </div>
+                        <button type="button" class="pager-btn next" aria-label="다음 페이지">Next</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 공통 푸터 -->
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+    </th:block>
+</th:block>
+</html>
