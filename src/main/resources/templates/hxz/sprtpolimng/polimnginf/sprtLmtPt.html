@@ -7,6 +7,35 @@
         <!-- 페이지 전용 CSS (예시) -->
         <link rel="stylesheet" th:href="@{/css/page/page.css}" />
 
+        <!-- ✅ 분기 모달 읽기전용 구분용 인라인 스타일 (새로 추가) -->
+        <style>
+            /* 모달에 qtr-readonly 클래스가 붙으면 읽기전용 스타일 적용 */
+            #modal-manager.qtr-readonly .dp-input[readonly] {
+                background: #f3f4f6;
+                /* 연회색 */
+                color: #6b7280;
+                /* 회색 텍스트 */
+                border-color: #d1d5db;
+                /* 옅은 회색 보더 */
+                cursor: not-allowed;
+            }
+
+            #modal-manager.qtr-readonly .dp-input[readonly]::placeholder {
+                color: #9ca3af;
+            }
+
+            #modal-manager.qtr-readonly .dp-btn[disabled] {
+                opacity: .35;
+                pointer-events: none;
+                cursor: not-allowed;
+            }
+
+            #modal-manager.qtr-readonly .text-field.readonly {
+                background: #f9fafb;
+                border-color: #e5e7eb;
+            }
+        </style>
+
         <section class="section" id="grid">
             <form class="section-header" th:object="${req}">
                 <div class="title-wrap box">
@@ -369,15 +398,6 @@
                                                         <button type="button" class="dp-btn" data-dp-toggle
                                                             aria-label="년 월 선택 열기"></button>
                                                     </div>
-                                                    <span>~</span>
-                                                    <div class="text-field datepicker" style="width: 200px">
-                                                        <input th:attr="id=|mon-end-${stat.index}|" class="dp-input"
-                                                            type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                            autocomplete="off"
-                                                            th:field="*{list[__${stat.index}__].lmtEndYm}" />
-                                                        <button type="button" class="dp-btn" data-dp-toggle
-                                                            aria-label="년 월 선택 열기"></button>
-                                                    </div>
                                                 </div>
                                             </td>
                                             <td><input class="text-field" maxlength="15" pattern="^[0-9]+$"
@@ -610,6 +630,86 @@
                     }
                 }
 
+                /* ✅ 분기 편집 제어 + 자동 분기 계산 */
+                function initQuarterOnlyEdit(scope) {
+                    const root = scope || document;
+
+                    const qtForm = root.querySelector('#qt');
+                    // ✅ 월 탭(#mon) 전부 읽기전용 + 버튼 비활성
+                    const monForm = root.querySelector('#mon');
+                    if (monForm) {
+                        monForm.querySelectorAll('.dp-input').forEach(i => {
+                            i.readOnly = true;
+                            i.closest('.text-field')?.classList.add('readonly');
+                        });
+                        monForm.querySelectorAll('.dp-btn').forEach(b => { b.disabled = true; });
+                    }
+                    if (!qtForm) return;
+
+                    // 모달에 읽기전용 스타일 플래그
+                    modal.classList.add('qtr-readonly');
+
+                    const rows = Array.from(qtForm.querySelectorAll('tbody tr'));
+                    if (!rows.length) return;
+
+                    const allInputs = Array.from(qtForm.querySelectorAll('.dp-input'));
+                    const allBtns = Array.from(qtForm.querySelectorAll('.dp-btn'));
+
+                    const firstStart = qtForm.querySelector('#qt-start-0') || allInputs[0];
+
+                    // 1) 전체 비활성 + 회색 처리
+                    allInputs.forEach(i => {
+                        i.readOnly = true;
+                        i.closest('.text-field')?.classList.add('readonly');
+                    });
+                    allBtns.forEach(b => { b.disabled = true; });
+
+                    // 2) 첫 번째 시작만 활성
+                    if (firstStart) {
+                        firstStart.readOnly = false;
+                        firstStart.closest('.text-field')?.classList.remove('readonly');
+                        const firstStartBtn = firstStart.closest('.text-field')?.querySelector('.dp-btn');
+                        if (firstStartBtn) firstStartBtn.disabled = false;
+                    }
+
+                    // 3) 자동 분기 채움
+                    function parseYm(val) {
+                        const s = String(val || '').trim();
+                        let y, m;
+                        if (/^\d{4}-\d{2}$/.test(s)) { y = +s.slice(0, 4); m = +s.slice(5, 7); }
+                        else if (/^\d{6}$/.test(s)) { y = +s.slice(0, 4); m = +s.slice(4, 6); }
+                        else return null;
+                        if (m < 1 || m > 12) return null; return { y, m };
+                    }
+                    const fmtYm = (y, m) => `${y}-${m < 10 ? '0' : ''}${m}`;
+                    const addMonths = (y, m, off) => {
+                        const z = y * 12 + (m - 1) + off;
+                        return { y: Math.floor(z / 12), m: (z % 12) + 1 };
+                    };
+
+                    function applyQuarters() {
+                        const base = parseYm(firstStart.value);
+                        if (!base) return;
+
+                        rows.forEach((tr, idx) => {
+                            const sInput = tr.querySelector('[id^="qt-start-"]');
+                            const eInput = tr.querySelector('[id^="qt-end-"]');
+                            if (!sInput || !eInput) return;
+
+                            const s = addMonths(base.y, base.m, idx * 3);
+                            const e = addMonths(s.y, s.m, 2);
+
+                            sInput.value = fmtYm(s.y, s.m);
+                            eInput.value = fmtYm(e.y, e.m);
+                        });
+                    }
+
+                    // 최초 적용 + 변경 반영
+                    applyQuarters();
+                    firstStart.addEventListener('input', applyQuarters);
+                    firstStart.addEventListener('change', applyQuarters);
+                }
+
                 // 신규 한도 설정: 1단계 선택 모달 표시
                 async function showSelectorModal() {
                     const tpl = document.getElementById('tpl-selector-modal');
@@ -636,9 +736,12 @@
                         if (cas.child.trdNcntLtnAdptYn === 'N') {
                             const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/amt');
                             container.innerHTML = html;
+                            // ✅ 분기 입력 제어 적용
+                            initQuarterOnlyEdit(container);
                         } else if (cas.child.trdNcntLtnAdptYn === 'Y') {
                             const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/ncnt');
                             container.innerHTML = html;
+                            modal.classList.remove('qtr-readonly');
                         } else {
                             Common.modalShow({ message: '선택한 서비스 유형의 한도 유형 정보를 확인할 수 없습니다.', title: '알림', buttons: 'close' });
                             return;
@@ -719,6 +822,10 @@
                             );
                             const container = modal.querySelector('.modal-container');
                             container.innerHTML = html;
+
+                            // 상세 모달이 금액(분기) 탭 구조일 때도 보호 적용 시도(없으면 조용히 패스)
+                            initQuarterOnlyEdit(container);
+
                             modal.setAttribute('aria-hidden', 'false');
                             modal.classList.add('is-open');
                             document.body.classList.add('modal-open');
@@ -797,6 +904,7 @@
                         }
                     } else if (label === '취소') {
                         Common.closeModal('#modal-manager');
+                        modal.classList.remove('qtr-readonly');
                     } else if (label === '행추가') {
                         addRow('newNcntTable', 'list');
                     } else if (label === '행삭제') {
