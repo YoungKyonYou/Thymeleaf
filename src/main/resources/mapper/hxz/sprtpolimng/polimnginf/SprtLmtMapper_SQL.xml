@@ -18,6 +18,7 @@
 
         select
         sprt.tpw_svc_id       as tpwSvcId      /* 서비스ID */
+        , sprt.tpw_svc_nm       as tpwSvcNm      /* 서비스명 */
         , sprt.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
         , sprt.tpw_svc_typ_nm   as tpwSvcTypNm   /* 서비스유형명 */
         , sprt.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */

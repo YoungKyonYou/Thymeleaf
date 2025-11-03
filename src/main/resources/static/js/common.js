@@ -903,7 +903,7 @@
             if (e.name === "AbortError") return; // 요청이 중단되었으면 아무것도 하지 않음
 
             // HTTP 상태 코드가 400, 422, 409인 경우 (일반적인 오류 응답)
-            if ([400, 422, 409].includes(e.status) && e.payload?.message) {
+           if (e?.status >= 400 && e.status < 500) {
                 // payload.message가 있으면 해당 메시지를 사용하고, 없으면 기본 메시지
                 const msg = e.payload.message || '요청을 처리할 수 없습니다.';
                 Common.modalShow({
