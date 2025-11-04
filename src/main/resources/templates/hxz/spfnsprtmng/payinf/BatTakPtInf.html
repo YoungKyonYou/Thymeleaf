@@ -1,111 +1,140 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
-<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
-    <th:block th:fragment="content">
+<head th:replace="~{component/commonHead :: head}"></head>
+<body>
 
-        <section class="section">
-            <div class="section-header">
-                <div class="title-wrap">
-                    <h3 class="section-title">배치작업내역조회</h3>
-                </div>
+<!-- 콘텐츠 영역 -->
+<div th:fragment="content">
 
+    <script th:src="@{/js/datepicker.js}"></script>
 
-                <div class="box-wrap">
-                    <div class="box">
-                        <p class="field-title">작업기간</p>
-                        <div class="text-field datepicker">
-                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                   name="startDate" value="${req.startDate}"
-                            >
-                            <button type="button" class="dp-btn" data-dp-toggle></button>
-                        </div>
-                    </div>
-                    <div class="box">
-                        <p class="field-title">&nbsp;</p>
-                        <div class="text-field datepicker">
-                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                   name="endDate" value="${req.endDate}"
-                            >
-                            <button type="button" class="dp-btn" data-dp-toggle></button>
-                        </div>
+    <section class="section">
+        <div class="section-header">
+            <div class="title-wrap">
+                <h3 class="section-title">배치작업내역조회</h3>
+            </div>
+
+            <!-- 검색폼: 날짜 검색만 -->
+            <div class="box-wrap">
+                <div class="box">
+                    <p class="field-title">작업기간</p>
+                    <div class="text-field datepicker">
+                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="startDate" th:value="${req.startDate}">
+                        <button type="button" class="dp-btn" data-dp-toggle></button>
                     </div>
                 </div>
-
-                <div class="btn-wrap">
-                    <button type="button" class="btn btn-primary">검색</button>
+                <div class="box">
+                    <p class="field-title">&nbsp;</p>
+                    <div class="text-field datepicker">
+                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="endDate" th:value="${req.endDate}">
+                        <button type="button" class="dp-btn" data-dp-toggle></button>
+                    </div>
                 </div>
             </div>
 
-            <div class="section-content">
-                <div class="flex justify-space-between">
-                    <b>검색결과: 10건</b>
-                    <div class="flex col-">
-                        <button type="button" class="btn btn-primary btn-icon-left">
-                            엑셀 다운로드 <i class="icon icon-save"></i>
-                        </button>
-                        <button type="button" class="btn btn-dark-line">목록</button>
-                    </div>
-                </div>
+            <div class="btn-wrap">
+                <button type="button" class="btn btn-primary" onclick="loadPage(0)">검색</button>
+            </div>
+        </div>
 
-                <div class="table-wrap mt20">
-                    <table class="table">
-                        <caption class="blind">배치작업내역조회 테이블</caption>
-                        <colgroup>
-                            <col width="80px">
-                            <col width="150px">
-                            <col width="200px">
-                            <col width="150px">
-                            <col width="150px">
-                            <col width="80px">
-                            <col width="150px">
-                        </colgroup>
-                        <thead>
-                        <tr>
-                            <!--<th class="sort-header" scope="col"><a data-sort="tpw_svc_id">서비스 ID</a></th> -->
-                            <th scope="col">순번</th>
-                            <th scope="col">작업일자</th>
-                            <th scope="col">배치작업ID</th>
-                            <th scope="col">배치작업명</th>
-                            <th scope="col">시작일시</th>
-                            <th scope="col">종료일시</th>
-                            <th scope="col">상태</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>2</td>
-                            <td>3</td>
-                            <td>4</td>
-                            <td>5</td>
-                            <td>1</td>
-                            <td>2</td>
-                        </tr>
-                        <!-- ... -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt20">
-                    <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
-                        <button type="button" class="pager-btn prev" aria-label="이전 페이지">Prev</button>
-                        <div class="pager-list">
-                            <button type="button" class="pager-item is-active" aria-current="page">1</button>
-                            <button type="button" class="pager-item">2</button>
-                            <button type="button" class="pager-item">3</button>
-                            <button type="button" class="pager-item">4</button>
-                            <button type="button" class="pager-item">5</button>
-                        </div>
-                        <button type="button" class="pager-btn next" aria-label="다음 페이지">Next</button>
-                    </div>
+        <!-- 검색결과 -->
+        <div class="section-content">
+            <div class="flex justify-space-between">
+                <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
+                <div class="flex col-">
+                    <button type="button" class="btn btn-primary btn-icon-left" onclick="exportExcel()">엑셀 다운로드 <i class="icon icon-save"></i></button>
+                    <button type="button" class="btn btn-dark-line" onclick="loadPage(0)">목록</button>
                 </div>
             </div>
-        </section>
 
-        <!-- 공통 푸터 -->
-        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+            <!-- 테이블 -->
+            <div class="table-wrap mt20">
+                <table class="table" id="grid">
+                    <caption class="blind">배치작업내역조회 테이블</caption>
+                    <thead id="grid-header">
+                    <tr>
+                        <th scope="col">순번</th>
+                        <th scope="col" data-sort="bat_tak_dt">작업일자</th>
+                        <th scope="col" data-sort="bat_tak_id">배치작업ID</th>
+                        <th scope="col" data-sort="bat_tak_name">배치작업명</th>
+                        <th scope="col" data-sort="bat_tak_stt_dtm">시작일시</th>
+                        <th scope="col" data-sort="bat_tak_end_dtm">종료일시</th>
+                        <th scope="col" data-sort="bat_prcg_sta_cd">상태</th>
+                    </tr>
+                    </thead>
+                    <tbody id="grid-body">
+                    <th:block th:each="u, stat : ${pageData.content}"
+                              th:with="base=${pageData.page} * ${pageData.size}">
+                        <tr>
+                            <td th:text="${base + stat.index + 1}"></td>
+                            <td th:text="${u.batTakDt}"></td>
+                            <td th:text="${u.batTakId}"></td>
+                            <td th:text="${u.batTakName}"></td>
+                            <td th:text="${u.batTakSttDtm}"></td>
+                            <td th:text="${u.batTakEndDtm}"></td>
+                            <td th:text="${u.batPrcgStaCd == '01' ? '처리중' : (u.batPrcgStaCd == '02' ? '처리완료' : (u.batPrcgStaCd == '03' ? '처리오류' : '알수없음'))}"></td>
+                        </tr>
+                    </th:block>
 
-    </th:block>
-</th:block>
+                    <tr th:if="${pageData.total == 0}">
+                        <td colspan="7">조회 결과가 없습니다.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 페이징 -->
+            <div class="mt20" id="grid-pager">
+                <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- JS Ajax -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const baseUrl = /*[[${@controllerBaseUrl}]]*/ '';
+    const inputSort = document.getElementById('sort');
+    const inputDir = document.getElementById('dir');
+
+    function loadPage(page) {
+        const params = {
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            sort: inputSort?.value || 'bat_tak_dt',
+            dir: inputDir?.value || 'asc',
+            page: page,
+            size: 10
+        };
+
+        fetch(baseUrl + '/batTak/list', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(params)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            document.getElementById('grid-body').innerHTML = data.htmlBody;
+            document.getElementById('grid-pager').innerHTML = data.htmlPager;
+        });
+    }
+
+    function exportExcel() {
+        const params = {
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            sort: inputSort?.value || 'bat_tak_dt',
+            dir: inputDir?.value || 'asc'
+        };
+        common.bndExcelExport(null, null, params.sort, params.dir, 'bat_tak_id', params);
+    }
+    /*]]>*/
+</script>
+
+<!-- Footer -->
+<th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+</body>
 </html>
