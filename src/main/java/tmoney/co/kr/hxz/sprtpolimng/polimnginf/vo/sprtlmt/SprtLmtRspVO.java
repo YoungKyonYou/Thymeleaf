@@ -3,9 +3,11 @@ package tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 @Getter
 public class SprtLmtRspVO {
     /** 서비스ID */
@@ -29,11 +31,12 @@ public class SprtLmtRspVO {
     /** 한도종료년월 */
     private String lmtEndYm;
     /** 최소조건값 */
-    private int minCndtVal;
+    private Integer  minCndtVal;
     /** 최대조건값 */
-    private int maxCndtVal;
+    private Integer  maxCndtVal;
     /** 대상조건값 */
-    private int tgtAdptVal;
+    private Integer  tgtAdptVal;
     /** 사용여부 */
     private String useYn;
+
 }

@@ -54,6 +54,7 @@ logging:
     org.springframework.jdbc.core.namedparam: DEBUG
     org.springframework.jdbc.core.StatementCreatorUtils: TRACE
     org.springframework.batch.item.database: DEBUG
+    tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper.SprtLmtMapper: DEBUG
 app:
   onboarding:
     token-ttl-minutes: 10 # 진행 토큰 (onb) JWT TTL 10분, 각 단계의 진행 토큰 유효시간
@@ -65,3 +66,6 @@ app:
     done-token-ttl-seconds: 600           # 완료 토큰(JWT) TTL (기본 10분 예시)
 
 
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

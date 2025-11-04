@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.service.SprtLmtService;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtInstReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtLmtModReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.AmtLstVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.LstVO;
@@ -149,7 +150,7 @@ public class SprtLmtController {
     public ResponseEntity<?> insertSprtLmtAmt(
             @Valid @RequestBody AmtInstReqVO req
     ) {
-        sprtLmtService.insertSprtLmtAmt(req);
+        sprtLmtService.insertSprtLmtAmt(req, req.getTpwSvcId());
         return ResponseEntity.ok().build();
     }
 
@@ -164,9 +165,9 @@ public class SprtLmtController {
     @ResponseBody
     public ResponseEntity<?> updateSprtLmtAmt(
             @PathVariable("tpwSvcTypId") String tpwSvcTypId,
-            @RequestBody List<AmtReqVO> req
+            @RequestBody AmtInstReqVO req
     ) {
-        sprtLmtService.updateSprtLmtAmt(req, tpwSvcTypId);
+        sprtLmtService.insertSprtLmtAmt(req, tpwSvcTypId);
         return ResponseEntity.ok().build();
     }
 }

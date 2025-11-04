@@ -6,22 +6,20 @@ import org.springframework.transaction.annotation.Transactional;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper.SprtLmtMapper;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtInstReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtLmtModReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntInstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtDtlRspVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @RequiredArgsConstructor
 @Service
-public class SprtLmtService  {
+public class SprtLmtService {
 
     private final SprtLmtMapper sprtLmtMapper;
 
@@ -97,54 +95,118 @@ public class SprtLmtService  {
         return sprtLmtMapper.readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, useYn);
     }
 
-
     @Transactional
-    public void insertSprtLmtAmt(AmtInstReqVO req) {
-        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(req.getTpwSvcTypId(), "Y");
-
-        List<SprtLmtReqVO> list = new ArrayList<>();
-        if (resList.isEmpty()) {
-            long num = Long.parseLong(readSpfnLmtMngNoNextVal());
-            for (AmtReqVO a : req.getList()) {
-                num += 1;
-                SprtLmtReqVO reqVO = new SprtLmtReqVO(
-                        req.getTpwSvcId(),
-                        req.getTpwSvcTypId(),
-                        String.format("%010d", num),
-                        "0000000001",
-                        "01",
-                        req.getTpwLmtTypCd(),
-                        a.getLmtSttYm(),
-                        a.getLmtEndYm(),
-                        0,
-                        0,
-                        a.getTgtAdptVal(),
-                        "Y"
-                );
-                list.add(reqVO);
-            }
-            insertSprtLmt(list);
-        } else {
-            // 에러 메시지(기존 데이터 존재)
-        }
+    public void updateSprtLmtUseYn(String tpwSvcTypId) {
+        sprtLmtMapper.updateSprtLmtUseYn(tpwSvcTypId);
     }
 
 
     @Transactional
-    public void updateSprtLmtAmt(List<AmtReqVO> req, String tpwSvcTypId) {
+    public void insertSprtLmtAmt(AmtInstReqVO req, String tpwSvcTypId) {
+        //기존 데이터 가져오기
+        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, "Y");
+
+        //월 한도인 경우 시작일자와 종료일자 맞춰줄 것
+        if (req.getTpwLmtTypCd().equals("02")) {
+            req.getList().forEach(a -> {
+                a.setLmtEndYm(a.getLmtSttYm());
+            });
+        }
+
+        int k = req.getList().size(); // 필요 개수
+        List<SprtLmtReqVO> list = new ArrayList<>();
+
+        //신규가 아니라 수정인 경우
+        if(!resList.isEmpty()) {
+
+            String curValueType = resList.get(0).getTpwLmtDvsCd();
+            String nextValueType = req.getTpwLmtDvsCd();
+            String curMonth = resList.get(0).getTpwLmtTypCd();
+            String nextMonth = req.getTpwLmtTypCd();
+            String curSno = resList.get(0).getSpfnLmtMngNo();
+            boolean isSame = (curValueType.equals(nextValueType) && curMonth.equals(nextMonth));
+
+            //한도유형이 같으면 그 같은 구간의 관리번호를 쓰거나 새로 채번
+            Deque<String> mngNoPool = isSame
+                    ? resList.stream()
+                    .map(SprtLmtRspVO::getSpfnLmtMngNo)
+                    .collect(Collectors.toCollection(ArrayDeque::new))
+                    : new ArrayDeque<>(readNextMngNo(k));
+
+
+
+            list = req.getList()
+                    .stream()
+                    .map(a -> new SprtLmtReqVO(
+                            tpwSvcTypId,
+                            req.getTpwSvcTypId(),
+                            mngNoPool.removeFirst(),
+                            readSpfnLmtSnoNextVal(curSno),
+                            req.getTpwLmtDvsCd(),
+                            req.getTpwLmtTypCd(),
+                            a.getLmtSttYm(),
+                            a.getLmtEndYm(),
+                            0,
+                            0,
+                            a.getTgtAdptVal(),
+                            "Y"
+
+
+                    )).collect(Collectors.toList());
+        }else{
+            //신규인 경우
+            Deque<String> mngNoPool = new ArrayDeque<>(readNextMngNo(k));
+
+            list = req.getList()
+                    .stream()
+                    .map(a -> new SprtLmtReqVO(
+                            tpwSvcTypId,
+                            req.getTpwSvcTypId(),
+                            mngNoPool.removeFirst(),
+                            "0000000001",
+                            req.getTpwLmtDvsCd(),
+                            req.getTpwLmtTypCd(),
+                            a.getLmtSttYm(),
+                            a.getLmtEndYm(),
+                            0,
+                            0,
+                            a.getTgtAdptVal(),
+                            "Y"
+
+
+                    )).collect(Collectors.toList());
+        }
+
+        //기존에 존재하는 서비스에 묶힌 한도가 존재한다면 useYn = 'N' 처리
+        updateSprtLmtUseYn(req.getTpwSvcTypId());
+
+
+
+        insertSprtLmt(list);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> readNextMngNo(int count){
+        return sprtLmtMapper.readNextMngNo(count);
+    }
+
+
+    @Transactional
+    public void updateSprtLmtAmt(AmtLmtModReqVO req, String tpwSvcTypId) {
         List<String> updList = new ArrayList<>();
         List<SprtLmtReqVO> list = new ArrayList<>();
         List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, "Y");
         SprtLmtRspVO res = resList.get(resList.size() - 1);
 
-        for (AmtReqVO a : req) {
+        for (AmtReqVO a : req.getList()) {
             SprtLmtReqVO reqVO = new SprtLmtReqVO(
                     res.getTpwSvcId(),
                     tpwSvcTypId,
                     a.getSpfnLmtMngNo(),
                     readSpfnLmtSnoNextVal(res.getSpfnLmtSno()),
                     res.getTpwLmtDvsCd(),
-                    res.getTpwLmtTypCd(),
+                    req.getTpwLmtTypCd(),
                     a.getLmtSttYm(),
                     a.getLmtEndYm(),
                     0,
