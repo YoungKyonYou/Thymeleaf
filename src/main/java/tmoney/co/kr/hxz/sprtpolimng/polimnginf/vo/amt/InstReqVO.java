@@ -8,13 +8,15 @@ import lombok.Setter;
 import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
 
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Setter
 @Getter
-public class AmtInstReqVO {
-    List<AmtReqVO> list = new ArrayList<>();
+public class InstReqVO {
+    List<AmtReqVO> amtList = new ArrayList<>();
+    List<NcntReqVO> ncntList = new ArrayList<>();
 
     /** 서비스ID */
     @Size(max = 7, message = "서비스ID의 길이는 7보다 작아야 합니다.")

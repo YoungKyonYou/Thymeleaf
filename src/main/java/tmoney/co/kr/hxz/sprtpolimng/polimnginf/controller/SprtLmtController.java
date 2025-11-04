@@ -7,22 +7,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.service.SprtLmtService;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtInstReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtLmtModReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.InstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.AmtLstVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.LstVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.NcntLstVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtDtlRspVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtModalDtlVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtModalVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO;
-
-import javax.validation.Valid;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -64,95 +55,70 @@ public class SprtLmtController {
      * @return return String
      */
 
-    @GetMapping(value = "/sprtLmtDtl/new/amt")
-    public String newSprtLmtAmt(
+    @GetMapping(value = "/sprtLmtDtl/new")
+    public String newSprtLmt(
             Model model
     ) {
-        List<AmtReqVO> qt = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            qt.add(new AmtReqVO());
-        }
+        SprtLmtModalVO vo = sprtLmtService.initModal();
 
-        List<AmtReqVO> mon = new ArrayList<>();
-        int year = LocalDate.now().getYear();
-        for (int i = 1; i <= 12; i++) {
-            String yyyymm = String.format("%d%02d", year, i);
-            mon.add(new AmtReqVO("", yyyymm, yyyymm, 0));
-        }
+        model.addAttribute("qt", vo.getQt());
+        model.addAttribute("mon", vo.getMon());
+        model.addAttribute("arr", vo.getArr());
 
-        model.addAttribute("qt", qt);
-        model.addAttribute("mon", mon);
-        model.addAttribute("amtQt", new AmtLstVO(qt));
-        model.addAttribute("amtMon", new AmtLstVO(mon));
+        model.addAttribute("amtQt", new AmtLstVO(vo.getQt()));
+        model.addAttribute("amtMon", new AmtLstVO(vo.getMon()));
+        model.addAttribute("ncnt", new NcntLstVO(vo.getArr(), ""));
         return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
     }
 
     /**
-     * 지원 한도(건수) 신규 모달
-     *
-     * @return return String
+     * 설정하기(편집) 눌렀을 때 3in1 모달을 띄운다.
+     * - 탭: 분기/월/건수 모두 enable
+     * - 현재 서비스 유형에 이미 설정된 타입(월/분기/건수)이 있으면 해당 탭이 기본 선택되도록 typ/dvs 코드를 내려준다.
+     * - 선택된 탭 데이터는 "기존값", 나머지 탭은 "신규 기본값"으로 채운다.
      */
-
-    @GetMapping(value = "/sprtLmtDtl/new/ncnt")
-    public String newSprtLmtNcnt(
-            Model model
-    ) {
-        List<NcntReqVO> arr = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            arr.add(new NcntReqVO());
-        }
-
-        model.addAttribute("ncnt", new NcntLstVO(arr, ""));
-        model.addAttribute("arr", arr);
-
-        return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: ncnt-modal";
-    }
-
-    /**
-     * 지원 한도 상세 조회 모달
-     *  - tbhxzd208 HXZ_지원금한도관리
-     *
-     * [process]
-     *  1. 서비스 유형 ID(tpwSvcTypId)로 HXZ_지원금한도관리 테이블 내 한도 관리 내역 호출
-     *
-     * @return return String
-     */
-
-    @GetMapping(value = "/sprtLmtDtl/{useYn}/{tpwSvcTypId}")
-    public String readSprtLmtDtl(
+    @GetMapping("/sprtLmtDtl/{tpwSvcTypId}/edit3")
+    public String openEdit3In1(
             @PathVariable("tpwSvcTypId") String tpwSvcTypId,
-            @PathVariable("useYn") String useYn,
             Model model
     ) {
-        SprtLmtDtlRspVO contents = sprtLmtService.readSprtLmtDtl(tpwSvcTypId, useYn);
-        List<SprtLmtReqVO> form = new ArrayList<>(contents.getSprtLmtReqList());
+        SprtLmtModalDtlVO vo = sprtLmtService.readSprtLmtByTpwSvcTypId(tpwSvcTypId);
 
-        model.addAttribute("sprtLmtDtlList", form);
-        model.addAttribute("typCd", contents.getTpwLmtTypCd());
-        model.addAttribute("dvsCd", contents.getTpwLmtDvsCd());
-        model.addAttribute("useYn", contents.getUseYn());
+        // 3) 모델 채우기 (3in1 신규 모달과 동일 fragment 사용: amt-modal)
+        model.addAttribute("mode", "edit-3in1");     // JS에서 3in1 편집 모드로 인지
         model.addAttribute("tpwSvcTypId", tpwSvcTypId);
+        model.addAttribute("dvsCd", vo.getDvsCd());
+        model.addAttribute("typCd", vo.getTypCd());
 
-        model.addAttribute("form", new LstVO(form));
+        model.addAttribute("qt", vo.getQt());
+        model.addAttribute("mon", vo.getMon());
+        model.addAttribute("arr", vo.getArr());
 
-        return "/hxz/sprtpolimng/polimnginf/sprtLmtPt :: modal-detail";
+        model.addAttribute("amtQt", new AmtLstVO(vo.getQt()));     // 분기 form backing
+        model.addAttribute("amtMon", new AmtLstVO(vo.getMon()));   // 월 form backing
+        model.addAttribute("ncnt",  new NcntLstVO(vo.getArr(), "")); // 건수 form backing
+
+        // 모든 탭을 enable 하고, 선택 탭은 JS에서 dvsCd/typCd 보고 선택
+        return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
     }
 
-    /**
-     * 지원 한도(금액) 추가 API
-     *  - tbhxzd208 HXZ_지원금한도관리
-     *
-     * @return return ResponseEntity
-     */
 
-    @PostMapping(path = "/sprtLmt/amt")
-    @ResponseBody
-    public ResponseEntity<?> insertSprtLmtAmt(
-            @Valid @RequestBody AmtInstReqVO req
-    ) {
-        sprtLmtService.insertSprtLmtAmt(req, req.getTpwSvcId());
-        return ResponseEntity.ok().build();
-    }
+//
+//    /**
+//     * 지원 한도(금액) 추가 API
+//     *  - tbhxzd208 HXZ_지원금한도관리
+//     *
+//     * @return return ResponseEntity
+//     */
+//
+//    @PostMapping(path = "/sprtLmt/amt")
+//    @ResponseBody
+//    public ResponseEntity<?> insertSprtLmtAmt(
+//            @Valid @RequestBody InstReqVO req
+//    ) {
+//        sprtLmtService.insertSprtLmtAmt(req, req.getTpwSvcId());
+//        return ResponseEntity.ok().build();
+//    }
 
     /**
      * 지원 한도(금액) 수정 API
@@ -161,13 +127,12 @@ public class SprtLmtController {
      * @return return ResponseEntity
      */
 
-    @PostMapping(path = "/sprtLmt/amt/{tpwSvcTypId}/edit")
+    @PostMapping(path = "/sprtLmt/edit")
     @ResponseBody
     public ResponseEntity<?> updateSprtLmtAmt(
-            @PathVariable("tpwSvcTypId") String tpwSvcTypId,
-            @RequestBody AmtInstReqVO req
+            @RequestBody InstReqVO req
     ) {
-        sprtLmtService.insertSprtLmtAmt(req, tpwSvcTypId);
+        sprtLmtService.insertSprtLmtAmt(req);
         return ResponseEntity.ok().build();
     }
 }
