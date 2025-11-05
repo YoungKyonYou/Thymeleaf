@@ -177,9 +177,10 @@
                                     <td th:text="*{useYn}"></td>
                                     <td>
                                         <button class="btn btn-dark-line open-modal" type="button"
-                                            data-target="#modal-manager" th:data-id="*{tpwSvcTypId}"
-                                            th:data-svc-id="*{tpwSvcId}" th:use-yn="*{useYn}"
-                                            sec:authorize="hasPermission('지원한도내역조회','UPDATE')">설정하기</button>
+                                                data-target="#modal-manager"
+                                                th:attr="data-tpw-svc-typ-id=*{tpwSvcTypId},data-tpw-svc-id=*{tpwSvcId},data-use-yn=*{useYn}">
+                                            설정하기
+                                        </button>
                                     </td>
                                 </tr>
                             </th:block>
@@ -880,13 +881,21 @@
                     const btnOpen = e.target.closest('.open-modal');
                     if (btnOpen && btnOpen.id !== 'new-modal') {
                         e.preventDefault();
-                        const tpwSvcTypId = btnOpen.getAttribute('data-id') || '';
-                        const tpwSvcId = btnOpen.getAttribute('data-svc-id') || '';
-                        if (!tpwSvcTypId) return;
 
-                        // 컨텍스트 저장 (편집 저장 시 사용)
+                        // 명확한 dataset 키만 사용
+                        const { tpwSvcTypId, tpwSvcId } = btnOpen.dataset;
+
+                        if (!tpwSvcTypId || !tpwSvcId) {
+                            console.warn('설정하기 클릭: 필요한 식별자 누락', btnOpen.dataset);
+                            showFooterError('서비스/서비스유형 식별자를 확인할 수 없습니다.');
+                            return;
+                        }
+
+                        // 이전 값 초기화 후 세팅(오염 방지)
+                        delete modal.dataset.tpwSvcTypId;
+                        delete modal.dataset.tpwSvcId;
                         modal.dataset.tpwSvcTypId = tpwSvcTypId;
-                        modal.dataset.tpwSvcId = tpwSvcId;
+                        modal.dataset.tpwSvcId    = tpwSvcId;
 
                         try {
                             await openEdit3In1(tpwSvcTypId);

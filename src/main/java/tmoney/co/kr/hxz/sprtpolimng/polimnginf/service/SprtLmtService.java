@@ -158,9 +158,11 @@ public class SprtLmtService {
 
         // 통합 빌더 호출
         List<SprtLmtReqVO> toInsert = buildInserts(req, existing, hasExisting);
-        if (toInsert.isEmpty()) return;
+        if (toInsert.isEmpty())
+            return;
 
-        if (hasExisting) updateSprtLmtUseYn(req.getTpwSvcTypId());
+        if (hasExisting)
+            updateSprtLmtUseYn(req.getTpwSvcTypId());
         insertSprtLmt(toInsert);
     }
 
