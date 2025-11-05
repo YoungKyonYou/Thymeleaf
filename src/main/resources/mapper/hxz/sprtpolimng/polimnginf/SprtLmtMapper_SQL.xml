@@ -184,7 +184,7 @@
             (
             #{u.tpwSvcId}
             , #{u.tpwSvcTypId}
-            , (to_char(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01'), 'FM0000000000'))
+            , #{u.spfnLmtMngNo}
             , #{u.spfnLmtSno}
             , #{u.tpwLmtDvsCd}
             , #{u.tpwLmtTypCd}

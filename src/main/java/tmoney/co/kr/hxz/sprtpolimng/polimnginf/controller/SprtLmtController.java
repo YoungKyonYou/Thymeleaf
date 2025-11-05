@@ -102,24 +102,6 @@ public class SprtLmtController {
         return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
     }
 
-
-//
-//    /**
-//     * 지원 한도(금액) 추가 API
-//     *  - tbhxzd208 HXZ_지원금한도관리
-//     *
-//     * @return return ResponseEntity
-//     */
-//
-//    @PostMapping(path = "/sprtLmt/amt")
-//    @ResponseBody
-//    public ResponseEntity<?> insertSprtLmtAmt(
-//            @Valid @RequestBody InstReqVO req
-//    ) {
-//        sprtLmtService.insertSprtLmtAmt(req, req.getTpwSvcId());
-//        return ResponseEntity.ok().build();
-//    }
-
     /**
      * 지원 한도(금액) 수정 API
      *  - tbhxzd208 HXZ_지원금한도관리

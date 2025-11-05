@@ -323,7 +323,9 @@ public class SprtLmtService {
         }
 
         // 3) 기존 사용중(useYn='Y') 데이터는 일괄 'N' 처리
-        updateSprtLmtUseYn(req.getTpwSvcTypId());
+        if(hasExisting){
+            updateSprtLmtUseYn(req.getTpwSvcTypId());
+        }
 
         // 4) 신규 버전 데이터 일괄 insert
         insertSprtLmt(toInsert);
