@@ -687,7 +687,7 @@
 
                     normalizeMonthInputs(tbody);
 
-                    // 최초엔 기존값 보존, 1행 변경(confirm) 시 전체 강제 재계산
+                    //  핵심 로직: 최초엔 기존값 보존, 1행 변경(confirm) 시 전체 강제 재계산
                     function apply(opts) {
                         const force = !!(opts && opts.force);
                         const base = parseYm(firstStart.value);
@@ -835,7 +835,7 @@
 
 
                 async function openEdit3In1(tpwSvcTypId) {
-                    const html = await fetchHtml(`/sprtpolimng/polimnginf/sprtLmtDtl/${encodeURIComponent(tpwSvcTypId)}/edit3`);
+                    const html = await fetchHtml(`/sprtpolimng/polimnginf/sprtLmtDtl/${encodeURIComponent(tpwSvcTypId)}/edit`);
                     const container = modal.querySelector('.modal-container');
                     container.innerHTML = html;
                     if (window.Dropdowns?.init) window.Dropdowns.init(container); else runInlineScripts(container);
