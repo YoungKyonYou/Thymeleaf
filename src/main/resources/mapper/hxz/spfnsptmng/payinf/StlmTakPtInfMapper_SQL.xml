@@ -1,0 +1,123 @@
+<select id="readStlmTakPtList" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+    select *
+    from (
+    <!-- ============================== -->
+    <!-- 1. 정기(PERD) 마감확정내역 -->
+    <!-- ============================== -->
+    select
+    'PERD' as exeDiv,
+    m201.tpw_svc_id as tpwSvcId,
+    d215.tpw_svc_typ_sno as tpwSvcTypSno,
+    m201.tpw_svc_nm as tpwSvcNm,
+    m202.tpw_svc_typ_nm as tpwSvcTypNm,
+    d215.apl_dt as aplDt,
+    d215.tpw_trd_stt_dt as tpwTrdSttDt,
+    d215.tpw_trd_end_dt as tpwTrdEndDt,
+    d215.stlm_dt as stlmDt,
+    d215.fix_dt as fixDt,
+    d215.clos_cfm_yn as closCfmYn,
+    d215.stlm_fix_yn as stlmFixYn,
+    d215.acng_prcg_fn_yn as acngPrcgFnYn
+    from tbhxzd215 d215
+    join tbhxzm201 m201 on m201.tpw_svc_id = d215.tpw_svc_id and m201.use_yn = 'Y'
+    join tbhxzm202 m202 on m202.tpw_svc_id = d215.tpw_svc_id
+    and m202.tpw_svc_typ_id = d215.tpw_svc_typ_id
+    and m202.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+    where 1=1
+    <if test="req.exeDiv != null and req.exeDiv != ''">
+        and 'PERD' = #{exeDiv}
+    </if>
+
+    <where>
+        <choose>
+            <!-- 정산일자 검색 -->
+            <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+                and d215.stlm_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+
+            <!-- 확정일자 검색 -->
+            <when test="req.searchType == 'fixDt' and req.sttDt != null and req.endDt != null">
+                and d215.fix_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+
+            <!-- 신청일자 검색 -->
+            <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+                and d215.apl_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+        </choose>
+    </where>
+
+    <!-- 서비스ID 검색 -->
+    <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+        and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+        <choose>
+            <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+            </when>
+            <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                and m201.tpw_svc_id = m202.tpw_svc_id
+            </when>
+        </choose>
+    </if>
+
+    union all
+
+    <!-- ============================== -->
+    <!-- 2. 시뮬레이션(SIM) 마감확정내역 -->
+    <!-- ============================== -->
+    select
+        'SIM' as exeDiv,
+        m201.tpw_svc_id as tpwSvcId,
+        d222.tpw_svc_typ_sno as tpwSvcTypSno,
+        m201.tpw_svc_nm as tpwSvcNm,
+        m202.tpw_svc_typ_nm as tpwSvcTypNm,
+        d222.apl_dt as aplDt,
+        d222.tpw_trd_stt_dt as tpwTrdSttDt,
+        d222.tpw_trd_end_dt as tpwTrdEndDt,
+        d222.apl_dt as stlmDt,   <!-- SIM은 stlmDt = aplDt -->
+        null as fixDt,
+        d222.prcg_fn_yn as closCfmYn,
+        'N' as stlmFixYn,
+        'N' as acngPrcgFnYn
+        from tbhxzd222 d222
+            join tbhxzm201 m201 on m201.tpw_svc_id = d222.tpw_svc_id and m201.use_yn = 'Y'
+            join tbhxzm202 m202 on m202.tpw_svc_id = d222.tpw_svc_id
+            and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+            and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+    where 1=1
+
+        <if test="req.exeDiv != null and req.exeDiv != ''">
+            and 'SIM' = #{req.exeDiv}
+        </if>
+
+        <choose>
+            <!-- 정산일자 검색 -->
+            <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}  <!-- SIM stlmDt = aplDt -->
+            </when>
+
+            <!-- 확정일자 검색 -->
+            <when test="req.searchType == 'fixDt' and req.sttDt != null and req.endDt != null">
+                <!-- SIM 테이블에는 fixDt 없음 -->
+            </when>
+
+            <!-- 신청일자 검색 -->
+            <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+        </choose>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+                </when>
+                <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </when>
+            </choose>
+        </if>
+    ) base
+</select>
