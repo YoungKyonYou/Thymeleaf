@@ -618,49 +618,11 @@
                     clearFooterError();
                 }
 
-                function disableTabsForNew(container) {
-                    // 신규일 때만, 검색폼의 tpwLmtDvsCd로 제어
-                    const dvs = (searchForm?.querySelector('input[name="tpwLmtDvsCd"]')?.value || '01').trim();
-                    const tabQ = container.querySelector('#tab-q'), tabM = container.querySelector('#tab-m'), tabC = container.querySelector('#tab-c');
-                    if (dvs === '01') { // 금액만
-                        tabC.setAttribute('disabled', 'disabled');
-                        tabQ.removeAttribute('disabled');
-                        tabM.removeAttribute('disabled');
-                        // 금액 기본: 분기 탭 선택
-                        activateTabByIndex(container, 0);
-                    } else { // 02 건수만
-                        tabQ.setAttribute('disabled', 'disabled');
-                        tabM.setAttribute('disabled', 'disabled');
-                        tabC.removeAttribute('disabled');
-                        activateTabByIndex(container, 2);
-                    }
-                }
 
                 function enableAllTabs(container) {
                     ['#tab-q', '#tab-m', '#tab-c'].forEach(sel => container.querySelector(sel)?.removeAttribute('disabled'));
                 }
 
-                function wireTabsOnce(scope) {
-                    const root = scope || document;
-                    const tabs = Array.from(root.querySelectorAll('.tabs .tab'));
-                    const panels = Array.from(root.querySelectorAll('.tab-panel'));
-                    if (!tabs.length || !panels.length) return;
-
-                    tabs.forEach((t, i) => {
-                        if (t.__wired) return;
-                        t.__wired = true;
-                        t.setAttribute('type', 'button');
-                        t.addEventListener('click', (e) => {
-                            e.preventDefault(); e.stopPropagation();
-                            activateTabByIndex(root, i);
-
-                            // 읽기전용/레이아웃 보정
-                            if (i === 0) { setupQuarterBehavior(root); }
-                            if (i === 1) { setupMonthlyReadonly(root, '#panel-m'); }
-                            if (i === 2) { bindNumericMasks(root.querySelector('#panel-c')); }
-                        }, { passive: false });
-                    });
-                }
 
                 /* ===== 분기 자동화 / 월 Readonly ===== */
                 function setupQuarterBehavior(scope) {
