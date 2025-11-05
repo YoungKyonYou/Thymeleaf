@@ -206,27 +206,35 @@ public class SprtLmtService {
         final String dvs = req.getTpwLmtDvsCd();           // 01=금액, 02=건수
         final boolean isAmount = "01".equals(dvs);
 
-        // 소스 리스트 선택
-        final List<AmtReqVO> amtSrc  = Optional.ofNullable(req.getAmtList()).orElse(Collections.emptyList());
+        final List<AmtReqVO>  amtSrc  = Optional.ofNullable(req.getAmtList()).orElse(Collections.emptyList());
         final List<NcntReqVO> ncntSrc = Optional.ofNullable(req.getNcntList()).orElse(Collections.emptyList());
         final int needCount = isAmount ? amtSrc.size() : ncntSrc.size();
         if (needCount == 0) return Collections.emptyList();
 
-        // 현재/다음 타입
-        final String curDvs = hasExisting ? existing.get(0).getTpwLmtDvsCd() : null;
-        final String curTyp = hasExisting ? existing.get(0).getTpwLmtTypCd() : null;
+        final String curDvs  = hasExisting ? existing.get(0).getTpwLmtDvsCd() : null;
+        final String curTyp  = hasExisting ? existing.get(0).getTpwLmtTypCd() : null;
         final String nextTyp = isAmount
-                ? req.getTpwLmtTypCd()                                       // 금액: 요청값 그대로 (01=월, 02=분기)
+                ? req.getTpwLmtTypCd()                                        // 금액: 01=월, 02=분기
                 : Optional.ofNullable(req.getTpwLmtTypCd()).orElse(curTyp != null ? curTyp : "02"); // 건수: 기존/기본 유지
 
-        // 관리번호 재사용 여부
-        final boolean reuseMngNo = hasExisting && Objects.equals(curDvs, dvs) && Objects.equals(curTyp, nextTyp);
+        // ----- mngNo 풀 구성 -----
+        final Deque<String> mngNoPool;
+        if (isAmount) {
+            // 금액은 동일 유형(금액/월·분기)일 때만 재사용, 아니면 전량 신규
+            final boolean reuseMngNo = hasExisting && Objects.equals(curDvs, dvs) && Objects.equals(curTyp, nextTyp);
+            mngNoPool = prepareMngNoPool(reuseMngNo, existing, needCount);
+        } else {
+            //  건수는 행추가/행삭제가 있어 재사용 금지: 매번 needCount만큼 "신규 채번"
+            mngNoPool = new ArrayDeque<>(readNextMngNo(needCount));
+        }
 
-        // 관리번호 풀, SNO 기준값
-        final Deque<String> mngNoPool = prepareMngNoPool(reuseMngNo, existing, needCount);
-        final String baseSno = hasExisting ? existing.get(existing.size() - 1).getSpfnLmtSno() : "0000000000";
+        // ----- SNO (주의: 현재는 한 건만 사용) -----
+        // 권장: readNextSnos(needCount)로 선채번하여 Iterator로 소비 (동시성 안전)
+        String nextSno = hasExisting
+                ? readSpfnLmtSnoNextVal(existing.get(existing.size() - 1).getSpfnLmtSno())
+                : "0000000001";
 
-        // 건수 한도의 기간(YYYYMM) 결정: 신규는 당월, 기존 있으면 유지
+        // 건수 한도의 기간(YYYYMM): 신규는 당월, 기존 있으면 유지
         final String nowYm = currentYYYYMM();
         final String sttYmForCount = hasExisting ? existing.get(0).getLmtSttYm() : nowYm;
         final String endYmForCount = hasExisting ? existing.get(0).getLmtEndYm() : nowYm;
@@ -234,48 +242,35 @@ public class SprtLmtService {
         final List<SprtLmtReqVO> out = new ArrayList<>(needCount);
 
         if (isAmount) {
-            // 금액: 행별 시작/종료월 사용, min/max=0, tgt=금액
             for (AmtReqVO a : amtSrc) {
                 final String mngNo = mngNoPool.removeFirst();
-                final String sno   = hasExisting ? readSpfnLmtSnoNextVal(baseSno) : "0000000001";
+                final String sno   = nextSno; // TODO: 선채번으로 대체 권장
 
                 out.add(new SprtLmtReqVO(
-                        req.getTpwSvcId(),
-                        req.getTpwSvcTypId(),
-                        mngNo,
-                        sno,
-                        "01",                   // 금액
-                        nextTyp,                // 01=월, 02=분기
-                        a.getLmtSttYm(),
-                        a.getLmtEndYm(),
-                        0,
-                        0,
-                        a.getTgtAdptVal(),
+                        req.getTpwSvcId(), req.getTpwSvcTypId(),
+                        mngNo, sno,
+                        "01", nextTyp,               // 금액 / (월|분기)
+                        a.getLmtSttYm(), a.getLmtEndYm(),
+                        0, 0, a.getTgtAdptVal(),
                         "Y"
                 ));
             }
         } else {
-            // 건수: 공통 기간 사용, min/max/tgt=행별 값
             for (NcntReqVO n : ncntSrc) {
                 final String mngNo = mngNoPool.removeFirst();
-                final String sno   = hasExisting ? readSpfnLmtSnoNextVal(baseSno) : "0000000001";
+                final String sno   = nextSno; // TODO: 선채번으로 대체 권장
 
                 out.add(new SprtLmtReqVO(
-                        req.getTpwSvcId(),
-                        req.getTpwSvcTypId(),
-                        mngNo,
-                        sno,
-                        "02",                   // 건수
-                        nextTyp,                // 규약 유지
-                        sttYmForCount,
-                        endYmForCount,
-                        n.getMinCndtVal(),
-                        n.getMaxCndtVal(),
-                        n.getTgtAdptVal(),
+                        req.getTpwSvcId(), req.getTpwSvcTypId(),
+                        mngNo, sno,
+                        "02", nextTyp,               // 건수
+                        sttYmForCount, endYmForCount,
+                        n.getMinCndtVal(), n.getMaxCndtVal(), n.getTgtAdptVal(),
                         "Y"
                 ));
             }
         }
         return out;
     }
+
 }
