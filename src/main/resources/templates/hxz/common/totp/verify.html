@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>TOTP 등록/검증</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root { --gap: 16px; }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.5; margin: 0; background:#f7f7fb; color:#111;}
+        .container { max-width: 880px; margin: 40px auto; background:#fff; border-radius: 16px; padding: 24px; box-shadow: 0 6px 24px rgba(0,0,0,.08);}
+        h1 { font-size: 20px; margin: 0 0 8px; }
+        p.desc { margin: 0 0 24px; color:#555;}
+        .grid { display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+        .card { border:1px solid #e8e8ef; border-radius: 12px; padding: 16px; background:#fff; }
+        .card h2 { font-size: 16px; margin: 0 0 12px; }
+        .field { display:flex; flex-direction:column; margin-bottom: 12px; }
+        .field label { font-size: 12px; color:#555; margin-bottom: 6px; }
+        .field input { padding: 10px 12px; border:1px solid #d9d9e3; border-radius: 10px; outline: none; }
+        .row { display:flex; gap: 10px; }
+        button { padding: 10px 14px; border-radius: 10px; border:1px solid #d9d9e3; background:#111; color:#fff; cursor:pointer; }
+        button.secondary { background:#fff; color:#111; }
+        button:disabled { opacity:.6; cursor:not-allowed; }
+        .muted { color:#666; font-size: 12px; }
+        .qr { display:flex; align-items:center; justify-content:center; width: 280px; height: 280px; border:1px dashed #ddd; border-radius:12px; background:#fafafa; }
+        .kv { background:#fafafa; border:1px solid #eee; border-radius: 10px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; overflow:auto;}
+        .ok { color:#0a7a0a; font-weight: 600; }
+        .fail { color:#c22626; font-weight: 600; }
+        .error { color:#c22626; white-space:pre-wrap; font-size: 12px; }
+        @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } .qr { width: 220px; height: 220px; } }
+    </style>
+</head>
+<body>
+<main class="container">
+    <h1>TOTP 등록/검증 데모</h1>
+    <p class="desc">관리자 ID를 입력해 <b>시크릿 발급 &amp; QR</b>을 만든 뒤, 인증앱(구글/마이크로소프트 Authenticator 등)에서 생성된 6자리 코드를 <b>검증</b>합니다.</p>
+
+    <section class="grid">
+        <!-- 등록 -->
+        <div class="card" id="enroll-card">
+            <h2>1) 등록 (시크릿 발급 & QR 생성)</h2>
+            <div class="field">
+                <label for="e-mngrId">관리자 ID (mngrId)</label>
+                <input id="e-mngrId" type="text" placeholder="예: admin001" />
+            </div>
+            <div class="field">
+                <label for="e-label">앱 라벨 (선택, 미입력 시 mngrId 사용)</label>
+                <input id="e-label" type="text" placeholder="예: 관리용 계정" />
+            </div>
+            <div class="row">
+                <button id="btn-enroll">등록(발급)</button>
+                <button id="btn-clear" class="secondary" title="페이지 상태 초기화">초기화</button>
+            </div>
+
+            <div style="display:flex; gap: var(--gap); margin-top: 16px; align-items:flex-start;">
+                <div class="qr"><img id="qr-img" alt="QR" style="max-width:100%; max-height:100%; display:none;" /></div>
+                <div style="flex:1; min-width: 0;">
+                    <div class="kv" id="enroll-json" aria-live="polite">요청 결과가 여기에 표시됩니다.</div>
+                    <div class="row" style="margin-top: 10px;">
+                        <button id="btn-copy-secret" class="secondary" disabled>시크릿 복사</button>
+                        <button id="btn-open-otpauth" class="secondary" disabled>앱에서 열기(otpauth)</button>
+                    </div>
+                    <p class="muted">※ QR이 보이지 않으면 응답의 <code>qrDataUri</code>를 새 탭에서 확인해보세요.</p>
+                    <div class="error" id="enroll-error" role="alert"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검증 -->
+        <div class="card" id="verify-card">
+            <h2>2) 검증 (6자리 코드)</h2>
+            <div class="field">
+                <label for="v-mngrId">관리자 ID (mngrId)</label>
+                <input id="v-mngrId" type="text" placeholder="예: admin001" />
+            </div>
+            <div class="field">
+                <label for="v-code">인증 코드 (6자리)</label>
+                <input id="v-code" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" placeholder="123456" />
+            </div>
+            <div class="row">
+                <button id="btn-verify">검증</button>
+            </div>
+            <div class="kv" id="verify-json" style="margin-top: 12px;" aria-live="polite">검증 결과가 여기에 표시됩니다.</div>
+            <p id="verify-result" class="muted" style="margin-top:8px;"></p>
+            <div class="error" id="verify-error" role="alert"></div>
+        </div>
+    </section>
+</main>
+
+<script>
+    (function () {
+      const $ = (sel) => document.querySelector(sel);
+
+      const btnEnroll = $('#btn-enroll');
+      const btnClear = $('#btn-clear');
+      const btnCopySecret = $('#btn-copy-secret');
+      const btnOpenOtpAuth = $('#btn-open-otpauth');
+
+      const eMngrId = $('#e-mngrId');
+      const eLabel = $('#e-label');
+      const qrImg = $('#qr-img');
+      const enrollJson = $('#enroll-json');
+      const enrollErr = $('#enroll-error');
+
+      const vMngrId = $('#v-mngrId');
+      const vCode = $('#v-code');
+      const btnVerify = $('#btn-verify');
+      const verifyJson = $('#verify-json');
+      const verifyResult = $('#verify-result');
+      const verifyErr = $('#verify-error');
+
+      let lastSecret = null;
+      let lastOtpauth = null;
+
+      async function enroll() {
+        resetEnrollFeedback();
+
+        const mngrId = (eMngrId.value || '').trim();
+        const accountLabel = (eLabel.value || '').trim();
+
+        if (!mngrId) {
+          enrollErr.textContent = '관리자 ID를 입력하세요.';
+          return;
+        }
+
+        btnEnroll.disabled = true;
+
+        try {
+          const res = await fetch('/api/totp/enroll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mngrId, accountLabel })
+          });
+
+          const json = await res.json();
+
+          // 에러 응답 처리(상태코드 2xx 아닐 때를 대비)
+          if (!res.ok) {
+            throw new Error(JSON.stringify(json, null, 2));
+          }
+
+          enrollJson.textContent = JSON.stringify(json, null, 2);
+
+          // QR 표시
+          if (json.qrDataUri) {
+            qrImg.src = json.qrDataUri;
+            qrImg.style.display = 'block';
+          } else {
+            qrImg.style.display = 'none';
+          }
+
+          // secret/otpauth 캐시
+          lastSecret = json.secret || null;
+          lastOtpauth = json.otpauthUri || null;
+
+          btnCopySecret.disabled = !lastSecret;
+          btnOpenOtpAuth.disabled = !lastOtpauth;
+
+          // 검증 카드에 mngrId 채워주기
+          if (mngrId) vMngrId.value = mngrId;
+
+        } catch (e) {
+          enrollErr.textContent = '등록 실패:\n' + (e?.message || e);
+        } finally {
+          btnEnroll.disabled = false;
+        }
+      }
+
+      async function verify() {
+        resetVerifyFeedback();
+
+        const mngrId = (vMngrId.value || '').trim();
+        const code = (vCode.value || '').trim();
+
+        if (!mngrId) {
+          verifyErr.textContent = '관리자 ID를 입력하세요.';
+          return;
+        }
+        if (!/^\d{6}$/.test(code)) {
+          verifyErr.textContent = '6자리 숫자 코드를 입력하세요.';
+          return;
+        }
+
+        btnVerify.disabled = true;
+
+        try {
+          const res = await fetch('/api/totp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mngrId, code })
+          });
+
+          const json = await res.json();
+
+          if (!res.ok) {
+            throw new Error(JSON.stringify(json, null, 2));
+          }
+
+          verifyJson.textContent = JSON.stringify(json, null, 2);
+          verifyResult.innerHTML = json.ok
+            ? '<span class="ok">검증 성공</span>'
+            : '<span class="fail">검증 실패</span>';
+
+        } catch (e) {
+          verifyErr.textContent = '검증 실패:\n' + (e?.message || e);
+        } finally {
+          btnVerify.disabled = false;
+        }
+      }
+
+      function resetEnrollFeedback() {
+        enrollErr.textContent = '';
+        enrollJson.textContent = '요청 결과가 여기에 표시됩니다.';
+      }
+
+      function resetVerifyFeedback() {
+        verifyErr.textContent = '';
+        verifyJson.textContent = '검증 결과가 여기에 표시됩니다.';
+        verifyResult.textContent = '';
+      }
+
+      btnEnroll.addEventListener('click', enroll);
+      btnVerify.addEventListener('click', verify);
+
+      btnClear.addEventListener('click', () => {
+        eMngrId.value = '';
+        eLabel.value = '';
+        qrImg.style.display = 'none';
+        qrImg.removeAttribute('src');
+        lastSecret = null;
+        lastOtpauth = null;
+        btnCopySecret.disabled = true;
+        btnOpenOtpAuth.disabled = true;
+        resetEnrollFeedback();
+        vMngrId.value = '';
+        vCode.value = '';
+        resetVerifyFeedback();
+      });
+
+      btnCopySecret.addEventListener('click', async () => {
+        if (!lastSecret) return;
+        try {
+          await navigator.clipboard.writeText(lastSecret);
+          btnCopySecret.textContent = '복사됨';
+          setTimeout(() => (btnCopySecret.textContent = '시크릿 복사'), 1200);
+        } catch {
+          alert('클립보드 복사 실패. 수동으로 복사하세요:\n' + lastSecret);
+        }
+      });
+
+      btnOpenOtpAuth.addEventListener('click', () => {
+        if (!lastOtpauth) return;
+        // 일부 브라우저는 otpauth:// 스킴을 새탭으로 못 여니, 안내만 띄움
+        const ok = confirm('인증앱에서 otpauth 링크를 여시겠어요?\n\n' + lastOtpauth);
+        if (ok) window.location.href = lastOtpauth;
+      });
+    })();
+</script>
+</body>
+</html>

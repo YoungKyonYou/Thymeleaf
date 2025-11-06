@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tmoney CMS - OTP 등록"/>
+    <title>Tmoney CMS - OTP 등록</title>
+
+    <link rel="stylesheet" th:href="@{/css/index.css}" />
+    <link rel="stylesheet" th:href="@{/css/page/page.css}" />
+
+    <!-- (선택) Spring Security CSRF 메타 -->
+    <!--
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    -->
+
+    <style>
+        .otp-wrap { max-width: 920px; margin: 0 auto; text-align: center; }
+        .otp-desc { color:#666; font-size: 13px; margin-top: 8px; }
+        .otp-actions { display:flex; gap:10px; justify-content:center; margin-top: 16px; }
+        .otp-qr-box {
+          width: 280px; height: 280px; margin: 28px auto 0;
+          border: 1px solid #e5e7eb; border-radius: 12px;
+          display:flex; align-items:center; justify-content:center;
+          background:#fafafa; overflow:hidden;
+        }
+        .otp-qr-box img { max-width:100%; max-height:100%; display:none; }
+        .otp-error { color:#c22626; font-size: 12px; margin-top: 10px; min-height: 18px; }
+    </style>
+</head>
+<body>
+<div id="wrapper" class="fluid">
+    <main id="contents">
+        <div class="container">
+            <div class="login-wrap otp-wrap">
+                <img th:src="@{/images/logo-t-money.png}" alt="Tmoney 로고">
+
+                <div class="fluid mt30">
+                    <p class="field-title" style="text-align:center;">OTP 등록</p>
+                    <p class="otp-desc">인증앱(구글/마이크로소프트 Authenticator 등)에 QR을 스캔한 뒤, <b>OTP 입력</b> 버튼으로 6자리 코드를 검증하세요.</p>
+                </div>
+
+                <div class="otp-actions">
+                    <button id="btnEnroll" type="button" class="btn btn-primary size-lg">QR 발급</button>
+                    <button id="btnReset"  type="button" class="btn btn-dark-line size-lg">초기화</button>
+                    <button id="btnOpenOtpModal" type="button" class="btn btn-dark-line size-lg" style="display:none;">OTP 입력</button>
+                </div>
+
+                <div class="otp-qr-box">
+                    <img id="qrImg" alt="OTP QR">
+                </div>
+                <div id="errorBox" class="otp-error"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 모달 프래그먼트 -->
+<th:block th:replace="~{hxz/common/totp/otp-modal :: otpModal('otpModal')}"></th:block>
+
+<script th:src="@{/js/vendor/common.js}"></script>
+<script th:src="@{/js/theme.js}"></script>
+
+<script>
+    (function(){
+      const btnEnroll = document.getElementById('btnEnroll');
+      const btnReset  = document.getElementById('btnReset');
+      const btnOpen   = document.getElementById('btnOpenOtpModal');
+      const qrImg     = document.getElementById('qrImg');
+      const errBox    = document.getElementById('errorBox');
+
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+      const csrfToken  = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+
+      function setLoading(el, on){ if (!el) return; el.disabled = !!on; el.classList.toggle('is-loading', !!on); }
+
+      function resetPage(){
+        qrImg.style.display = 'none';
+        qrImg.removeAttribute('src');
+        btnOpen.style.display = 'none';
+        errBox.textContent = '';
+      }
+
+      btnReset.addEventListener('click', resetPage);
+
+      btnEnroll.addEventListener('click', async () => {
+        setLoading(btnEnroll, true);
+        errBox.textContent = '';
+
+        try {
+          const headers = {};
+          if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
+
+          // 본문 없이 POST (컨트롤러가 하드코딩 사용자 기준으로 발급)
+          const r = await fetch('/api/totp/enroll', { method:'POST', headers });
+          const j = await r.json();
+          if (!r.ok) throw (typeof j === 'object' ? JSON.stringify(j) : j);
+
+          if (j.qrDataUri) {
+            qrImg.src = j.qrDataUri;
+            qrImg.style.display = 'block';
+            btnOpen.style.display = 'inline-block';
+          } else {
+            errBox.textContent = 'QR 데이터가 없습니다.';
+            resetPage();
+          }
+        } catch (e) {
+          errBox.textContent = '등록 실패: ' + (e?.toString() || e);
+        } finally {
+          setLoading(btnEnroll, false);
+        }
+      });
+
+      btnOpen.addEventListener('click', () => {
+        window.otpModal?.open?.();
+      });
+    })();
+</script>
+</body>
+</html>

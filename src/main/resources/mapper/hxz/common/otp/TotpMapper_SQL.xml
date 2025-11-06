@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.common.otp.mapper.TotpMapper">
+
+    <select id="existsById" parameterType="string" resultType="int">
+        select case when exists (
+        select 1
+        from tbhxzm106 m106
+        where m106.mngr_id = #{mngrId}
+        ) then 1 else 0 end
+    </select>
+
+
+    <update id="updateOtpSecretById" parameterType="map">
+        update tbhxzm106
+        set otp_scrt_key_val  = #{otpScrtKeyVal}
+        , updr_id           = 'system'
+        , upd_dtm           = to_char(current_timestamp, 'yyyymmddhh24miss')
+        where mngr_id = #{mngrId}
+    </update>
+
+
+    <select id="readOtpSecretById" parameterType="string" resultType="string">
+        select m106.otp_scrt_key_val
+        from tbhxzm106 m106
+        where m106.mngr_id = #{mngrId}
+    </select>
+</mapper>

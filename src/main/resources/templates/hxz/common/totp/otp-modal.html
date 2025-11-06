@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="otpModal(id)">
+    <style>
+        dialog.otp-modal {
+          width: 360px;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 20px 40px rgba(0,0,0,.2);
+        }
+        .otp-modal::backdrop { background: rgba(0,0,0,.35); }
+        .otp-head { font-weight: 700; margin: 0 0 10px; }
+        .otp-actions { display:flex; gap:10px; margin-top: 12px; justify-content: flex-end; }
+        .otp-msg { font-size: 12px; color:#c22626; min-height: 18px; margin-top: 6px; white-space: pre-wrap; }
+        .otp-muted { color:#666; font-size: 12px; margin-top: 6px; }
+        .otp-input { width: 100%; }
+    </style>
+
+    <dialog th:attr="id=${id}" class="otp-modal" aria-labelledby="otp-title" aria-modal="true">
+        <form method="dialog" onsubmit="return false;">
+            <h3 id="otp-title" class="otp-head">OTP 코드 입력</h3>
+            <p class="otp-muted">인증앱에서 생성된 6자리 숫자를 입력하세요.</p>
+
+            <input id="otp-code" class="text-field otp-input" type="text"
+                   inputmode="numeric" pattern="\\d{6}" maxlength="6"
+                   placeholder="123456" autocomplete="one-time-code" />
+
+            <div id="otp-msg" class="otp-msg" role="alert"></div>
+
+            <div class="otp-actions">
+                <button type="button" id="otp-cancel" class="btn btn-dark-line">취소</button>
+                <button type="button" id="otp-verify" class="btn btn-primary">검증</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        (function(){
+          const dlg = document.currentScript?.previousElementSibling;
+          const codeEl = dlg.querySelector('#otp-code');
+          const msgEl  = dlg.querySelector('#otp-msg');
+          const btnVerify = dlg.querySelector('#otp-verify');
+          const btnCancel = dlg.querySelector('#otp-cancel');
+
+          // CSRF 자동 탐지
+          const csrfToken  = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || null;
+          const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+
+          function setLoading(on){ btnVerify.disabled = !!on; btnVerify.classList.toggle('is-loading', !!on); }
+          function open(){ msgEl.textContent=''; codeEl.value=''; dlg.showModal?.() ?? dlg.setAttribute('open','open'); setTimeout(()=>codeEl.focus(), 10); }
+          function close(){ dlg.close?.() ?? dlg.removeAttribute('open'); }
+
+          async function verify(){
+            const code = (codeEl.value || '').trim();
+            if (!/^\d{6}$/.test(code)) { msgEl.textContent='6자리 숫자를 입력하세요.'; codeEl.focus(); return; }
+
+            setLoading(true); msgEl.textContent='';
+
+            try {
+              const headers = { 'Content-Type':'application/json' };
+              if (csrfToken) headers[csrfHeader] = csrfToken;
+
+              // 컨트롤러는 하드코딩 사용자로 검증하므로 code만 전송
+              const r = await fetch('/api/totp/verify', {
+                method:'POST', headers, body: JSON.stringify({ code })
+              });
+              const j = await r.json();
+              if (!r.ok) throw (typeof j === 'object' ? JSON.stringify(j) : j);
+
+              if (j.ok) {
+                // 데모 컨트롤러 기준: 성공 시 메인으로 이동
+                window.location.href = '/';
+              } else {
+                msgEl.textContent = '검증 실패. 코드를 다시 확인하세요.';
+                codeEl.focus();
+              }
+            } catch(e) {
+              msgEl.textContent = '검증 실패: ' + (e?.toString() || e);
+            } finally {
+              setLoading(false);
+            }
+          }
+
+          btnVerify.addEventListener('click', verify);
+          btnCancel.addEventListener('click', close);
+          dlg.addEventListener('cancel', (e)=>{ e.preventDefault(); close(); });
+          codeEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') { e.preventDefault(); verify(); }});
+
+          // 외부 제어 API
+          window.otpModal = { open, close };
+        })();
+    </script>
+</th:block>
+</html>

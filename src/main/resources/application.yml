@@ -56,6 +56,8 @@ logging:
     org.springframework.batch.item.database: DEBUG
     tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper.SprtLmtMapper: DEBUG
 app:
+  totp:
+    issuer: "TMONEY"
   onboarding:
     token-ttl-minutes: 10 # 진행 토큰 (onb) JWT TTL 10분, 각 단계의 진행 토큰 유효시간
     hmac-secret: "dGhpc19pc19hX2RlbW9fMzJieXRlX2tleV9mb3JfSE1BQ1MyNTY="
@@ -69,3 +71,4 @@ app:
 mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
