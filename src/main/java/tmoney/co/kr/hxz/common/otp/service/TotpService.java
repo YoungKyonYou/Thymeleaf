@@ -66,8 +66,8 @@ public class TotpService {
     }
 
     /** otpauth://totp/{issuer}:{account}?secret=...&issuer=...&digits=6&period=30&algorithm=SHA1 */
-    private String buildOtpAuthUri(String issuer, String secret) {
-        String label = url(issuer);
+    private String buildOtpAuthUri(String issuer, String account, String secret) {
+        String label = url(issuer) + ":" + url(account);
         String params = "secret=" + url(secret)
                 + "&issuer=" + url(issuer)
                 + "&digits=6&period=30&algorithm=SHA1";
