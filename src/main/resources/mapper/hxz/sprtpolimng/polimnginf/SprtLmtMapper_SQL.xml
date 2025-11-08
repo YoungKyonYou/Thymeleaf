@@ -218,6 +218,20 @@
         </foreach>
     </update>
 
+    <update id="updateTrdNcntLtnAdptYn" parameterType="String">
+        /* sql_id : updateTrdNcntLtnAdptYn */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 교통복지서비스유형관리 거래건수제한적용여부 업데이트
+        * 3. 작성자 : 유영균
+        * 4. 변경이력 :
+        * 2025.11.09 - 유영균 : 최초작성
+        */
+        update tbhxzm202
+        set trd_ncnt_ltn_adpt_yn = upper(#{adptYn})
+        where tpw_svc_typ_id = #{tpwSvcTypId}
+    </update>
+
     <insert id="insertNextSprtLmt" parameterType="list">
         /* sql_id : insertNextSprtLmt */
         /*

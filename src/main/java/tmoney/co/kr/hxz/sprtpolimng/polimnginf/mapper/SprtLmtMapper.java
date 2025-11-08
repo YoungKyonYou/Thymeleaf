@@ -35,4 +35,6 @@ public interface SprtLmtMapper {
     void updateSprtLmtUseYn(@Param("tpwSvcTypId") String tpwSvcTypId);
 
     List<String> readNextMngNo(@Param("count") int count);
+
+    void updateTrdNcntLtnAdptYn(@Param("tpwSvcTypId") String tpwSvcTypId, @Param("adptYn") String adptYn);
 }

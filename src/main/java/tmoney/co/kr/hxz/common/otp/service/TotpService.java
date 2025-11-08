@@ -52,7 +52,7 @@ public class TotpService {
         totpMapper.updateOtpSecretById(mngrId, secret);
 
 
-        String uri = buildOtpAuthUri(issuer, secret);
+        String uri = buildOtpAuthUri(issuer, mngrId,secret);
         return new EnrollResult(secret, uri);
     }
 

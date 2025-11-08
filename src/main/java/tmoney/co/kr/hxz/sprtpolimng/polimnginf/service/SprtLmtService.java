@@ -186,6 +186,11 @@ public class SprtLmtService {
         return sprtLmtMapper.readSpfnLmtSnoNextVal(spfnLmtSno);
     }
 
+    @Transactional
+    public void updateTrdNcntLtnAdptYn(String tpwSvcTypId, String adptYn) {
+        sprtLmtMapper.updateTrdNcntLtnAdptYn(tpwSvcTypId, adptYn);
+    }
+
     private void ensureEndYmForMonthly(InstReqVO req) {
         if ("01".equals(req.getTpwLmtTypCd()) && req.getAmtList() != null) {
             req.getAmtList().forEach(a -> a.setLmtEndYm(a.getLmtSttYm()));
@@ -244,7 +249,7 @@ public class SprtLmtService {
         if (isAmount) {
             for (AmtReqVO a : amtSrc) {
                 final String mngNo = mngNoPool.removeFirst();
-                final String sno   = nextSno; // TODO: 선채번으로 대체 권장
+                final String sno   = nextSno;
 
                 out.add(new SprtLmtReqVO(
                         req.getTpwSvcId(), req.getTpwSvcTypId(),
@@ -258,7 +263,8 @@ public class SprtLmtService {
         } else {
             for (NcntReqVO n : ncntSrc) {
                 final String mngNo = mngNoPool.removeFirst();
-                final String sno   = nextSno; // TODO: 선채번으로 대체 권장
+                final String sno   = nextSno;
+                updateTrdNcntLtnAdptYn(req.getTpwSvcTypId(), "Y");
 
                 out.add(new SprtLmtReqVO(
                         req.getTpwSvcId(), req.getTpwSvcTypId(),
