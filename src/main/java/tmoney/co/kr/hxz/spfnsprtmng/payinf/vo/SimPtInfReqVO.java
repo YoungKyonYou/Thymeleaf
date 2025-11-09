@@ -7,6 +7,8 @@ import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 public class SimPtInfReqVO {
@@ -36,7 +38,7 @@ public class SimPtInfReqVO {
     private String tpwSvcTypId;        // 서비스유형ID
 
     @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.")
-    private String tpwSvcTypSno;       // 서비스유형일련번호
+    private BigDecimal tpwSvcTypSno;       // 서비스유형일련번호
 
     @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.")
     private int page = 0;

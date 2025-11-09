@@ -10,6 +10,8 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
+import java.math.BigDecimal;
+
 /**
  * 마감확정내역 응답 VO (조회 + 신규등록 검증용)
  */
@@ -33,11 +35,21 @@ public class StlmTakPtInfRspVO {
 
     /** 서비스명 */
     @Size(max = 500, message = "서비스명은 500자리 이하이어야 합니다.")
-    private String svcNm;
+    private String tpwSvcNm;
 
     /** 서비스유형명 */
     @Size(max = 100, message = "서비스유형명은 100자리 이하이어야 합니다.")
-    private String svcTypNm;
+    private String tpwSvcTypNm;
+
+    /** 신청시작일자 (YYYYMMDD) */
+    @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
+    @Pattern(regexp = "^[0-9]{8}$", message = "신청일자는 8자리 숫자(YYYYMMDD) 형식이어야 합니다.")
+    private String aplSttDt;
+
+    /** 신청종료일자 (YYYYMMDD) */
+    @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
+    @Pattern(regexp = "^[0-9]{8}$", message = "신청일자는 8자리 숫자(YYYYMMDD) 형식이어야 합니다.")
+    private String aplEndDt;
 
     /** 신청일자 (YYYYMMDD) */
     @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
@@ -47,12 +59,12 @@ public class StlmTakPtInfRspVO {
     /** 거래시작일자 (YYYYMMDD) */
     @Size(max = 8, message = "거래시작일자는 8자리 이하이어야 합니다.")
     @Pattern(regexp = "^[0-9]{8}$", message = "거래시작일자는 8자리 숫자(YYYYMMDD) 형식이어야 합니다.")
-    private String tradeSttDt;
+    private String tpwTrdSttDt;
 
     /** 거래종료일자 (YYYYMMDD) */
     @Size(max = 8, message = "거래종료일자는 8자리 이하이어야 합니다.")
     @Pattern(regexp = "^[0-9]{8}$", message = "거래종료일자는 8자리 숫자(YYYYMMDD) 형식이어야 합니다.")
-    private String tradeEndDt;
+    private String tpwTrdEndDt;
 
     /** 정산일자 (YYYYMMDD) */
     @Size(max = 8, message = "정산일자는 8자리 이하이어야 합니다.")
@@ -82,6 +94,12 @@ public class StlmTakPtInfRspVO {
     @Pattern(regexp = "^[YN]$", message = "회계처리여부는 Y 또는 N이어야 합니다.")
     private String acngPrcgFnYn;
 
+    /** 회계처리완료여부 (Y/N)
+     *  ^[YN]$ → Y 또는 N만 허용
+     */
+    @Pattern(regexp = "^[YN]$", message = "회계처리여부는 Y 또는 N이어야 합니다.")
+    private String prcgFnYn;
+
     /** 서비스ID */
     @Size(max = 7, message = "서비스ID는 7자리 이하이어야 합니다.")
     private String tpwSvcId;
@@ -92,7 +110,7 @@ public class StlmTakPtInfRspVO {
 
     /** 서비스유형일련번호 (numeric(10)) */
     @PositiveOrZero(message = "서비스유형일련번호는 0 이상이어야 합니다.")
-    private Long tpwSvcTypSno;
+    private BigDecimal tpwSvcTypSno;
 
 
 
