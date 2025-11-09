@@ -1,8 +1,11 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
@@ -12,9 +15,34 @@ import java.math.BigDecimal;
  * 마감확정내역 조회 요청 VO
  * 검색조건용
  */
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 public class StlmTakPtInfReqVO {
+    
+
+    // 실행구분
+    private String exeDiv; // 'PERD' or 'SIM' 구분 정기, 시뮬레이션
+    
+    /** 신청시작일 (YYYYMMDD) */
+    @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
+    private String aplSttDt;
+    
+    /** 신청종료일 (YYYYMMDD) */
+    @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
+    private String aplEndDt;
+    
+    
+
+
+    /** 정산일자 (YYYYMMDD) */
+    @Size(max = 8, message = "정산일자는 8자리 이하이어야 합니다.")
+    private String stlmDt;
+
+    /** 확정일자 (YYYYMMDD) */
+    @Size(max = 8, message = "확정일자는 8자리 이하이어야 합니다.")
+    private String fixDt;
 
     @Size(max = 7, message = "기관코드는 7자리 이하의 길이어야 합니다.")
     private String orgCd; // 기관코드
@@ -24,9 +52,6 @@ public class StlmTakPtInfReqVO {
 
     @Size(max = 8, message = "검색 종료일자는 8자리 이하의 길이어야 합니다.")
     private String endDt; // 검색 종료일자 (YYYYMMDD)
-
-    @Size(max = 100, message = "카드번호는 100자리 이하의 길이어야 합니다.")
-    private String cardNo; // 카드번호
 
     @Size(max = 500, message = "서비스명은 500자리 이하의 길이어야 합니다.")
     private String svcNm; // 서비스명
@@ -43,7 +68,7 @@ public class StlmTakPtInfReqVO {
     private BigDecimal tpwSvcTypSno; // 서비스유형일련번호
 
     @Size(max = 10, message = "검색유형은 10자리 이하의 길이어야 합니다.")
-    private String searchType; // 검색유형 (정산일자, 확정일자, 신청일자, 거래기간 등)
+    private String searchType = "stlmDt"; // 검색유형 (정산일자, 확정일자, 신청일자, 거래기간 등)
 
     @PositiveOrZero(message = "페이지는 음수가 될 수 없습니다.")
     private int page = 0;

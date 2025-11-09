@@ -11,6 +11,8 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimPtInfRspVO;
 
 import java.util.List;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class SimPtInfServiceImpl implements SimPtInfService {
@@ -43,7 +45,7 @@ public class SimPtInfServiceImpl implements SimPtInfService {
                 req.getSvcTypNm(),
                 req.getTpwSvcId(),
                 req.getTpwSvcTypId(),
-                req.getTpwSvcTypSno(),
+                req.getTpwSvcTypSno().toPlainString(),
                 offset,
                 req.getPage(),
                 req.getSize(),
