@@ -29,7 +29,7 @@
     (function () {
       // ─────────────────────────────────────────
       // 1) 안전 가드: 동일 DOM에 중복 바인딩 방지
-      var rootId = /*[[''+${rootId}]]*/ 'root';
+      var rootId =  'root';
       var root = document.getElementById(rootId);
       if (!root || root.dataset.bound === '1') return;
       root.dataset.bound = '1';
@@ -41,9 +41,9 @@
       var apiUrl = root.getAttribute('data-api-url');
 
       // 캐시
-      var SERVICE_BY_ID = {};   // { svcId: {tpwSvcId, tpwSvcNm, ...} }
-      var TYPES_BY_SVC = {};   // { svcId: [{tpwSvcTypId, tpwSvcTypNm, ...}, ...] }
-      var _payload = null; // 원 응답 보관
+      var SERVICE_BY_ID = {};
+      var TYPES_BY_SVC = {};
+      var _payload = null;
 
       // 외부 클릭 닫기 핸들러(인스턴스 단위)
       var offsiteCloser = function (e) {
@@ -92,7 +92,7 @@
             if (!r?.ok) throw new Error('HTTP ' + (r?.status || ''));
             return r.data;
           } catch (_) {
-            /* 아래 fetch로 폴백 */
+
           }
         }
         const res = await fetch(url, {

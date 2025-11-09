@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.common.cmncd.mapper.CmnCdMapper">
+
+    <select id="readCmnCdInf" parameterType="String" resultType="tmoney.co.kr.hxz.common.cmncd.vo.CmnCdVO">
+        select c001.cmn_grp_cd_id
+             , c001.cmn_cd_eng_nm
+             , c002.cmn_dtl_cd
+             , c002.cmn_dtl_cd_nm
+             , c002.use_yn
+          from ohxzown.tbhxzc001 AS c001
+          join ohxzown.tbhxzc002 AS c002
+            on c002.cmn_grp_cd_id = c001.cmn_grp_cd_id
+         where c001.cmn_grp_cd_id = #{cmnGrpCdId}
+           and c002.use_yn = 'Y'
+         order by cd_seq
+    </select>
+</mapper>
