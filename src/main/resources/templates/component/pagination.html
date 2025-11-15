@@ -55,79 +55,106 @@
 
     <!-- 사용 예: bindPagination('/user', { dir: 'asc', email: 'kim@test.com', username: 'young' }) -->
     <script>
-        function putParam(params, key, value) {
-          if (value === null || value === undefined || value === '') return;
-          if (Array.isArray(value)) value.forEach(v => putParam(params, key, v));
-          else params.set(key, value);
-        }
+        (function () {
+          'use strict';
 
-        async function fetchAndSwap(u) {
-          const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const html = await res.text();
+          // ===== 공통 유틸 =====
+          function putParam(params, key, value) {
+            if (value === null || value === undefined || value === '') return;
+            if (Array.isArray(value)) value.forEach(v => putParam(params, key, v));
+            else params.set(key, value);
+          }
 
-          const doc = new DOMParser().parseFromString(html, 'text/html');
+          async function fetchAndSwap(u) {
+            const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const html = await res.text();
 
-          const newHead  = doc.querySelector('#grid-header');
-          const newTbody = doc.querySelector('#grid-tbody');
-          const newPager = doc.querySelector('#grid-pager');
-          const newTitle = doc.querySelector('#grid-title');
-          const newTHead = doc.querySelector('#grid-head');
+            const doc = new DOMParser().parseFromString(html, 'text/html');
 
-          const curHead  = document.querySelector('#grid-header');
-          const curTbody = document.querySelector('#grid-tbody');
-          const curPager = document.querySelector('#grid-pager');
-          const curTitle = document.querySelector('#grid-title');
-          const curTHead = document.querySelector('#grid-head');
+            const newHead  = doc.querySelector('#grid-header');
+            const newTbody = doc.querySelector('#grid-tbody');
+            const newPager = doc.querySelector('#grid-pager');
+            const newTitle = doc.querySelector('#grid-title');
+            const newTHead = doc.querySelector('#grid-head');
 
-          if (newTbody && curTbody) curTbody.replaceWith(newTbody);
-          if (newPager && curPager) curPager.innerHTML = newPager.innerHTML;
-          if (newHead  && curHead)  curHead.replaceWith(newHead);
-          if (newTitle && curTitle) curTitle.replaceWith(newTitle);
-          if (newTHead && curTHead) curTHead.replaceWith(newTHead);
+            const curHead  = document.querySelector('#grid-header');
+            const curTbody = document.querySelector('#grid-tbody');
+            const curPager = document.querySelector('#grid-pager');
+            const curTitle = document.querySelector('#grid-title');
+            const curTHead = document.querySelector('#grid-head');
 
-          // 주소창만 갱신 (전체 새로고침 X)
-          history.pushState(null, '', u.toString());
-        }
+            if (newTbody && curTbody) curTbody.replaceWith(newTbody);
+            if (newPager && curPager) curPager.innerHTML = newPager.innerHTML;
+            if (newHead  && curHead)  curHead.replaceWith(newHead);
+            if (newTitle && curTitle) curTitle.replaceWith(newTitle);
+            if (newTHead && curTHead) curTHead.replaceWith(newTHead);
 
-        function bindPagination(url, ...args) {
-          const baseUrl  = new URL(url, window.location.origin);
-          const baseArgs = Object.assign({}, ...args);
+            // 주소창만 갱신 (전체 새로고침 X)
+            history.pushState(null, '', u.toString());
+          }
 
-          // 브라우저 뒤로/앞으로 가기 지원
-          window.addEventListener('popstate', () => {
-            fetchAndSwap(new URL(window.location.href)).catch(console.error);
+          // ===== 전역 상태: 여러 번 bindPagination 호출해도 리스너는 1세트만 =====
+          const state = window.__PAGER_STATE__ || (window.__PAGER_STATE__ = {
+            baseUrl:  null,
+            baseArgs: {}
           });
 
-          document.addEventListener('click', function (e) {
+          // popstate / click 핸들러 정의 (state만 참조)
+          function handlePopState() {
+            // 뒤로가기/앞으로가기 → 현재 URL로 다시 grid만 갱신
+            fetchAndSwap(new URL(window.location.href)).catch(console.error);
+          }
+
+          function handleClick(e) {
             const btn = e.target.closest('.pagination [data-page]');
             if (!btn) return;
 
             if (btn.classList.contains('disabled')) return;
-            e.preventDefault(); // 혹시 모를 기본동작 차단
+            e.preventDefault();
+
+            // 아직 설정이 안 되어 있으면 아무 것도 안 함
+            if (!state.baseUrl) return;
 
             const page = Number(btn.dataset.page);
 
-            const u = new URL(baseUrl.toString());
+            const u = new URL(state.baseUrl.toString());
             const p = new URLSearchParams(u.search);
 
-            const size = baseArgs.size ?? null; // null이면 생략
-            const dir  = baseArgs.dir  ?? 'asc';
-            const sort = baseArgs.sort ?? null; // null/''이면 생략
+            const size = state.baseArgs.size ?? null;
+            const dir  = state.baseArgs.dir  ?? 'asc';
+            const sort = state.baseArgs.sort ?? null;
 
             putParam(p, 'size', size);
-            putParam(p, 'page', page); // 0-base 그대로
+            putParam(p, 'page', page);
             putParam(p, 'dir',  dir);
-            if (sort !== null && sort !== undefined && sort !== '') putParam(p, 'sort', sort);
+            if (sort !== null && sort !== undefined && sort !== '') {
+              putParam(p, 'sort', sort);
+            }
 
             const skip = new Set(['size','page','dir','sort']);
-            Object.entries(baseArgs).forEach(([k, v]) => { if (!skip.has(k)) putParam(p, k, v); });
+            Object.entries(state.baseArgs).forEach(([k, v]) => {
+              if (!skip.has(k)) putParam(p, k, v);
+            });
 
             u.search = p.toString();
 
             fetchAndSwap(u).catch(console.error);
-          });
-        }
+          }
+
+          // 전역 리스너는 한 번만 등록
+          if (!window.__PAGER_BOUND__) {
+            window.__PAGER_BOUND__ = true;
+            window.addEventListener('popstate', handlePopState);
+            document.addEventListener('click', handleClick);
+          }
+
+          // 외부에서 호출하는 API: 단순히 state만 갱신
+          window.bindPagination = function (url, ...args) {
+            state.baseUrl  = new URL(url, window.location.origin);
+            state.baseArgs = Object.assign({}, ...args);
+          };
+        })();
     </script>
 </th:block>
 

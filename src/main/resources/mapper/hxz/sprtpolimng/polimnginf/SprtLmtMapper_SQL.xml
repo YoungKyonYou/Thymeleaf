@@ -58,6 +58,12 @@
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
         </if>
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and lower(d208.tpw_svc_id) = lower(#{req.tpwSvcId})
+        </if>
+        <if test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+            and lower(d208.tpw_svc_typ_id) = lower(#{req.tpwSvcTypId})
+        </if>
         <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
             and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
         </if>
@@ -94,6 +100,12 @@
         </if>
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
+        </if>
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and lower(d208.tpw_svc_id) = lower(#{req.tpwSvcId})
+        </if>
+        <if test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+            and lower(d208.tpw_svc_typ_id) = lower(#{req.tpwSvcTypId})
         </if>
         <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
             and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}

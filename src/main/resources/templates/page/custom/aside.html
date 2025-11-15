@@ -62,6 +62,22 @@
             </ul>
         </nav>
     </div>
+    <script>
+        // 중복 init 방지 + common.js 로드 대비
+        (function initMiniSpaWhenReady() {
+          if (window.__miniSpaInited) return;                     // 이미 초기화면 스킵
+          if (window.Common && Common.MiniSPA) {                  // common.js 로드 확인
+            Common.MiniSPA.init({
+              asideSelector: '.aside-nav',                        // 네 마크업 그대로
+              containerSelector: '#contents .container'
+            });
+            window.__miniSpaInited = true;
+            return;
+          }
+          // 아직 Common이 없으면 조금 뒤에 재시도
+          setTimeout(initMiniSpaWhenReady, 50);
+        })();
+    </script>
 </aside>
 </body>
 </html>
