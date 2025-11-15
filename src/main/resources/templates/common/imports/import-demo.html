@@ -16,27 +16,27 @@
             </div>
 
             <div class="section-content">
-                <div class="toolbar">
-                    <!-- ▼ 엑셀 업로드 트리거 버튼 + 숨겨진 file input -->
+                <div class="toolbar" style="display:flex; gap:8px; align-items:center;">
+                    <!-- 숨겨진 파일 인풋 (버튼으로 트리거) -->
+                    <input type="file"
+                           id="user-import-file"
+                           accept=".xlsx"
+                           style="display:none;" />
+
+                    <!-- 엑셀 업로드 버튼 -->
                     <button type="button"
                             id="btn-user-import"
                             class="btn btn-primary btn-icon-left">
                         <i class="icon icon-save"></i>
-                        엑셀 업로드
+                        파일 선택
                     </button>
 
-                    <!-- 실제 파일 선택 input (숨김) -->
-                    <input type="file"
-                           id="user-import-file"
-                           accept=".xlsx"
-                           style="display:none" />
-
-                    <!-- ▼ 예시 파일 다운로드 버튼 -->
+                    <!-- 예시 엑셀 다운로드 버튼 -->
                     <button type="button"
                             id="btn-user-template"
                             class="btn btn-secondary btn-icon-left">
-                        <i class="icon icon-download"></i>
-                        예시 엑셀 다운로드
+                        <i class="icon icon-save"></i>
+                        Import 예시 파일
                     </button>
                 </div>
 
@@ -83,14 +83,13 @@
         <!-- common.js 에 bindExcelImport, collectTablePayload, sendSafe 가 정의되어 있다고 가정 -->
         <script th:inline="javascript">
             document.addEventListener('DOMContentLoaded', function () {
-                const fileInput        = document.getElementById('user-import-file');
-                const btnImportTrigger = document.getElementById('btn-user-import');
-                const btnTemplate      = document.getElementById('btn-user-template');
-
-                const tbody       = document.querySelector('#user-grid tbody');
-                const errorArea   = document.getElementById('user-import-errors');
-                const btnSendGrid = document.getElementById('btn-send-grid');
-                const logEl       = document.getElementById('user-grid-log');
+                const fileInput      = document.getElementById('user-import-file');
+                const btnUserImport  = document.getElementById('btn-user-import');
+                const btnUserTmpl    = document.getElementById('btn-user-template');
+                const tbody          = document.querySelector('#user-grid tbody');
+                const errorArea      = document.getElementById('user-import-errors');
+                const btnSendGrid    = document.getElementById('btn-send-grid');
+                const logEl          = document.getElementById('user-grid-log');
 
                 if (!window.Common) {
                     console.error('Common 전역 객체가 없습니다. /js/common.js 포함 여부를 확인하세요.');
@@ -106,29 +105,21 @@
                 }
 
                 // ==========================
-                // 0) 업로드 버튼 → hidden file input 클릭
+                // 0) 버튼 → 파일 선택창 열기
                 // ==========================
-                if (btnImportTrigger && fileInput) {
-                    btnImportTrigger.addEventListener('click', function () {
+                if (btnUserImport && fileInput) {
+                    btnUserImport.addEventListener('click', function () {
                         fileInput.click();
                     });
                 }
 
-                // 예시 엑셀 다운로드 버튼
-                if (btnTemplate) {
-                    btnTemplate.addEventListener('click', function () {
-                        // GET /imports/users/template 로 다운로드
-                        const url = /*[[@{/imports/users/template}]]*/ '/imports/users/template';
-                        window.location.href = url;
-                    });
-                }
-
                 // ==========================
-                // 1) 엑셀 Import 바인딩 (기존 그대로)
+                // 1) 엑셀 Import 바인딩
+                //    (POST /import/xlsx, provider=user)
                 // ==========================
                 Common.bindExcelImport(
                     fileInput,
-                    'user', // provider name (UserImportProvider.name())
+                    'user', // ImportProviderRegistry 에 등록된 provider 이름
                     function (rows) {
                         // rows: UserImportRow[] 그대로 옴
                         tbody.innerHTML = '';
@@ -164,13 +155,25 @@
                         }).join('<br/>');
                     },
                     {
-                        // 필요하면 여기 extraParams로 화면 조건 같이 보낼 수 있음
-                        // 예: orgCd: /*[[${orgCd}]]*/ '0001'
+                        // 필요하면 extraParams 넣기
+                        // orgCd: /*[[${orgCd}]]*/ '0001'
                     }
                 );
 
                 // ==========================
-                // 2) 테이블 전체 → payload → sendSafe
+                // 2) 예시 엑셀 다운로드
+                //    (GET /import/template/xlsx?provider=user)
+                // ==========================
+                if (btnUserTmpl) {
+                    btnUserTmpl.addEventListener('click', function () {
+                        // 타임리프 없을 때를 위해 fallback 도 같이 둠
+                        const url = '/import/template/xlsx?provider=user';
+                        window.location.href = url;
+                    });
+                }
+
+                // ==========================
+                // 3) 테이블 전체 → payload → sendSafe
                 // ==========================
 
                 // thead 헤더 텍스트 → DTO 필드명 매핑

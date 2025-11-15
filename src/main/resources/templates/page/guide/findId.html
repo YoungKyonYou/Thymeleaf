@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tmoney CMS"/>
+    <meta name="keywords" content="Tmoney CMS"/>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Tmoney CMS" />
+    <meta property="og:description" content="Tmoney CMS" />
+    <title>Tmoney CMS LOGIN</title>
+
+    <!-- 정적 리소스 -->
+    <link rel="stylesheet" th:href="@{/css/index.css}" />
+    <link rel="stylesheet" th:href="@{/css/page/page.css}" />
+
+    <!-- 모달 전용 오버라이드 (전역과 충돌 방지) -->
+    <style>
+        /* ✅ 전역 .box-wrap 그리드 영향 제거하고, 모달 전용 폼 그리드 사용 */
+        #modal-find-id .modal-body { padding-top: 12px; }
+        #modal-find-id .form-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 14px 16px;
+        }
+        @media (min-width: 480px) {
+          #modal-find-id .form-grid { grid-template-columns: 1fr 1fr; }
+        }
+        #modal-find-id .field { display: flex; flex-direction: column; min-width: 0; }
+        #modal-find-id .field-title { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--color-darken); }
+        #modal-find-id .text-field {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 10px 12px;
+          border-radius: 8px;
+          border: 1px solid var(--border-darken);
+          background: var(--color-white);
+          color: var(--color-darken);
+          font-size: 14px;
+        }
+        #modal-find-id .text-field::placeholder { color: #9ca3af; }
+        #modal-find-id .hint-error { display:none; color:#e11d48; font-size:13px; margin-top:6px; }
+        #modal-find-id .result-box { display:none; margin-top:12px; }
+        #modal-find-id .result-box .box {
+          border:1px solid var(--border-darken);
+          background: var(--color-white);
+          border-radius:10px; padding:14px;
+        }
+        /* 탭 하단 보더 라인 정렬 */
+        #modal-find-id .tabs { gap: 0; }
+        #modal-find-id .tabs .tab { padding:10px 16px; border-bottom:2px solid transparent; }
+        #modal-find-id .tabs .tab.is-active { border-color: var(--color-primary); }
+
+        /* 푸터 버튼 정렬 안정화 */
+        #modal-find-id .modal-footer .btn { min-width: 96px; }
+    </style>
+</head>
+<body>
+<div id="wrapper" class="fluid">
+    <main id="contents">
+        <div class="container">
+            <div class="login-wrap" style="max-width:420px;margin:60px auto 0;">
+                <img th:src="@{/images/logo-t-money.png}" alt="Tmoney 로고" style="display:block;margin:0 auto;width:160px;">
+
+                <div class="fluid mt40">
+                    <p class="field-title">로그인</p>
+                    <input type="text" class="text-field" placeholder="아이디" autocomplete="username"/>
+                </div>
+
+                <div class="fluid mt40">
+                    <p class="field-title">비밀번호</p>
+                    <input type="password" class="text-field" placeholder="비밀번호 입력" autocomplete="current-password"/>
+                </div>
+
+                <button type="button" class="btn btn-primary size-lg mt40" style="width:100%;">로그인</button>
+
+                <div class="btn-wrap" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-dark-line size-lg" data-open="modal-find-id">아이디 찾기</button>
+                    <button type="button" class="btn btn-dark-line size-lg">비밀번호 찾기</button>
+                    <button type="button" class="btn btn-dark-line size-lg">신규등록</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ───────── 아이디 찾기 모달 ───────── -->
+<div class="modal modal-sm" id="modal-find-id" aria-hidden="true">
+    <div class="modal-overlay" data-close="true" aria-hidden="true"></div>
+    <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="findIdTitle" tabindex="-1">
+        <div class="modal-header">
+            <h2 class="modal-title" id="findIdTitle">아이디 찾기</h2>
+            <button type="button" class="modal-close" aria-label="닫기" data-close="true"></button>
+        </div>
+
+        <div class="modal-body">
+            <div class="tabs" role="tablist" aria-label="아이디 찾기 방식">
+                <button class="tab is-active" role="tab" id="tab-email" aria-controls="panel-email" aria-selected="true">이메일로 찾기</button>
+                <button class="tab" role="tab" id="tab-phone" aria-controls="panel-phone" aria-selected="false">휴대폰으로 찾기</button>
+            </div>
+
+            <div class="tab-panels">
+                <!-- 이메일 -->
+                <section id="panel-email" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-email">
+                    <form id="findIdByEmailForm" novalidate>
+                        <div class="form-grid" style="margin-top:12px;">
+                            <div class="field">
+                                <p class="field-title">이름</p>
+                                <input type="text" class="text-field" name="name" placeholder="이름을 입력하세요" autocomplete="name" required/>
+                            </div>
+                            <div class="field">
+                                <p class="field-title">이메일</p>
+                                <input type="email" class="text-field" name="email" placeholder="예) user@example.com" autocomplete="email" required/>
+                            </div>
+                        </div>
+                        <p id="email-error" class="hint-error">이름과 유효한 이메일을 입력해주세요.</p>
+                        <div id="email-result" class="result-box"></div>
+                    </form>
+                </section>
+
+                <!-- 휴대폰 -->
+                <section id="panel-phone" class="tab-panel" role="tabpanel" aria-labelledby="tab-phone" hidden>
+                    <form id="findIdByPhoneForm" novalidate>
+                        <div class="form-grid" style="margin-top:12px;">
+                            <div class="field">
+                                <p class="field-title">이름</p>
+                                <input type="text" class="text-field" name="name" placeholder="이름을 입력하세요" autocomplete="name" required/>
+                            </div>
+                            <div class="field">
+                                <p class="field-title">휴대폰 번호</p>
+                                <input type="tel" class="text-field" name="phone" placeholder="숫자만 입력(예: 01012345678)" inputmode="numeric" pattern="\\d{10,11}" required/>
+                            </div>
+                        </div>
+                        <p id="phone-error" class="hint-error">이름과 유효한 휴대폰 번호(10~11자리)를 입력해주세요.</p>
+                        <div id="phone-result" class="result-box"></div>
+                    </form>
+                </section>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn" data-close="true">취소</button>
+            <button type="button" class="btn btn-primary" id="btnFindId">아이디 찾기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 공통 스크립트 -->
+<script th:src="@{/js/vendor/common.js}"></script>
+<script th:src="@{/js/theme.js}"></script>
+
+<!-- 바닐라 JS -->
+<script>
+    (function(){
+      'use strict';
+      const $  = (s, r=document)=>r.querySelector(s);
+      const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+      const FOCUSABLE = [
+        'a[href]','area[href]','input:not([disabled])','select:not([disabled])','textarea:not([disabled])',
+        'button:not([disabled])','iframe','object','embed','[contenteditable]','[tabindex]:not([tabindex="-1"])'
+      ].join(',');
+
+      // ── Modal open/close ─────────────────────────────────────────
+      const modal  = $('#modal-find-id');
+      const dialog = $('.modal-container', modal);
+      let lastActive = null;
+
+      function openModal(){
+        lastActive = document.activeElement;
+        modal.setAttribute('aria-hidden','false');
+        document.body.classList.add('body-lock');
+        ( $$(FOCUSABLE, modal)[0] || dialog ).focus();
+        window.addEventListener('keydown', onEsc);
+        dialog.addEventListener('keydown', trapFocus);
+      }
+      function closeModal(){
+        modal.setAttribute('aria-hidden','true');
+        document.body.classList.remove('body-lock');
+        window.removeEventListener('keydown', onEsc);
+        dialog.removeEventListener('keydown', trapFocus);
+        if (lastActive && lastActive.focus) lastActive.focus();
+      }
+      function onEsc(e){ if (e.key === 'Escape'){ e.preventDefault(); closeModal(); } }
+      function trapFocus(e){
+        if (e.key !== 'Tab') return;
+        const nodes = $$(FOCUSABLE, dialog).filter(el=>el.offsetParent !== null);
+        if (!nodes.length) return;
+        const first = nodes[0], last = nodes[nodes.length-1];
+        if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+        if ( e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      }
+      modal.addEventListener('click', e=>{ if (e.target.closest('[data-close]')) closeModal(); });
+      $$('[data-open="modal-find-id"]').forEach(b=>b.addEventListener('click', openModal));
+
+      // ── Tabs ────────────────────────────────────────────────────
+      const tabEmail   = $('#tab-email');
+      const tabPhone   = $('#tab-phone');
+      const panelEmail = $('#panel-email');
+      const panelPhone = $('#panel-phone');
+
+      function activateTab(btn){
+        const isEmail = btn === tabEmail;
+        [tabEmail, tabPhone].forEach(t=>{
+          const active = t === btn;
+          t.classList.toggle('is-active', active);
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panelEmail.classList.toggle('is-active', isEmail);
+        panelEmail.hidden = !isEmail;
+        panelPhone.classList.toggle('is-active', !isEmail);
+        panelPhone.hidden = isEmail;
+      }
+      tabEmail.addEventListener('click', ()=>activateTab(tabEmail));
+      tabPhone.addEventListener('click', ()=>activateTab(tabPhone));
+
+      // ── Find ID demo logic ──────────────────────────────────────
+      const btnFind = $('#btnFindId');
+
+      function maskId(id){
+        if (!id) return '';
+        const at = id.indexOf('@');
+        if (at > -1){
+          const name = id.slice(0, at), domain = id.slice(at);
+          const keep = Math.max(1, Math.floor(name.length/3));
+          return name.slice(0, keep) + '*'.repeat(Math.max(3, name.length-keep)) + domain;
+        }
+        const keep = Math.max(2, Math.floor(id.length/3));
+        return id.slice(0, keep) + '*'.repeat(Math.max(3, id.length-keep));
+      }
+      function showResult(el, ok, html){
+        el.style.display = 'block';
+        el.innerHTML = `<div class="box" style="border-color:${ok?'#c7d2fe':'#fecdd3'};background:${ok?'#eef2ff':'#fff1f2'}">${html}</div>`;
+      }
+
+      btnFind.addEventListener('click', async ()=>{
+        if (tabEmail.classList.contains('is-active')){
+          const f   = $('#findIdByEmailForm');
+          const err = $('#email-error');
+          const res = $('#email-result');
+          err.style.display = 'none'; res.style.display = 'none';
+
+          const name  = f.name.value.trim();
+          const email = f.email.value.trim();
+          const ok    = name && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+          if (!ok){ err.style.display='block'; return; }
+
+          // 실제 연동 예시
+          // const rsp = await fetch('[[@{/api/auth/find-id-by-email}]]',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, email}) });
+          // const data = await rsp.json();
+
+          const data = { ok:true, userId:'wesley.you' }; // demo
+          if (data.ok && data.userId){
+            showResult(res, true, `<strong>찾은 아이디</strong>: <span style="font-weight:700">${maskId(data.userId)}</span><br><small>보안을 위해 일부 마스킹되었습니다.</small>`);
+          } else {
+            showResult(res, false, '일치하는 정보가 없습니다. 입력값을 다시 확인해주세요.');
+          }
+        } else {
+          const f   = $('#findIdByPhoneForm');
+          const err = $('#phone-error');
+          const res = $('#phone-result');
+          err.style.display = 'none'; res.style.display = 'none';
+
+          const name  = f.name.value.trim();
+          const phone = f.phone.value.trim();
+          const ok    = name && /^\d{10,11}$/.test(phone);
+          if (!ok){ err.style.display='block'; return; }
+
+          // const rsp = await fetch('[[@{/api/auth/find-id-by-phone}]]',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, phone}) });
+          // const data = await rsp.json();
+
+          const data = { ok:true, userId:'tmoney.master' }; // demo
+          if (data.ok && data.userId){
+            showResult(res, true, `<strong>찾은 아이디</strong>: <span style="font-weight:700">${maskId(data.userId)}</span><br><small>보안을 위해 일부 마스킹되었습니다.</small>`);
+          } else {
+            showResult(res, false, '일치하는 정보가 없습니다. 입력값을 다시 확인해주세요.');
+          }
+        }
+      });
+
+      // 엔터로 submit 막고 버튼 클릭으로 통일
+      ['findIdByEmailForm','findIdByPhoneForm'].forEach(id=>{
+        const fm = document.getElementById(id);
+        fm.addEventListener('submit', e=>{ e.preventDefault(); $('#btnFindId').click(); });
+      });
+    })();
+</script>
+</body>
+</html>
