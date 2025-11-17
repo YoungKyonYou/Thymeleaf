@@ -1,15 +1,13 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{component/commonHead :: head}"></head>
-<body>
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
 
-<!-- 콘텐츠 영역 -->
-<div th:fragment="content">
 
     <script th:src="@{/js/datepicker.js}"></script>
 
     <section class="section">
-        <div class="section-header">
+        <form class="section-header">
             <div class="title-wrap">
                 <h3 class="section-title">배치작업내역조회</h3>
             </div>
@@ -19,31 +17,34 @@
                 <div class="box">
                     <p class="field-title">작업기간</p>
                     <div class="text-field datepicker">
-                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="startDate" th:value="${req.startDate}">
+                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="startDate" th:value="${req.sttDt}">
                         <button type="button" class="dp-btn" data-dp-toggle></button>
                     </div>
                 </div>
                 <div class="box">
                     <p class="field-title">&nbsp;</p>
                     <div class="text-field datepicker">
-                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="endDate" th:value="${req.endDate}">
+                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="endDate" th:value="${req.endDt}">
                         <button type="button" class="dp-btn" data-dp-toggle></button>
                     </div>
                 </div>
             </div>
 
             <div class="btn-wrap">
-                <button type="button" class="btn btn-primary" onclick="loadPage(0)">검색</button>
+                <button type="submit" class="btn btn-primary">검색</button>
             </div>
-        </div>
+        </form>
 
         <!-- 검색결과 -->
         <div class="section-content">
             <div class="flex justify-space-between">
                 <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
                 <div class="flex col-">
-                    <button type="button" class="btn btn-primary btn-icon-left" onclick="exportExcel()">엑셀 다운로드 <i class="icon icon-save"></i></button>
-                    <button type="button" class="btn btn-dark-line" onclick="loadPage(0)">목록</button>
+                    <!-- <button type="button" class="btn btn-primary btn-icon-left" data-export="xlsx">엑셀 다운로드 <i class="icon icon-save"></i></button> -->
+                    <a class="btn btn-primary btn-icon-left" href="/spfnsprtmng/payinf/exportBatTakPtInf">
+                        엑셀 다운로드 <i class="icon icon-save"></i>
+                    </a>
+                    <button type="button" class="btn btn-dark-line">목록</button>
                 </div>
             </div>
 
@@ -51,7 +52,7 @@
             <div class="table-wrap mt20">
                 <table class="table" id="grid">
                     <caption class="blind">배치작업내역조회 테이블</caption>
-                    <thead id="grid-header">
+                    <thead id="grid-head">
                     <tr>
                         <th scope="col">순번</th>
                         <th scope="col" data-sort="bat_tak_dt">작업일자</th>
@@ -90,51 +91,98 @@
         </div>
     </section>
 
-</div>
 
-<!-- JS Ajax -->
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    const baseUrl = /*[[${@controllerBaseUrl}]]*/ '';
-    const inputSort = document.getElementById('sort');
-    const inputDir = document.getElementById('dir');
+    <script data-page="memrStlmPt" th:inline="javascript" type="text/javascript">
+        (function () {
+            const baseUrl = '/spfnsprtmng/payinf/batTakPtInf.do';
+            const grid = document.getElementById('grid');
+            const head = document.getElementById('grid-head');
+            const searchForm = grid.querySelector('form');
+            const selectSize = searchForm.querySelector('select[name="size"]') ?? {};
+            const inputSort = document.getElementById('sort');
+            const inputDir = document.getElementById('dir');
+            
+            // excel export payload 설정
+            const payload = {
+                // orgCd,
+                dnRsn: ''
+            }
 
-    function loadPage(page) {
-        const params = {
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            sort: inputSort?.value || 'bat_tak_dt',
-            dir: inputDir?.value || 'asc',
-            page: page,
-            size: 10
-        };
+            // excel export 대상 이벤트 등록
+            const exportHandler = (e) => {
+                const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                Common.bindExcelExport(
+                    searchForm,
+                    exportBtn,
+                    inputSort.value,
+                    inputDir.value,
+                    'mbrs_id',
+                    payload
+                );
+            };
+            grid.addEventListener('click', exportHandler);
 
-        fetch(baseUrl + '/batTak/list', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(params)
-        })
-        .then(resp => resp.json())
-        .then(data => {
-            document.getElementById('grid-body').innerHTML = data.htmlBody;
-            document.getElementById('grid-pager').innerHTML = data.htmlPager;
-        });
-    }
+            // bindPagination event 등록(초기 화면에서 페이징 되도록 하기 위함)
+            bindPagination(baseUrl, {
+                page: 0,
+                size: parseInt(selectSize?.value || '10', 10),
+                dir: inputDir?.value || 'asc',
+                sort: inputSort?.value || 'mbrs_id',
+            });
 
-    function exportExcel() {
-        const params = {
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            sort: inputSort?.value || 'bat_tak_dt',
-            dir: inputDir?.value || 'asc'
-        };
-        common.bndExcelExport(null, null, params.sort, params.dir, 'bat_tak_id', params);
-    }
-    /*]]>*/
-</script>
+            // 헤더 컬럼 클릭 시 정렬
+            head.addEventListener('click', (e) => {
+                const a = e.target.closest('a[data-sort]');
+                if (!a) return;
+                e.preventDefault();
+                
+                const next = a.dataset.sort;
+                const curr = inputSort?.value || 'mbrs_id';
+                let dir = inputDir?.value || 'asc';
+                
+                // 현재 정렬 기준과 다음 정렬 기준이 같으면 dir을 토글, 아니면 'asc'로 설정
+                dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
 
-<!-- Footer -->
-<th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+                if (inputSort) inputSort.value = next;
+                if (inputDir) inputDir.value = dir;
+                
+                // 폼 데이터 수집 및 목록 리로드
+                applied = Common.collectFromForm(searchForm);
+                Common.reloadList({
+                    page: 0,
+                    defaultSortColumn: 'mbrs_id',
+                    swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                    selectSize: selectSize,
+                    baseUrl: baseUrl,
+                    inputSort: inputSort,
+                    inputDir: inputDir,
+                    applied: applied
+                });
+            });
 
-</body>
+            // 폼 submit 시 이벤트 적용
+            searchForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                applied = Common.collectFromForm(searchForm);
+                Common.reloadList({
+                    page: 0,
+                    defaultSortColumn: 'mbrs_id',
+                    swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                    selectSize: selectSize,
+                    baseUrl: baseUrl,
+                    inputSort: inputSort,
+                    inputDir: inputDir,
+                    applied: applied
+                });
+            });
+        })();
+    </script>
+
+
+    <!-- Footer -->
+    <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+
+    </th:block>
+</th:block>
 </html>

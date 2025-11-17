@@ -29,16 +29,24 @@ public class BatTakPtInfExportService implements ExportProvider<BatTakPtInfRspVO
     }
 
     @Override
-    public List<ExportColumn<BatTakPtInfRspVO>> columns() {
+    public List<ExportColumn<BatTakPtInfRspVO>> columns()
+    {
         return List.of(
                 new ExportColumn<>("작업일자", BatTakPtInfRspVO::getBatTakDt),
-                new ExportColumn<>("배치작업ID", BatTakPtInfRspVO::getBatTakId),
-                new ExportColumn<>("배치작업명", BatTakPtInfRspVO::getBatTakNm),
-                new ExportColumn<>("시작일시", BatTakPtInfRspVO::getBatTakSttDtm),
-                new ExportColumn<>("종료일시", BatTakPtInfRspVO::getBatTakEndDtm),
-                new ExportColumn<>("상태", BatTakPtInfRspVO::getBatPrcgStaCd)
+                new ExportColumn<>("작업ID", BatTakPtInfRspVO::getBatTakId),
+                new ExportColumn<>("배치유형코드", BatTakPtInfRspVO::getTpwBatTypCd),
+                new ExportColumn<>("배치명", BatTakPtInfRspVO::getBatTakNm),
+                new ExportColumn<>("배치시작일시", BatTakPtInfRspVO::getBatTakSttDtm),
+                new ExportColumn<>("배치종료일시", BatTakPtInfRspVO::getBatTakEndDtm),
+                new ExportColumn<>("처리건수", vo -> vo.getPrcgNcnt() != null ? vo.getPrcgNcnt().toString() : ""), // null 체크 필요
+                new ExportColumn<>("배치처리상태코드", BatTakPtInfRspVO::getBatPrcgStaCd),
+                new ExportColumn<>("등록자ID", BatTakPtInfRspVO::getRgsrId),
+                new ExportColumn<>("등록일시", BatTakPtInfRspVO::getRgtDtm),
+                new ExportColumn<>("수정자ID", BatTakPtInfRspVO::getUpdrId),
+                new ExportColumn<>("수정일시", BatTakPtInfRspVO::getUpdDtm)
         );
     }
+
 
     @Override
     public Stream<BatTakPtInfRspVO> stream(Map<String, String> params) {
@@ -61,7 +69,7 @@ public class BatTakPtInfExportService implements ExportProvider<BatTakPtInfRspVO
         r.setSize(pageSize);
 
         // PagingStream 대신 바로 리스트 스트림 반환
-        List<BatTakPtInfRspVO> list = batTakPtInfService.readBatTakPtList(r, orgCd);
+        List<BatTakPtInfRspVO> list = batTakPtInfService.readBatTakPtInfList(r, orgCd);
         return list.stream();
     }
 

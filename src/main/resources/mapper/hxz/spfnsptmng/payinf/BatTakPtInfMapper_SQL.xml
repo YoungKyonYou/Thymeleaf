@@ -18,27 +18,29 @@
         bat.bat_tak_end_dtm as batTakEndDtm
         from (
         select
-        to_char(to_date(d200.bat_tak_dt, 'YYYYMMDD'), 'YYYY-MM-DD') as bat_tak_dt,
+        to_date(d200.bat_tak_dt, 'YYYYMMDD') as bat_tak_dt,
         d200.bat_tak_id,
         d200.bat_prcg_sta_cd,
-        to_char(d200.bat_tak_stt_dtm, 'YYYY-MM-DD HH24:MI:SS') as bat_tak_stt_dtm,
-        to_char(d200.bat_tak_end_dtm, 'YYYY-MM-DD HH24:MI:SS') as bat_tak_end_dtm
+        d200.bat_tak_stt_dtm as bat_tak_stt_dtm,
+        d200.bat_tak_end_dtm as bat_tak_end_dtm
         from tbhxzd200 d200
         <where>
             1=1
-            <if test="sttDt != null and sttDt != '' and endDt != null and endDt != ''">
-                and d200.bat_tak_dt between replace(#{sttDt}, '-', '') and replace(#{endDt}, '-', '')
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and d200.bat_tak_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
             </if>
-            <if test="batPrcgStaCd != null and batPrcgStaCd != ''">
-                and d200.bat_prcg_sta_cd = #{batPrcgStaCd}
-            </if>
-            <if test="batTakId != null and batTakId != ''">
-                and d200.bat_tak_id = #{batTakId}
-            </if>
+            <!-- 이거 req에 없음 -->
+            <!-- <if test="req.batPrcgStaCd != null and req.batPrcgStaCd != ''">
+                and d200.bat_prcg_sta_cd = #{req.batPrcgStaCd}
+            </if> -->
+            <!-- 이거 req에 없음 -->
+            <!-- <if test="req.batTakId != null and req.batTakId != ''">
+                and d200.bat_tak_id = #{req.batTakId}
+            </if> -->
         </where>
         ) bat
-        order by ${sort} ${dir}
-        limit #{size} offset #{page}
+        order by ${req.sort} ${req.dir}
+        limit #{req.size} offset #{req.page}
 
     </select>
 
@@ -53,15 +55,17 @@
         from tbhxzd200 d200
         <where>
             1=1
-            <if test="sttDt != null and sttDt != '' and endDt != null and endDt != ''">
-                and d200.bat_tak_dt between replace(#{sttDt}, '-', '') and replace(#{endDt}, '-', '')
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and d200.bat_tak_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
             </if>
-            <if test="batPrcgStaCd != null and batPrcgStaCd != ''">
-                and d200.bat_prcg_sta_cd = #{batPrcgStaCd}
-            </if>
-            <if test="batTakId != null and batTakId != ''">
-                and d200.bat_tak_id = #{batTakId}
-            </if>
+            <!-- 이거 req에 없음 -->
+            <!-- <if test="req.batPrcgStaCd != null and req.batPrcgStaCd != ''">
+                and d200.bat_prcg_sta_cd = #{req.batPrcgStaCd}
+            </if> -->
+            <!-- 이거 req에 없음 -->
+            <!-- <if test="req.batTakId != null and req.batTakId != ''">
+                and d200.bat_tak_id = #{req.batTakId}
+            </if> -->
         </where>
 
     </select>

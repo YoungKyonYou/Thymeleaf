@@ -13,13 +13,13 @@ import java.util.List;
 public interface BatTakPtInfMapper {
 
     // 배치작업 포인트 리스트 조회
-    List<BatTakPtInfRspVO> readBatTakPtList(
+    List<BatTakPtInfRspVO> readBatTakPtInfList(
             @Param("req") BatTakPtInfReqVO req,
             @Param("orgCd") String orgCd
     );
 
     // 배치작업 포인트 총 건수 조회
-    long readBatTakPtListCnt(
+    long readBatTakPtInfListCnt(
             @Param("req") BatTakPtInfReqVO req,
             @Param("orgCd") String orgCd
     );

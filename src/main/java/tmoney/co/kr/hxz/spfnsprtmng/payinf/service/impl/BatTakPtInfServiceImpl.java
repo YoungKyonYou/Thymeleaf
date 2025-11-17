@@ -32,7 +32,7 @@ public class BatTakPtInfServiceImpl implements BatTakPtInfService {
         final int offset = req.getPage() * req.getSize();
 
         // 총 건수 조회
-        long total = batTakPtInfMapper.readBatTakPtListCnt(req, orgCd);
+        long total = batTakPtInfMapper.readBatTakPtInfListCnt(req, orgCd);
 
         // 요청 파라미터 복사
         BatTakPtInfReqVO reqVO = new BatTakPtInfReqVO(
@@ -46,7 +46,7 @@ public class BatTakPtInfServiceImpl implements BatTakPtInfService {
         );
 
         // 리스트 조회
-        List<BatTakPtInfRspVO> content = batTakPtInfMapper.readBatTakPtList(reqVO, orgCd);
+        List<BatTakPtInfRspVO> content = batTakPtInfMapper.readBatTakPtInfList(reqVO, orgCd);
 
         // PageDataVO 리턴
         return new PageDataVO<>(content, req.getPage(), req.getSize(), total);
@@ -54,14 +54,14 @@ public class BatTakPtInfServiceImpl implements BatTakPtInfService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BatTakPtInfRspVO> readBatTakPtList(BatTakPtInfReqVO req, String orgCd) {
-        return batTakPtInfMapper.readBatTakPtList(req, orgCd);
+    public List<BatTakPtInfRspVO> readBatTakPtInfList(BatTakPtInfReqVO req, String orgCd) {
+        return batTakPtInfMapper.readBatTakPtInfList(req, orgCd);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long readBatTakPtListCnt(BatTakPtInfReqVO req, String orgCd) {
-        return batTakPtInfMapper.readBatTakPtListCnt(req, orgCd);
+    public long readBatTakPtInfListCnt(BatTakPtInfReqVO req, String orgCd) {
+        return batTakPtInfMapper.readBatTakPtInfListCnt(req, orgCd);
     }
 
 

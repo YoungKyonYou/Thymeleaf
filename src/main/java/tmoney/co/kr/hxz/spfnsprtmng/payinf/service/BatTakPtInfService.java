@@ -23,11 +23,11 @@ public interface BatTakPtInfService {
      * 배치작업 포인트 정보 리스트 조회
      */
     @Transactional(readOnly = true)
-    List<BatTakPtInfRspVO> readBatTakPtList(BatTakPtInfReqVO req, String orgCd);
+    List<BatTakPtInfRspVO> readBatTakPtInfList(BatTakPtInfReqVO req, String orgCd);
 
     /**
      * 배치작업 포인트 정보 총 건수 조회
      */
     @Transactional(readOnly = true)
-    long readBatTakPtListCnt(BatTakPtInfReqVO req, String orgCd);
+    long readBatTakPtInfListCnt(BatTakPtInfReqVO req, String orgCd);
 }

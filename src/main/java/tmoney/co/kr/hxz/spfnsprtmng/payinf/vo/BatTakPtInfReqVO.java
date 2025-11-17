@@ -3,6 +3,9 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
@@ -61,4 +64,58 @@ public class BatTakPtInfReqVO {
      * 기본 생성자 (MyBatis 등에서 필수)
      */
     public BatTakPtInfReqVO() {}
+
+    // 맵 받고 생성
+    public BatTakPtInfReqVO(Map<String, String> map)
+    {
+        if (map == null)
+        {
+            return;
+        }
+
+        this.batTakDt = map.get("batTakDt");
+        this.sttDt    = map.getOrDefault("sttDt", this.sttDt);
+        this.endDt    = map.getOrDefault("endDt", this.endDt);
+
+        // 숫자 파싱 안전 처리
+        try
+        {
+            this.page = map.containsKey("page") ? Integer.parseInt(map.get("page")) : this.page;
+        }
+        catch (NumberFormatException e)
+        {
+            this.page = 0;
+        }
+
+        try
+        {
+            this.size = map.containsKey("size") ? Integer.parseInt(map.get("size")) : this.size;
+        }
+        catch (NumberFormatException e)
+        {
+            this.size = 10;
+        }
+
+        this.sort = map.getOrDefault("sort", this.sort);
+        this.dir  = map.getOrDefault("dir", this.dir);
+    }
+
+    // 맵 반환
+    public Map<String, String> toMap()
+    {
+        Map<String, String> map = new HashMap<>();
+
+        if (this.batTakDt != null) map.put("batTakDt", this.batTakDt);
+        if (this.sttDt    != null) map.put("sttDt", this.sttDt);
+        if (this.endDt    != null) map.put("endDt", this.endDt);
+
+        map.put("page", String.valueOf(this.page));
+        map.put("size", String.valueOf(this.size));
+
+        if (this.sort != null) map.put("sort", this.sort);
+        if (this.dir  != null) map.put("dir", this.dir);
+
+        return map;
+    }
+
 }
