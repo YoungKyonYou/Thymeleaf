@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.MemrStlmPtMapper">
+
+    <select id="readMemrStlmPtList" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
+        SELECT
+            memrSt.mbrs_id as mbrsId -- 회원 ID
+            , memrSt.mbrs_nm as mbrsNm -- 회원명
+            , memrSt.tpw_mbrs_svc_sta_cd as tpwMbrsSvcStaCd -- 회원 서비스 상태
+            <if test="orgCd != null and orgCd != '' and orgCd == '000000'">
+                , memrSt.tpw_svc_nm as tpwSvcNm -- 서비스명
+                , memrSt.tpw_svc_typ_nm as tpwSvcTypNm -- 서비스유형명
+                , memrSt.tpw_svc_typ_sno as tpwSvcTypSno -- 서비스일련번호
+            </if>
+            , memrSt.addo_nm as addoNm -- 행정동명
+            , memrSt.req_dt as reqDt -- 요청일자 (YYYYMMDD)
+            , memrSt.prcg_dt as prcgDt -- 처리일자 (YYYYMMDD)
+            , memrSt.tpw_memr_prcg_sta_cd as tpwMemrPrcgStaCd -- 처리상태
+            , memrSt.apl_amt as aplAmt -- 요청금액
+        FROM (
+            SELECT
+                d216.mbrs_id, -- 회원 ID
+                m101.mbrs_nm, -- 회원명
+                m102.tpw_mbrs_svc_sta_cd, -- 회원 서비스 상태
+                m008.addo_nm, -- 행정동명
+                to_char(to_date(d216.req_dtm, 'YYYYMMDDHHMISS'), 'YYYY-MM-DD') as req_dt, -- 요청일자 (YYYYMMDD)
+                to_char(to_date(d216.prcg_dt, 'YYYYMMDD'), 'YYYY-MM-DD') as prcg_dt, -- 처리일자 (YYYYMMDD)
+                d216.tpw_memr_prcg_sta_cd, -- 처리상태
+                d216.apl_amt, -- 요청금액
+                m201.tpw_svc_nm, -- 서비스명
+                m202.tpw_svc_typ_nm, -- 서비스유형명
+                m202.tpw_svc_typ_sno -- 서비스일련번호
+            FROM tbhxzd216 d216 -- 수기정산내역 테이블
+            JOIN tbhxzm102 m102 ON m102.mbrs_id = d216.mbrs_id
+                                AND m102.tpw_svc_id = d216.tpw_svc_id
+                                AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id -- 회원 서비스 정보
+            JOIN tbhxzm008 m008 ON m008.addo_cd = m102.addo_cd -- 행정동 코드 관리
+            JOIN tbhxzm101 m101 ON m101.mbrs_id = d216.mbrs_id -- 회원정보
+            JOIN tbhxzm201 m201 ON m201.tpw_svc_id = d216.tpw_svc_id -- 서비스 관리
+            JOIN tbhxzm202 m202 ON m201.tpw_svc_id = m202.tpw_svc_id
+
+            WHERE 1=1
+
+            <if test="orgCd != '000000'">
+                AND m201.org_cd = #{orgCd}
+            </if>
+
+            <if test="orgCd != null and orgCd != '' and orgCd != '000000'">
+                AND m201.org_cd LIKE CONCAT('%', LOWER(#{orgCd}), '%')
+            </if>
+
+            <if test="req.addoNm != null and req.addoNm != ''">
+                AND m008.addo_nm LIKE CONCAT('%', LOWER(#{req.addoNm}), '%')
+            </if>
+
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                AND m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        AND m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+
+            <if test="req.tpwMemrPrcgStaCd != null and req.tpwMemrPrcgStaCd != ''">
+                AND d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
+            </if>
+
+            <where>
+                <choose>
+                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsId'">
+                        AND m101.mbrs_id LIKE CONCAT('%', LOWER(#{req.mbrsId}), '%')
+                    </when>
+                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsNm'">
+                        AND m101.mbrs_nm LIKE CONCAT('%', LOWER(#{req.mbrsNm}))
+                    </when>
+                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.reqDtm">
+                        AND d216.req_dtm BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
+                    </when>
+                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.prcgDt">
+                        AND d216.prcg_dt BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
+                    </when>
+                </choose>
+            </where>
+
+        ) memrSt
+        ORDER BY memrSt.${req.sort} ${req.dir}
+        LIMIT #{req.size} OFFSET #{req.offset}
+    </select>
+
+
+    <select id="readMemrStlmPtListCnt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO" resultType="long">
+        SELECT COUNT(1)
+        FROM tbhxzd216 d216 -- 수기정산내역 테이블
+        JOIN tbhxzm102 m102 ON m102.mbrs_id = d216.mbrs_id
+                            AND m102.tpw_svc_id = d216.tpw_svc_id
+                            AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id -- 회원 서비스 정보
+        JOIN tbhxzm008 m008 ON m008.addo_cd = m102.addo_cd -- 행정동 코드 관리
+        JOIN tbhxzm101 m101 ON m101.mbrs_id = d216.mbrs_id -- 회원정보
+        JOIN tbhxzm201 m201 ON m201.tpw_svc_id = d216.tpw_svc_id -- 서비스 관리
+        JOIN tbhxzm202 m202 ON m201.tpw_svc_id = m202.tpw_svc_id
+
+        WHERE 1=1
+
+        <if test="orgCd != '000000'">
+            AND m201.org_cd = #{orgCd}
+        </if>
+
+        <if test="orgCd != null and orgCd != '' and orgCd != '000000'">
+            AND m201.org_cd LIKE CONCAT('%', LOWER(#{orgCd}), '%')
+        </if>
+
+        <if test="req.addoNm != null and req.addoNm != ''">
+            AND m008.addo_nm LIKE CONCAT('%', LOWER(#{req.addoNm}), '%')
+        </if>
+
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            AND m201.tpw_svc_id = #{req.tpwSvcId}
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                </when>
+                <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                    AND m201.tpw_svc_id = m202.tpw_svc_id
+                </when>
+            </choose>
+        </if>
+
+        <if test="req.tpwMemrPrcgStaCd != null and req.tpwMemrPrcgStaCd != ''">
+            AND d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
+        </if>
+
+        <where>
+            <choose>
+                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsId'">
+                    AND m101.mbrs_id LIKE CONCAT('%', LOWER(#{req.mbrsId}), '%')
+                </when>
+                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsNm'">
+                    AND m101.mbrs_nm LIKE CONCAT('%', LOWER(#{req.mbrsNm}))
+                </when>
+                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.reqDtm">
+                    AND d216.req_dtm BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
+                </when>
+                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.prcgDt">
+                    AND d216.prcg_dt BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
+                </when>
+            </choose>
+        </where>
+    </select>
+</mapper>

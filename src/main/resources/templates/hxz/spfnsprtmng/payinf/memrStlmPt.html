@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
+<body>
+
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+        <script th:src="@{/js/datepicker.js}"></script>
+
+        <link rel="stylesheet" th:href="@{/css/page/page.css}"/>
+
+        <section class="section" id="grid">
+            <form class="section-header" th:object="${req}">
+                <div class="title-wrap">
+                    <h3 class="section-title">수기정산내역조회</h3>
+                </div>
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">서비스명</p>
+                        <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
+                                'svcPair1',
+                                'tpwSvcId',
+                                'tpwSvcTypId'
+                        )}"/>
+                    </div>
+                    </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">요청기간</p>
+                        <div class="dropdown" data-name="searchType">
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="요청기간 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요" value="">선택하세요</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" th:field="*{reqDtm}">요청일자</li>
+                                <li role="option" class="dropdown_option" th:field="*{prcgDt}">처리일자</li>
+                            </ul>
+                            <input type="hidden" name="searchType" value="" id="searchType">
+                        </div>
+                    </div>
+                    <div class="box">
+                        <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed}"></th:block>
+<!--                        <th:block th:replace="~{common/fragment/datepicker :: periodFixed}"/>-->
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">전체</p>
+                        <div class="dropdown" data-name="searchType">
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="검색 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요" value="">선택하세요</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" th:field="*{mbrsId}">회원ID</li>
+                                <li role="option" class="dropdown_option" th:field="*{mbrsNm}">회원명</li>
+                            </ul>
+                        </div>
+                        <input type="hidden" name="department" value="">
+                        <input type="hidden" th:field="*{searchType}">
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">검색어</p>
+                        <input class="text-field keyword-search" th:value="*{keyword}" type="search">
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">처리상태</p>
+                        <div class="dropdown" data-name="tpwMemrPrcgStaCd">
+
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="처리상태 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요" value="">선택하세요</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" th:data-value="01">요청</li>
+                                <li role="option" class="dropdown_option" th:data-value="02">승인</li>
+                                <li role="option" class="dropdown_option" th:data-value="03">반려</li>
+                            </ul>
+                            <input type="hidden" name="tpwMemrPrcgStaCd" value="" id="tpwMemrPrcgStaCd">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box" th:if="${mngr.orgCd == '000000'}">
+                        <p class="field-title">기관코드</p>
+                        <input class="text-field" maxlength="7" th:field="*{orgCd}" placeholder="기관코드 입력" type="search">
+                    </div>
+                    <div class="box">
+                        <p class="field-title">행정동</p>
+                        <input class="text-field" th:field="*{addoNm}" maxlength="100" placeholder="행정동 입력"
+                               type="search">
+                    </div>
+                </div>
+
+                <div class="btn-wrap">
+                    <button class="btn btn-primary btn-icon-left data-export-xlsx" data-provider="수기정산내역조회"
+                            type="button">엑셀 다운로드 <i class="icon icon-save"></i></button>
+                    <button class="btn btn-primary btn-icon-left" type="submit">검색 <i
+                            class="icon icon-search"></i></button>
+                </div>
+                <input th:field="*{sort}" type="hidden">
+                <input th:field="*{dir}" type="hidden">
+            </form>
+            
+            <div class="section-content mt20">
+                <div class="flex justify-space-between" id="grid-header" th:object="${pageData}">
+                    <b th:text="'검색 결과 : ' + *{total} + '건'"></b>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table class="table">
+                        <caption class="blind">교통비 사용내역 조회 테이블</caption>
+                        <colgroup>
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="250px">
+                            <col width="150px">
+                            <col width="300px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="150px">
+                        </colgroup>
+                        <thead id="grid-head">
+                        <tr>
+                            <th scope="col">순번</th>
+                            <th class="sort-header" scope="col"><a data-sort="mbrs_id">회원ID</a></th>
+                            <th class="sort-header" scope="col"><a data-sort="mbrs_nm">회원명</a></th>
+                            <th class="sort-header" scope="col"><a data-sort="tpw_mbrs_svc_sta_cd">회원상태</a></th>
+                            <th class="sort-header" scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}">
+                                <a data-sort="tpw_svc_nm">서비스명</a></th>
+                            <th class="sort-header" scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}">
+                                <a data-sort="tpw_svc_typ_nm">서비스유형명</a></th>
+                            <th class="sort-header" scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}">
+                                <a data-sort="tpw_svc_typ_sno">서비스일련번호</a>
+                            </th>
+
+                            <th class="sort-header" scope="col"><a data-sort="addo_nm">행정동명</a></th>
+                            <th class="sort-header" scope="col"><a data-sort="req_dtm">요청일자</a></th>
+                            <th class="sort-header" scope="col"><a data-sort="prcg_dt">처리일자</a></th>
+
+                            <th class="sort-header" scope="col"><a data-sort="tpw_memr_prcg_sta_cd">처리상태</a></th>
+
+                            <th class="sort-header" scope="col"><a data-sort="apl_amt">요청금액</a></th>
+                        </tr>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <th:block th:each="u, stat : ${pageData.content}"
+                                  th:with="base=${(pageData.page) * pageData.size}" th:if="${pageData != null and pageData.total > 0}" th:object="${u}">
+                            <tr th:if="${u != null}">
+                                <td th:text="${base + stat.index+1}"></td>
+                                <td th:text="*{mbrsId}"></td>
+                                <td th:text="*{mbrsNm}"></td>
+                                <td th:text="*{tpwMbrsSvcStaCd == '00' ? '정상'
+                                             : tpwMbrsSvcStaCd == '01' ? '휴면'
+                                             : tpwMbrsSvcStaCd == '03' ? '탈퇴'
+                                             : '' }"></td>
+                                <td th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}"
+                                    th:text="*{tpwSvcNm}"></td>
+                                <td th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}"
+                                    th:text="*{tpwSvcTypNm}"></td>
+                                <td th:if="${orgCd != null and orgCd != '' and orgCd == '000000'}"
+                                    th:text="*{tpwSvcTypSno}"></td>
+
+                                <td th:text="*{addoNm}"></td>
+                                <td th:text="*{reqDtm}"></td>
+                                <td th:text="*{prcgDt}"></td>
+
+                                <td th:text="*{tpwMemrPrcgStaCd == '01' ? '요청'
+                                             : tpwMemrPrcgStaCd == '02' ? '승인'
+                                             : tpwMemrPrcgStaCd == '03' ? '반려'
+                                             : '' }"></td>
+
+                                <td th:text="*{aplAmt}"></td>
+                            </tr>
+                        </th:block>
+
+                        <th:block th:unless="${pageData != null and pageData.total > 0}">
+                            <tr th:if="${orgCd == '000000'}">
+                                <td colspan="12" aria-live="polite" class="colspan-11">
+                                    조회 결과가 없습니다.
+                                </td>
+                            </tr>
+                        </th:block>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"/>
+                </div>
+            </div>
+        </section>
+
+        <script data-page="memrStlmPt" th:inline="javascript" type="text/javascript">
+            (function () {
+                const baseUrl = 'spfnsprtmng/payinf/memrStlmPt.do';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-head');
+                const searchForm = grid.querySelector('form');
+                const selectSize = searchForm.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                // const orgCd = [[${mngr.orgCd}]];
+                // const mngrId = [[${mngr.mngrId}]];
+
+                // excel export payload 설정
+                const payload = {
+                    orgCd,
+                    mngrId,
+                    dnRsn: ''
+                }
+
+                // excel export 대상 이벤트 등록
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(
+                        searchForm,
+                        exportBtn,
+                        inputSort.value,
+                        inputDir.value,
+                        'mbrs_id',
+                        payload
+                    );
+                };
+                grid.addEventListener('click', exportHandler);
+
+                // bindPagination event 등록(초기 화면에서 페이징 되도록 하기 위함)
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir?.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id',
+                });
+
+                // 헤더 컬럼 클릭 시 정렬
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('a[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    
+                    const next = a.dataset.sort;
+                    const curr = inputSort?.value || 'mbrs_id';
+                    let dir = inputDir?.value || 'asc';
+                    
+                    // 현재 정렬 기준과 다음 정렬 기준이 같으면 dir을 토글, 아니면 'asc'로 설정
+                    dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    
+                    // 폼 데이터 수집 및 목록 리로드
+                    applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+
+                // 폼 submit 시 이벤트 적용
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+            })();
+        </script>
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+    </th:block>
+</th:block>
+
+</body>
+</html>
