@@ -45,7 +45,7 @@ public class SimPtInfServiceImpl implements SimPtInfService {
                 req.getSvcTypNm(),
                 req.getTpwSvcId(),
                 req.getTpwSvcTypId(),
-                req.getTpwSvcTypSno().toPlainString(),
+                req.getTpwSvcTypSno(),
                 offset,
                 req.getPage(),
                 req.getSize(),
@@ -63,7 +63,6 @@ public class SimPtInfServiceImpl implements SimPtInfService {
     @Transactional(readOnly = true)
     @Override
     public List<SimPtInfRspVO> readSimPtList(SimPtInfReqVO req, String orgCd) {
-//        final String orgCd = "0000000"; // TODO: 추후 로그인 정보(orgCd) 연동 예정
         return simPtInfMapper.readSimPtList(req, orgCd);
     }
 
