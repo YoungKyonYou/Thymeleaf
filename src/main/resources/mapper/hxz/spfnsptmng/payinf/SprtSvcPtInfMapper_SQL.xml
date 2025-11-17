@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.SprtSvcPtInfMapper">
+
+    <select id="readSprtSvcPtInfList"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO"
+    >
+        select
+        sprt.org_cd as orgCd,
+        sprt.tpw_org_nm as tpwOrgNm,
+        sprt.tpw_svc_ctt as tpwSvcCtt,
+        sprt.tpw_svc_stt_dt as tpwSvcSttDt,
+        sprt.tpw_svc_end_dt as tpwSvcEndDt,
+        sprt.tpw_svc_nm as tpwSvcNm,
+        sprt.tpw_svc_typ_nm as tpwSvcTypNm,
+        sprt.tpw_svc_id as tpwSvcId
+        from (
+        select
+        m201.org_cd,
+        m009.tpw_org_nm,
+        m201.tpw_svc_ctt,
+        m201.tpw_svc_stt_dt,
+        m201.tpw_svc_end_dt,
+        m201.tpw_svc_nm,
+        m202.tpw_svc_typ_nm,
+        m201.tpw_svc_id
+        from ohxzown.tbhxzm201 m201
+        join ohxzown.tbhxzm009 m009
+        on m201.org_cd = m009.org_cd
+        join ohxzown.tbhxzm202 m202
+        on m201.tpw_svc_id = m202.tpw_svc_id
+        left join ohxzown.tbhxzm103 m103
+        on m202.tpw_mbrs_typ_cd = m103.tpw_mbrs_typ_cd
+        where 1 = 1
+        and m201.use_yn = 'Y'
+        <if test="reqVO.orgCd != null and reqVO.orgCd != ''">
+            and m009.org_cd like concat('%', #{reqVO.orgCd}, '%')
+        </if>
+        <if test="reqVO.tpwSvcNm != null and reqVO.tpwSvcNm != ''">
+            and m201.tpw_svc_nm like concat('%', #{reqVO.svcNm}, '%')
+        </if>
+
+        <if test="reqVO.svcSttDt != null and reqVO.svcSttDt != '' and reqVO.svcEndDt != null and reqVO.svcEndDt != ''">
+            and (
+            m201.tpw_svc_stt_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
+            or m201.tpw_svc_end_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
+            )
+        </if>
+
+        <if test="reqVO.tpwMbrsTypCdNm != null and reqVO.tpwMbrsTypCdNm != ''">
+            and m103.tpw_mbrs_typ_cd_nm like concat('%', #{reqVO.tpwMbrsTypCdNm}, '%')
+        </if>
+
+        <if test="reqVO.tpwSvcId != null and reqVO.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{reqVO.tpwSvcId}  <choose>
+            <when test="reqVO.tpwSvcTypId != null and reqVO.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{reqVO.tpwSvcTypId}  </when>
+            <otherwise>
+                and m201.tpw_svc_id = m202.tpw_svc_id
+            </otherwise>
+        </choose>
+        </if>
+        ) sprt
+        order by sprt.${reqVO.sort} ${reqVO.dir}
+        limit #{reqVO.size} offset #{reqVO.page}
+    </select>
+
+    <select id="readSprtSvcPtInfListCnt"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO"
+            resultType="Long"
+    >
+        select
+        count(1)
+        from ohxzown.tbhxzm201 m201
+        join ohxzown.tbhxzm009 m009
+        on m201.org_cd = m009.org_cd
+        join ohxzown.tbhxzm202 m202
+        on m201.tpw_svc_id = m202.tpw_svc_id
+        left join ohxzown.tbhxzm103 zm103
+        on m202.tpw_mbrs_typ_cd = zm103.tpw_mbrs_typ_cd
+        where 1 = 1
+        and m201.use_yn = 'Y'
+        <if test="reqVO.orgNm != null and reqVO.orgNm != ''">
+            and m009.tpw_org_nm like concat('%', #{reqVO.orgNm}, '%')
+        </if>
+        <if test="reqVO.tpwSvcNm != null and reqVO.tpwSvcNm != ''">
+            and m201.tpw_svc_nm like concat('%', #{reqVO.svcNm}, '%')
+        </if>
+
+        <if test="reqVO.svcSttDt != null and reqVO.svcSttDt != '' and reqVO.svcEndDt != null and reqVO.svcEndDt != ''">
+            and (
+            m201.tpw_svc_stt_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
+            or m201.tpw_svc_end_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
+            )
+        </if>
+
+        <if test="reqVO.tpwMbrsTypCdNm != null and reqVO.tpwMbrsTypCdNm != ''">
+            and zm103.tpw_mbrs_typ_cd_nm like concat('%', #{reqVO.tpwMbrsTypCdNm}, '%')
+        </if>
+
+        <if test="reqVO.tpwSvcId != null and reqVO.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{reqVO.tpwSvcId}  <choose>
+            <when test="reqVO.tpwSvcTypId != null and reqVO.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{reqVO.tpwSvcTypId}  </when>
+            <otherwise>
+                and m201.tpw_svc_id = m202.tpw_svc_id
+            </otherwise>
+        </choose>
+        </if>
+    </select>
+
+
+    <select id="findSprtSvcPtInf"
+            parameterType="map"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO">
+        select
+        m201.org_cd as orgCd,
+        m009.tpw_org_nm as tpwOrgNm,
+        m201.tpw_svc_id as tpwSvcId,
+        m201.tpw_svc_ctt as tpwSvcCtt,
+        m201.tpw_svc_stt_dt as tpwSvcSttDt,
+        m201.tpw_svc_end_dt as tpwSvcEndDt,
+        m201.tpw_svc_nm as tpwSvcNm,
+        m201.krn_chec_yn as krnChecYn,
+        m201.use_yn as useYn,
+        m201.acng_trdp_no as acngTrdpNo,
+        m201.bnk_trn_ctt as bnkTrnCtt
+        from ohxzown.tbhxzm201 m201
+        join ohxzown.tbhxzm009 m009
+        on m009.org_cd = m201.org_cd
+        and m009.use_yn = 'Y'
+        where m201.org_cd = #{orgCd}
+        and m201.tpw_svc_id = #{tpwSvcId}
+    </select>
+
+
+    <insert id="saveSprtSvcPtInf"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfRspVO">
+
+        insert into ohxzown.tbhxzm201 (
+        org_cd,
+        tpw_svc_id,
+        tpw_svc_nm,
+        tpw_svc_stt_dt,
+        tpw_svc_end_dt,
+        tpw_svc_ctt,
+        krn_chec_yn,
+        use_yn,
+        acng_trdp_no,
+        bnk_trn_ctt,
+        rgsr_id,
+        rgt_dtm,
+        updr_id,
+        upd_dtm
+        )
+        select
+        /* 1. org_cd */
+        #{orgCd},
+
+        /* 2. tpw_svc_id 계산 (규칙 유지) */
+        (
+        select
+        substr(#{orgCd}, 1, 4) || lpad(cast(coalesce(cast(max(substr(tpw_svc_id, 5, 3)) as integer), 0) + 1 as text), 3, '0')
+        from ohxzown.tbhxzm201
+        where tpw_svc_id like substr(#{orgCd}, 1, 4) || '%'
+        and org_cd = #{orgCd}
+        ),
+
+        /* 3. tpw_svc_nm */
+        #{tpwSvcNm},
+
+        /* 4. tpw_svc_stt_dt */
+        #{tpwSvcSttDt},
+
+        /* 5. tpw_svc_end_dt */
+        #{tpwSvcEndDt},
+
+        /* 6. tpw_svc_ctt */
+        #{tpwSvcCtt},
+
+        /* 7. krn_chec_yn */
+        #{krnChecYn},
+
+        /* 8. use_yn */
+        #{useYn},
+
+        /* 9. acng_trdp_no */
+        #{acngTrdpNo},
+
+        /* 10. bnk_trn_ctt */
+        #{bnkTrnCtt},
+
+        /* 11. rgsr_id (상수 처리) */
+        'system',
+
+        /* 12. rgt_dtm (함수 처리) */
+        to_char(now(), 'YYYYMMDDHH24MISS'),
+
+        /* 13. updr_id (상수 처리) */
+        'system',
+
+        /* 14. upd_dtm (함수 처리) */
+        to_char(now(), 'YYYYMMDDHH24MISS')
+    </insert>
+
+
+    <update id="updateSprtSvcPtInf"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfRspVO">
+        update ohxzown.tbhxzm201
+        set
+        tpw_svc_nm       = #{tpwSvcNm},
+        tpw_svc_stt_dt   = #{tpwSvcSttDt},
+        tpw_svc_end_dt   = #{tpwSvcEndDt},
+        tpw_svc_ctt      = #{tpwSvcCtt},
+        krn_chec_yn      = #{krnChecYn},
+        use_yn           = #{useYn},
+        acng_trdp_no     = #{acngTrdpNo},
+        bnk_trn_ctt      = #{bnkTrnCtt},
+        updr_id          = 'system',
+        upd_dtm          = to_char(now(), 'YYYYMMDDHH24MISS')
+        where org_cd = #{orgCd}
+        and tpw_svc_id = #{tpwSvcId}
+    </update>
+
+
+    <select id="findSprtSvcTypList" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        select
+            (select tpw_org_nm
+            from tbhxzm009
+            where org_cd = m201.org_cd
+            and use_yn = 'Y'
+            limit 1) as orgNm,
+            m201.tpw_svc_nm as tpwSvcNm,
+            m202.tpw_mbrs_typ_cd as tpwMbrsTypCd,
+            m202.tpw_mntn_cd as tpwMntnCd,
+            m202.tpw_trd_org_cd as tpwTrdOrgCd,
+            m202.use_yn as useYn,
+            m202.tpw_stlm_cyc_dvs_cd as tpwStlmCycDvsCd,
+            m202.sprt_dplc_yn as sprtDplcYn,
+            m202.tpw_rsdc_auth_cyc_cd as tpwRsdcAuthCycCd,
+            m202.tpw_stlm_act_dvs_cd as tpwStlmActDvsCd,
+            m202.aut_apl_yn as autAplYn,
+            m202.frgn_sprt_yn as frgnSprtYn,
+            m202.tpw_crov_dvs_cd as tpwCrovDvsCd,
+            m202.trns_trd_mlpr_ex_yn as trnsTrdMlprExYn,
+            m202.evdn_yn as evdnYn,
+            m202.trd_ncnt_ltn_adpt_yn as trdNcntLtnAdptYn,
+            m201.org_cd as orgCd,
+            m202.tpw_svc_id as tpwSvcId,
+            m202.tpw_svc_typ_id as tpwSvcTypId,
+            m202.tpw_svc_typ_sno as tpwSvcTypSno,
+            m202.tpw_svc_typ_nm as tpwSvcTypNm,
+            m202.tpw_svc_typ_ctt as tpwSvcTypCtt,
+            m202.tpw_stlm_ctg_cd as tpwStlmCtgCd,
+            m202.stlm_ctg_adpt_val as stlmCtgAdptVal,
+            m202.trns_trd_req_yn as trnsTrdReqYn,
+            m202.ldgr_trd_req_yn as ldgrTrdReqYn,
+            m202.taxi_trd_req_yn as taxiTrdReqYn,
+            m202.area_trd_req_yn as areaTrdReqYn
+        from tbhxzm202 m202
+            join tbhxzm201 m201
+            on m201.tpw_svc_id = m202.tpw_svc_id
+            and m201.use_yn = 'Y'
+
+        where m202.tpw_svc_id = #{tpwSvcId}
+            and m202.use_yn = 'Y'
+                order by m202.tpw_svc_typ_sno
+    </select>
+
+    <select id="countSprtSvcTypList" parameterType="map" resultType="long">
+        select count(*)
+        from tbhxzm202 m202
+        join tbhxzm201 m201
+        on m201.tpw_svc_id = m202.tpw_svc_id
+        and m201.use_yn = 'Y'
+        where m202.tpw_svc_id = #{tpwSvcId}
+        and m202.use_yn = 'Y'
+    </select>
+
+
+    <select id="findSprtSvcTyp" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        select
+        (select tpw_org_nm
+        from tbhxzm009
+        where org_cd = m201.org_cd
+        and use_yn = 'Y'
+        limit 1) as orgNm,
+        m201.tpw_svc_nm as tpwSvcNm,
+        m202.tpw_mbrs_typ_cd as tpwMbrsTypCd,
+        m202.tpw_mntn_cd as tpwMntnCd,
+        m202.tpw_trd_org_cd as tpwTrdOrgCd,
+        m202.use_yn as useYn,
+        m202.tpw_stlm_cyc_dvs_cd as tpwStlmCycDvsCd,
+        m202.sprt_dplc_yn as sprtDplcYn,
+        m202.tpw_rsdc_auth_cyc_cd as tpwRsdcAuthCycCd,
+        m202.tpw_stlm_act_dvs_cd as tpwStlmActDvsCd,
+        m202.aut_apl_yn as autAplYn,
+        m202.frgn_sprt_yn as frgnSprtYn,
+        m202.tpw_crov_dvs_cd as tpwCrovDvsCd,
+        m202.trns_trd_mlpr_ex_yn as trnsTrdMlprExYn,
+        m202.evdn_yn as evdnYn,
+        m202.trd_ncnt_ltn_adpt_yn as trdNcntLtnAdptYn,
+        m201.org_cd as orgCd,
+        m202.tpw_svc_id as tpwSvcId,
+        m202.tpw_svc_typ_id as tpwSvcTypId,
+        m202.tpw_svc_typ_sno as tpwSvcTypSno,
+        m202.tpw_svc_typ_nm as tpwSvcTypNm,
+        m202.tpw_svc_typ_ctt as tpwSvcTypCtt,
+        m202.tpw_stlm_ctg_cd as tpwStlmCtgCd,
+        m202.stlm_ctg_adpt_val as stlmCtgAdptVal,
+        m202.trns_trd_req_yn as trnsTrdReqYn,
+        m202.ldgr_trd_req_yn as ldgrTrdReqYn,
+        m202.taxi_trd_req_yn as taxiTrdReqYn,
+        m202.area_trd_req_yn as areaTrdReqYn
+        from tbhxzm202 m202
+        join tbhxzm201 m201
+        on m201.tpw_svc_id = m202.tpw_svc_id
+        and m201.use_yn = 'Y'
+        where m202.tpw_svc_id = #{tpwSvcId}
+        and m202.tpw_svc_typ_id = #{tpwSvcTypId}
+        and m202.tpw_svc_typ_sno = #{tpwSvcTypSno}
+    </select>
+
+
+    <!--
+        TODO:
+            tpwSvcTypId 생성 규칙 정해지면 진행하는걸로
+
+             #{tpwSvcId},
+            #{tpwSvcTypId},
+            (select coalesce(max(m202.tpw_svc_typ_sno), 0) + 1
+                from ohxzown.tbhxzm202 m202
+                    where m202.tpw_svc_id = #{tpwSvcId}
+                        and m202.tpw_svc_typ_id = #{tpwSvcId}
+              ),
+    -->
+    <insert id="insertSprtSvcTyp" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        insert into ohxzown.tbhxzm202 (
+            tpw_svc_id,
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            tpw_svc_typ_nm,
+            tpw_svc_typ_stt_dt,
+            tpw_svc_typ_end_dt,
+            tpw_svc_typ_ctt,
+            tpw_mbrs_typ_cd,
+            tpw_mntn_cd,
+            tpw_stlm_cyc_dvs_cd,
+            tpw_stlm_ctg_cd,
+            stlm_ctg_adpt_val,
+            trns_trd_req_yn,
+            ldgr_trd_req_yn,
+            taxi_trd_req_yn,
+            area_trd_req_yn,
+            tpw_stlm_act_dvs_cd,
+            tpw_rsdc_auth_cyc_cd,
+            tpw_crov_dvs_cd,
+            sprt_dplc_yn,
+            tpw_trd_org_cd,
+            trns_trd_mlpr_ex_yn,
+            aut_apl_yn,
+            evdn_yn,
+            frgn_sprt_yn,
+            trd_ncnt_ltn_adpt_yn,
+            use_yn,
+            rgsr_id,
+            rgt_dtm,
+            updr_id,
+            upd_dtm
+        )
+        values
+        (
+
+
+        #{tpwSvcId},
+            (select substr(#{tpwSvcId},1,4) || lpad(cast(coalesce(cast(max(substr(tpw_svc_id,5,3)) as integer),0)+1 as text),3,'0')
+            from tbhxzm201
+            where tpw_svc_id like substr(#{tpwSvcId},1,4) || '%'
+            and org_cd = #{tpwSvcId}),
+
+        (select coalesce(max(m202.tpw_svc_typ_sno), 0) + 1
+            from ohxzown.tbhxzm202 m202
+            where m202.tpw_svc_id = #{tpwSvcId}
+             and m202.tpw_svc_typ_id = #{tpwSvcTypId}
+        ),
+        #{tpwSvcTypNm},
+        #{tpwSvcTypSttDt},
+        #{tpwSvcTypEndDt},
+        #{tpwSvcTypCtt},
+        #{tpwMbrsTypCd},
+        #{tpwMntnCd},
+        #{tpwStlmCycDvsCd},
+        #{tpwStlmCtgCd},
+        #{stlmCtgAdptVal},
+        #{trnsTrdReqYn},
+        #{ldgrTrdReqYn},
+        #{taxiTrdReqYn},
+        #{areaTrdReqYn},
+        #{tpwStlmActDvsCd},
+        #{tpwRsdcAuthCycCd},
+        #{tpwCrovDvsCd},
+        #{sprtDplcYn},
+        #{tpwTrdOrgCd},
+        #{trnsTrdMlprExYn},
+        #{autAplYn},
+        #{evdnYn},
+        #{frgnSprtYn},
+        #{trdNcntLtnAdptYn},
+        #{useYn},
+        coalesce(#{rgsrId}, 'system'),
+        to_char(now(), 'YYYYMMDDHH24MISS'),
+        coalesce(#{updrId}, 'system'),
+        to_char(now(), 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+    <!-- 1. 기존 데이터 use_yn = 'N' 처리 -->
+    <update id="updateUseYnN" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        update ohxzown.tbhxzm202
+        set use_yn = 'N'
+        where tpw_svc_id = #{tpwSvcId}
+        and tpw_svc_typ_id = #{tpwSvcTypId}
+        and tpw_svc_typ_sno = #{tpwSvcTypSno}
+    </update>
+
+    <!-- 2. 신규 insert -->
+    <insert id="saveSprtSvcTyp" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        insert into ohxzown.tbhxzm202 (
+            tpw_svc_id,
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            tpw_svc_typ_nm,
+            tpw_svc_typ_stt_dt,
+            tpw_svc_typ_end_dt,
+            tpw_svc_typ_ctt,
+            tpw_mbrs_typ_cd,
+            tpw_mntn_cd,
+            tpw_trd_org_cd,
+            use_yn,
+            tpw_stlm_cyc_dvs_cd,
+            sprt_dplc_yn,
+            tpw_rsdc_auth_cyc_cd,
+            tpw_stlm_act_dvs_cd,
+            aut_apl_yn,
+            frgn_sprt_yn,
+            tpw_crov_dvs_cd,
+            trns_trd_mlpr_ex_yn,
+            evdn_yn,
+            trd_ncnt_ltn_adpt_yn,
+            updr_id,
+            upd_dtm
+        )
+        values (
+            #{tpwSvcId},
+            #{tpwSvcTypId},
+            (select coalesce(max(m202.tpw_svc_typ_sno), 0) + 1
+            from ohxzown.tbhxzm202 m202
+            where m202.tpw_svc_id = #{tpwSvcId}
+            and m202.tpw_svc_typ_id = #{tpwSvcTypId}),
+            #{tpwSvcTypNm},
+            #{tpwSvcTypSttDt},
+            #{tpwSvcTypEndDt},
+            #{tpwSvcTypCtt},
+            #{tpwMbrsTypCd},
+            #{tpwMntnCd},
+            #{tpwTrdOrgCd},
+            #{useYn},
+            #{tpwStlmCycDvsCd},
+            #{sprtDplcYn},
+            #{tpwRsdcAuthCycCd},
+            #{tpwStlmActDvsCd},
+            #{autAplYn},
+            #{frgnSprtYn},
+            #{tpwCrovDvsCd},
+            #{trnsTrdMlprExYn},
+            #{evdnYn},
+            #{trdNcntLtnAdptYn},
+            'system',
+            to_char(now(), 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+    <!--    tpw_svc_typ_sno id생성-->
+    <select id="generateNewSvcTypId" resultType="String" parameterType="String">
+        select 'T' || lpad(coalesce(max(substr(tpw_svc_typ_id,2,5)),0)+1,5,'0')
+        from ohxzown.tbhxzm202
+        where tpw_svc_id = #{tpwSvcId}
+    </select>
+
+
+    <!-- 기존 데이터를 조회할 select 추가 -->
+    <select id="findSprtSvcTypById" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+        select *
+        from ohxzown.tbhxzm202
+        where tpw_svc_id = #{tpwSvcId}
+        and tpw_svc_typ_id = #{tpwSvcTypId}
+        and tpw_svc_typ_sno = #{tpwSvcTypSno}
+    </select>
+
+</mapper>
