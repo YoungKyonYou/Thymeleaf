@@ -2,11 +2,13 @@ package tmoney.co.kr;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+import tmoney.co.kr.imports.ImportDemoRequest;
+
+import java.util.List;
 
 
 @RequiredArgsConstructor
@@ -21,6 +23,20 @@ public class TestController {
     @GetMapping("/page/dashboard/index")
     public String dashboard() {
         return "page/dashboard/index";
+    }
+
+    @GetMapping("/common/import/demo")
+    public String importDemo() {
+
+
+        return "common/imports/import-demo";
+    }
+
+    @PostMapping("/api/users/import")
+    public ResponseEntity<Void> importDemo(@RequestBody List<ImportDemoRequest> list) {
+
+        System.out.println("받은 payload = " + list);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/page/guide/{view}")

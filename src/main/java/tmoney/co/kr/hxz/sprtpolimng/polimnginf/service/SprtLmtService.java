@@ -38,7 +38,7 @@ public class SprtLmtService  {
         long total = readSprtLmtPtListCnt(req);
 
         SprtLmtSrchReqVO reqVO = new SprtLmtSrchReqVO(
-                req.getTpwSvcNm(), req.getUseYn(), req.getTpwLmtDvsCd(),
+                req.getTpwSvcId(), req.getTpwSvcNm(), req.getTpwSvcTypId(), req.getTpwSvcTypNm(), req.getUseYn(), req.getTpwLmtDvsCd(),
                 offset, req.getSize(), req.getSort(), req.getDir()
         );
 

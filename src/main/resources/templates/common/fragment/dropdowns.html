@@ -1,261 +1,294 @@
 <th:block th:fragment="cascadingDropdown(rootId, deptName, subName)">
-  <div class="cascading-dropdowns" th:attr="id=${rootId},
+    <div class="cascading-dropdowns" th:attr="id=${rootId},
                 data-parent-name=${deptName},
                 data-child-name=${subName},
                 data-api-url=@{/common/tpwsvc/tpwSvcInf}" style="display:flex; gap:16px; align-items:flex-start;">
 
-    <!-- 1차: 서비스 -->
-    <div class="dropdown" style="width:240px" th:attr="data-name=${deptName}">
-      <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
-        aria-label="서비스 선택 드롭다운">
-        <span class="dropdown_value" data-placeholder="서비스 선택">서비스 선택</span>
-      </button>
-      <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
-      <input th:attr="name=${deptName}" type="hidden" value="">
+        <!-- 1차: 서비스 -->
+        <div class="dropdown" style="width:240px" th:attr="data-name=${deptName}">
+            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
+                    aria-label="서비스 선택 드롭다운">
+                <span class="dropdown_value" data-placeholder="서비스 선택">서비스 선택</span>
+            </button>
+            <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
+            <input th:attr="name=${deptName}" type="hidden" value="">
+        </div>
+
+        <!-- 2차: 서비스 유형 -->
+        <div class="dropdown" style="width:240px" th:attr="data-name=${subName}, data-parent=${deptName}">
+            <button type="button" class="dropdown_button" disabled aria-disabled="true" aria-haspopup="listbox"
+                    aria-expanded="false" aria-label="서비스 유형 선택 드롭다운">
+                <span class="dropdown_value" data-placeholder="먼저 서비스를 선택">먼저 서비스를 선택</span>
+            </button>
+            <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
+            <input th:attr="name=${subName}" type="hidden" value="">
+        </div>
     </div>
 
-    <!-- 2차: 서비스 유형 -->
-    <div class="dropdown" style="width:240px" th:attr="data-name=${subName}, data-parent=${deptName}">
-      <button type="button" class="dropdown_button" disabled aria-disabled="true" aria-haspopup="listbox"
-        aria-expanded="false" aria-label="서비스 유형 선택 드롭다운">
-        <span class="dropdown_value" data-placeholder="먼저 서비스를 선택">먼저 서비스를 선택</span>
-      </button>
-      <ul class="dropdown_list" role="listbox" tabindex="-1"></ul>
-      <input th:attr="name=${subName}" type="hidden" value="">
-    </div>
-  </div>
+    <script th:inline="javascript">
+        (function () {
+          // ─────────────────────────────────────────
+          // 1) 안전 가드: 동일 DOM에 중복 바인딩 방지
+          var rootId = /*[['' + ${rootId} + '']]*/ 'root';
+          var root   = document.getElementById(rootId);
+          if (!root || root.dataset.bound === '1') return;
+          root.dataset.bound = '1';
 
-  <script th:inline="javascript">
-    (function () {
-      // ─────────────────────────────────────────
-      // 1) 안전 가드: 동일 DOM에 중복 바인딩 방지
-      var rootId = /*[[''+${rootId}]]*/ 'root';
-      var root = document.getElementById(rootId);
-      if (!root || root.dataset.bound === '1') return;
-      root.dataset.bound = '1';
+          // ─────────────────────────────────────────
+          // 2) 설정/상태
+          var parentName = root.getAttribute('data-parent-name');
+          var childName  = root.getAttribute('data-child-name');
+          var apiUrl     = root.getAttribute('data-api-url');
 
-      // ─────────────────────────────────────────
-      // 2) 설정/상태
-      var parentName = root.getAttribute('data-parent-name');
-      var childName = root.getAttribute('data-child-name');
-      var apiUrl = root.getAttribute('data-api-url');
+          // 캐시
+          var SERVICE_BY_ID = {};
+          var TYPES_BY_SVC  = {};
+          var _payload      = null;
 
-      // 캐시
-      var SERVICE_BY_ID = {};   // { svcId: {tpwSvcId, tpwSvcNm, ...} }
-      var TYPES_BY_SVC = {};   // { svcId: [{tpwSvcTypId, tpwSvcTypNm, ...}, ...] }
-      var _payload = null; // 원 응답 보관
-
-      // 외부 클릭 닫기 핸들러(인스턴스 단위)
-      var offsiteCloser = function (e) {
-        if (!root.contains(e.target)) closeAll();
-      };
-      document.addEventListener('click', offsiteCloser, true);
-
-      // ─────────────────────────────────────────
-      // 3) 유틸
-      function parts(dd) {
-        return {
-          btn: dd.querySelector('.dropdown_button'),
-          value: dd.querySelector('.dropdown_value'),
-          list: dd.querySelector('.dropdown_list'),
-          hidden: dd.querySelector('input[type="hidden"]')
-        };
-      }
-      function open(dd) { var p = parts(dd); p.btn.setAttribute('aria-expanded', 'true'); p.list.style.display = 'block'; p.list.focus(); }
-      function close(dd) { var p = parts(dd); p.btn.setAttribute('aria-expanded', 'false'); p.list.style.display = 'none'; }
-      function closeAll() { root.querySelectorAll('.dropdown').forEach(close); }
-
-      function setLoading(listEl, msg) { listEl.innerHTML = '<li class="dropdown_option" aria-disabled="true">' + (msg || '로딩 중...') + '</li>'; }
-      function setError(listEl, msg) { listEl.innerHTML = '<li class="dropdown_option" aria-disabled="true">' + (msg || '불러오기에 실패했습니다') + '</li>'; }
-      function fill(listEl, items, vKey, lKey) {
-        listEl.innerHTML = (items || []).map(function (it) {
-          return '<li role="option" class="dropdown_option" data-value="' + it[vKey] + '">' + it[lKey] + '</li>';
-        }).join('');
-      }
-      function resetChild() {
-        var childDD = root.querySelector('.dropdown[data-name="' + childName + '"]');
-        var c = parts(childDD);
-        c.list.innerHTML = '';
-        c.hidden.value = '';
-        c.btn.disabled = true;
-        c.btn.setAttribute('aria-disabled', 'true');
-        c.value.textContent = c.value.getAttribute('data-placeholder') || '선택하세요';
-        close(childDD);
-      }
-
-      // 단일 fetch 래퍼 (Common.sendSafe 있으면 우선)
-      async function httpGetJson(url) {
-        // sendSafe가 (url, options) 시그니처일 때만 사용
-        if (window.Common?.sendSafe && window.Common.sendSafe.length >= 2) {
-          try {
-            const r = await Common.sendSafe(url, { method: 'GET', expect: 'json' });
-            if (!r?.ok) throw new Error('HTTP ' + (r?.status || ''));
-            return r.data;
-          } catch (_) {
-            /* 아래 fetch로 폴백 */
+          // ─────────────────────────────────────────
+          // 3) 유틸
+          function parts(dd) {
+            return {
+              btn:    dd.querySelector('.dropdown_button'),
+              value:  dd.querySelector('.dropdown_value'),
+              list:   dd.querySelector('.dropdown_list'),
+              hidden: dd.querySelector('input[type="hidden"]')
+            };
           }
-        }
-        const res = await fetch(url, {
-          method: 'GET',
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      }
+          function open(dd) {
+            var p = parts(dd);
+            p.btn.setAttribute('aria-expanded', 'true');
+            p.list.style.display = 'block';
+            p.list.focus();
+          }
+          function close(dd) {
+            var p = parts(dd);
+            p.btn.setAttribute('aria-expanded', 'false');
+            p.list.style.display = 'none';
+          }
+          function closeAll() {
+            root.querySelectorAll('.dropdown').forEach(close);
+          }
 
-      // ─────────────────────────────────────────
-      // 4) 로딩 & 바인딩
-      var parentDD = root.querySelector('.dropdown[data-name="' + parentName + '"]');
-      var childDD = root.querySelector('.dropdown[data-name="' + childName + '"]');
-      var P = parts(parentDD), C = parts(childDD);
+          function setLoading(listEl, msg) {
+            listEl.innerHTML =
+              '<li class="dropdown_option" aria-disabled="true">' +
+              (msg || '로딩 중...') +
+              '</li>';
+          }
+          function setError(listEl, msg) {
+            listEl.innerHTML =
+              '<li class="dropdown_option" aria-disabled="true">' +
+              (msg || '불러오기에 실패했습니다') +
+              '</li>';
+          }
+          function fill(listEl, items, vKey, lKey) {
+            listEl.innerHTML = (items || []).map(function (it) {
+              return '<li role="option" class="dropdown_option" data-value="' +
+                       it[vKey] + '">' + it[lKey] + '</li>';
+            }).join('');
+          }
+          function resetChild() {
+            var childDD = root.querySelector('.dropdown[data-name="' + childName + '"]');
+            var c = parts(childDD);
+            c.list.innerHTML = '';
+            c.hidden.value   = '';
+            c.btn.disabled   = true;
+            c.btn.setAttribute('aria-disabled', 'true');
+            c.value.textContent = c.value.getAttribute('data-placeholder') || '선택하세요';
+            close(childDD);
+          }
 
-      // 버튼 토글
-      parentDD.addEventListener('click', function (e) {
-        var btn = e.target.closest('.dropdown_button');
-        if (!btn) return;
-        e.stopPropagation();
-        closeAll();
-        open(parentDD);
-      });
-      childDD.addEventListener('click', function (e) {
-        var btn = e.target.closest('.dropdown_button');
-        if (!btn || btn.disabled) return;
-        e.stopPropagation();
-        closeAll();
-        open(childDD);
-      });
+          // 단일 fetch 래퍼 (Common.sendSafe 있으면 우선)
+          async function httpGetJson(url) {
+            if (window.Common?.sendSafe && window.Common.sendSafe.length >= 2) {
+              try {
+                const r = await Common.sendSafe(url, { method: 'GET', expect: 'json' });
+                if (!r?.ok) throw new Error('HTTP ' + (r?.status || ''));
+                return r.data;
+              } catch (_) {
+                // fallback → 아래 fetch 사용
+              }
+            }
+            const res = await fetch(url, {
+              method: 'GET',
+              credentials: 'same-origin',
+              headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          }
 
-      // 옵션 클릭(위임)
-      P.list.addEventListener('click', function (e) {
-        var li = e.target.closest('.dropdown_option');
-        if (!li || li.hasAttribute('aria-disabled')) return;
-        // parent select
-        P.list.querySelectorAll('.dropdown_option[aria-selected="true"]').forEach(function (n) { n.setAttribute('aria-selected', 'false'); });
-        li.setAttribute('aria-selected', 'true');
-        P.value.textContent = li.textContent.trim();
-        P.hidden.value = li.dataset.value || '';
-        close(parentDD);
+          // ─────────────────────────────────────────
+          // 4) 로딩 & 바인딩
+          var parentDD = root.querySelector('.dropdown[data-name="' + parentName + '"]');
+          var childDD  = root.querySelector('.dropdown[data-name="' + childName  + '"]');
+          var P = parts(parentDD), C = parts(childDD);
 
-        // child 채우기
-        var items = TYPES_BY_SVC[P.hidden.value] || [];
-        if (items.length) {
-          C.btn.disabled = false;
-          C.btn.setAttribute('aria-disabled', 'false');
-          C.value.textContent = C.value.getAttribute('data-placeholder') || '선택하세요';
-          fill(C.list, items, 'tpwSvcTypId', 'tpwSvcTypNm');
-          C.hidden.value = '';
-        } else {
-          resetChild();
-        }
-
-        // 변경 이벤트
-        root.dispatchEvent(new CustomEvent('cascading:change', { detail: { level: 'parent', value: P.hidden.value } }));
-      });
-
-      C.list.addEventListener('click', function (e) {
-        var li = e.target.closest('.dropdown_option');
-        if (!li || li.hasAttribute('aria-disabled')) return;
-        C.list.querySelectorAll('.dropdown_option[aria-selected="true"]').forEach(function (n) { n.setAttribute('aria-selected', 'false'); });
-        li.setAttribute('aria-selected', 'true');
-        C.value.textContent = li.textContent.trim();
-        C.hidden.value = li.dataset.value || '';
-        close(childDD);
-        root.dispatchEvent(new CustomEvent('cascading:change', { detail: { level: 'child', value: C.hidden.value } }));
-      });
-
-      // Esc 닫기
-      root.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeAll();
-      });
-
-      // 데이터 로드
-      async function loadAll() {
-        setLoading(P.list, '서비스 로딩...');
-        try {
-          var data = await httpGetJson(apiUrl);
-          _payload = data || {};
-          var services = _payload.services || [];
-          TYPES_BY_SVC = _payload.typesBySvcId || {};
-          SERVICE_BY_ID = Object.fromEntries(services.map(function (s) { return [String(s.tpwSvcId), s]; }));
-          fill(P.list, services, 'tpwSvcId', 'tpwSvcNm');
-          root.cascadingData = _payload;
-
-          // 초기화 이벤트 (외부에서 대기했다가 프리셋 선택 등에 사용)
-          root.dispatchEvent(new CustomEvent('cascading:json', { detail: _payload }));
-          root.dispatchEvent(new CustomEvent('cascading:ready'));
-        } catch (e) {
-          console.error(e);
-          setError(P.list, '서비스를 불러오지 못했습니다');
-        }
-      }
-
-      // ─────────────────────────────────────────
-      // 5) 퍼블릭 API (다른 곳 영향 없이 root에만 붙임)
-      root.getSelectedObjects = function (id) {
-        var parentId = String(P.hidden.value || '').trim();
-        var childId = String(C.hidden.value || '').trim();
-        var parentObj = parentId ? (SERVICE_BY_ID[parentId] || null) : null;
-        var childObj = null;
-        if (parentObj && childId) {
-          var list = TYPES_BY_SVC[parentId] || [];
-          childObj = list.find(function (t) { return String(t.tpwSvcTypId) === childId; }) || null;
-        }
-        return {
-          rootId: id || rootId,
-          parentId, childId,
-          parent: parentObj ? { ...parentObj } : null,
-          child: childObj ? { ...childObj } : null,
-          validParent: !!parentObj,
-          validChild: !!childObj,
-          valid: !!(parentObj && childObj)
-        };
-      };
-
-      root.selectFirstPair = function () {
-        if (!root.cascadingData) {
-          var once = function () { root.removeEventListener('cascading:json', once); root.selectFirstPair(); };
-          root.addEventListener('cascading:json', once, { once: true });
-          return false;
-        }
-        var fp = P.list.querySelector('.dropdown_option:not([aria-disabled="true"])');
-        if (!fp) return false;
-        // parent 선택
-        fp.click();
-        // child 첫 번째는 다음 프레임에서
-        requestAnimationFrame(function () {
-          var fc = C.list.querySelector('.dropdown_option:not([aria-disabled="true"])');
-          fc && fc.click();
-        });
-        return true;
-      };
-
-      root.selectByValues = function (parentId, childId) {
-        // parent
-        var pl = P.list.querySelector('.dropdown_option[data-value="' + String(parentId) + '"]');
-        if (!pl) return false;
-        pl.click();
-        if (childId != null) {
-          requestAnimationFrame(function () {
-            var cl = C.list.querySelector('.dropdown_option[data-value="' + String(childId) + '"]');
-            cl && cl.click();
+          // 버튼 토글
+          parentDD.addEventListener('click', function (e) {
+            var btn = e.target.closest('.dropdown_button');
+            if (!btn) return;
+            e.stopPropagation();
+            closeAll();
+            open(parentDD);
           });
-        }
-        return true;
-      };
+          childDD.addEventListener('click', function (e) {
+            var btn = e.target.closest('.dropdown_button');
+            if (!btn || btn.disabled) return;
+            e.stopPropagation();
+            closeAll();
+            open(childDD);
+          });
 
-      root.refresh = function () { loadAll(); };
+          // 옵션 클릭(위임) - 부모
+          P.list.addEventListener('click', function (e) {
+            var li = e.target.closest('.dropdown_option');
+            if (!li || li.hasAttribute('aria-disabled')) return;
 
-      root.destroy = function () {
-        document.removeEventListener('click', offsiteCloser, true);
-        delete root.cascadingData;
-        root.dataset.bound = '';
-      };
+            P.list.querySelectorAll('.dropdown_option[aria-selected="true"]')
+              .forEach(function (n) { n.setAttribute('aria-selected', 'false'); });
+            li.setAttribute('aria-selected', 'true');
 
-      // ─────────────────────────────────────────
-      // 6) 최초 로드
-      resetChild();
-      loadAll();
-    })();
-  </script>
+            P.value.textContent = li.textContent.trim();
+            P.hidden.value      = li.dataset.value || '';
+            close(parentDD);
+
+            var items = TYPES_BY_SVC[P.hidden.value] || [];
+            if (items.length) {
+              C.btn.disabled = false;
+              C.btn.setAttribute('aria-disabled', 'false');
+              C.value.textContent = C.value.getAttribute('data-placeholder') || '선택하세요';
+              fill(C.list, items, 'tpwSvcTypId', 'tpwSvcTypNm');
+              C.hidden.value = '';
+            } else {
+              resetChild();
+            }
+
+            root.dispatchEvent(new CustomEvent('cascading:change', {
+              detail: { level: 'parent', value: P.hidden.value }
+            }));
+          });
+
+          // 옵션 클릭(위임) - 자식
+          C.list.addEventListener('click', function (e) {
+            var li = e.target.closest('.dropdown_option');
+            if (!li || li.hasAttribute('aria-disabled')) return;
+
+            C.list.querySelectorAll('.dropdown_option[aria-selected="true"]')
+              .forEach(function (n) { n.setAttribute('aria-selected', 'false'); });
+            li.setAttribute('aria-selected', 'true');
+
+            C.value.textContent = li.textContent.trim();
+            C.hidden.value      = li.dataset.value || '';
+            close(childDD);
+
+            root.dispatchEvent(new CustomEvent('cascading:change', {
+              detail: { level: 'child', value: C.hidden.value }
+            }));
+          });
+
+          // Esc 닫기
+          root.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAll();
+          });
+
+          // 데이터 로드
+          async function loadAll() {
+            setLoading(P.list, '서비스 로딩...');
+            try {
+              var data = await httpGetJson(apiUrl);
+              _payload      = data || {};
+              var services  = _payload.services || [];
+              TYPES_BY_SVC  = _payload.typesBySvcId || {};
+              SERVICE_BY_ID = Object.fromEntries(
+                services.map(function (s) { return [String(s.tpwSvcId), s]; })
+              );
+
+              fill(P.list, services, 'tpwSvcId', 'tpwSvcNm');
+              root.cascadingData = _payload;
+
+              root.dispatchEvent(new CustomEvent('cascading:json',  { detail: _payload }));
+              root.dispatchEvent(new CustomEvent('cascading:ready'));
+            } catch (e) {
+              console.error(e);
+              setError(P.list, '서비스를 불러오지 못했습니다');
+            }
+          }
+
+          // ─────────────────────────────────────────
+          // 5) 퍼블릭 API
+          root.getSelectedObjects = function (id) {
+            var parentId  = String(P.hidden.value || '').trim();
+            var childId   = String(C.hidden.value || '').trim();
+            var parentObj = parentId ? (SERVICE_BY_ID[parentId] || null) : null;
+            var childObj  = null;
+
+            if (parentObj && childId) {
+              var list = TYPES_BY_SVC[parentId] || [];
+              childObj = list.find(function (t) {
+                return String(t.tpwSvcTypId) === childId;
+              }) || null;
+            }
+
+            return {
+              rootId: id || rootId,
+              parentId, childId,
+              parent: parentObj ? { ...parentObj } : null,
+              child : childObj  ? { ...childObj  } : null,
+              validParent: !!parentObj,
+              validChild : !!childObj,
+              valid      : !!(parentObj && childObj)
+            };
+          };
+
+          root.selectFirstPair = function () {
+            if (!root.cascadingData) {
+              var once = function () {
+                root.removeEventListener('cascading:json', once);
+                root.selectFirstPair();
+              };
+              root.addEventListener('cascading:json', once, { once: true });
+              return false;
+            }
+            var fp = P.list.querySelector('.dropdown_option:not([aria-disabled="true"])');
+            if (!fp) return false;
+
+            fp.click();
+            requestAnimationFrame(function () {
+              var fc = C.list.querySelector('.dropdown_option:not([aria-disabled="true"])');
+              fc && fc.click();
+            });
+            return true;
+          };
+
+          root.selectByValues = function (parentId, childId) {
+            var pl = P.list.querySelector('.dropdown_option[data-value="' + String(parentId) + '"]');
+            if (!pl) return false;
+
+            pl.click();
+            if (childId != null) {
+              requestAnimationFrame(function () {
+                var cl = C.list.querySelector('.dropdown_option[data-value="' + String(childId) + '"]');
+                cl && cl.click();
+              });
+            }
+            return true;
+          };
+
+          root.refresh = function () {
+            loadAll();
+          };
+
+          root.destroy = function () {
+            delete root.cascadingData;
+            root.dataset.bound = '';
+          };
+
+          // ─────────────────────────────────────────
+          // 6) 최초 로드
+          resetChild();
+          loadAll();
+        })();
+    </script>
 </th:block>

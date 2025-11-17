@@ -14,9 +14,19 @@ import javax.validation.constraints.Size;
 @Setter
 @Getter
 public class SprtLmtSrchReqVO {
+
+    @Size(min = 0, max = 500, message = "교통복지서비스 아이디는 0에서 500 이하의 길이어야 합니다.")
+    private String tpwSvcId;
     /** 교통복지서비스명 */
     @Size(min = 0, max = 500, message = "교통복지서비스명은 0에서 500 이하의 길이어야 합니다.")
     private String tpwSvcNm;
+
+    @Size(min = 0, max = 100, message = "교통복지서비스유형 아이디는 0에서 100 이하의 길이어야 합니다.")
+    private String tpwSvcTypId;
+
+    @Size(min = 0, max = 100, message = "교통복지서비스유형명은 0에서 100 이하의 길이어야 합니다.")
+    private String tpwSvcTypNm;
+
     /** 사용여부 */
     @Size(min = 0, max = 1, message = "사용여부는 0에서 1 이하의 길이어야 합니다.")
     private String useYn = "Y";

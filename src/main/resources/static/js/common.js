@@ -61,7 +61,103 @@
     // }
     // initDatePicker();
 
+/**
+ * 엑셀 Import 공통 바인딩
+ *
+ * @param {HTMLInputElement} fileInput  엑셀 업로드 <input type="file">
+ * @param {string} provider             서버측 ImportProvider name (ex: "user")
+ * @param {function(Object[]):void} onSuccessRows   rows 콜백 (그리드 갱신용)
+ * @param {function(Object[]):void} onErrors        에러 콜백 (에러표시용)
+ * @param {Object} extraParams          추가 파라미터 (필요시)
+ */
+async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, extraParams) {
+    if (!fileInput) return;
 
+    // 한 번이라도 성공적으로 업로드 했는지 여부
+    let hasUploadedOnce = false;
+
+    // 실제 업로드 수행 로직을 함수로 분리
+    async function doUpload(file) {
+        const form = new FormData();
+        form.append('provider', provider);
+        form.append('file', file);
+
+        if (extraParams) {
+            Object.entries(extraParams).forEach(([k, v]) => {
+                form.append(k, v);
+            });
+        }
+
+        const res = await sendSafe('/import/xlsx', {
+            method: 'POST',
+            data: form,
+            multipart : true
+        });
+
+        // Abort 된 경우(null)나, 에러(ok=false)는 여기서 그냥 종료
+        if (!res || !res.ok) {
+            // sendSafe 안에서 이미 모달을 띄웠으므로 추가 처리 없이 리턴
+            fileInput.value = '';   // 그래도 다시 선택 가능하게 리셋
+            return;
+        }
+
+        // sendSafe OK → res.data 에 JSON 이 들어있다고 가정
+        const json = res.data;
+        // json = { rows: [...], errors: [...], totalRows, successRows, errorRows }
+
+        if (onSuccessRows && Array.isArray(json.rows)) {
+            onSuccessRows(json.rows);
+        }
+
+        if (onErrors && Array.isArray(json.errors)) {
+            onErrors(json.errors);
+        }
+
+        // 기본 로그/알림
+        if (json.errorRows && json.errorRows > 0) {
+            console.warn('Import errors: ', json.errors);
+            modalShow({
+                title: '알림',
+                message: `총 ${json.totalRows}건 중 ${json.successRows}건 성공, ${json.errorRows}건 실패했습니다.`
+            });
+        }
+
+        // 여기까지 왔으면 적어도 한 번은 업로드 성공으로 취급
+        hasUploadedOnce = true;
+
+        // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 value 리셋
+        fileInput.value = '';
+    }
+
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        // 아직 한 번도 업로드 안 했으면 바로 업로드
+        if (!hasUploadedOnce) {
+            doUpload(file).catch(console.error);
+            return;
+        }
+
+        // 이미 업로드한 적이 있으면 모달로 한 번 더 확인
+        modalShow({
+            title: '확인',
+            message: '이미 데이터를 한 번 업로드했습니다.\n기존 내용을 지우고 다시 업로드하시겠습니까?',
+            buttons: 'ok-close',
+            okText: '다시 업로드',
+            closeText: '취소',
+            onOk: function () {
+                // 확인 눌렀을 때 다시 업로드
+                doUpload(file).catch(console.error);
+            },
+            onClose: function () {
+                // 취소한 경우도 파일 선택 상태는 비워 줘야
+                // 같은 파일을 다시 선택해도 change가 뜬다
+                fileInput.value = '';
+            }
+        });
+    });
+}
 
     /**
      * 엑셀 출력 API 호출
@@ -144,10 +240,10 @@
     // expect: 응답 형식 기대값 (기본값: 'json')
     // clientErrorMsg: 클라이언트 에러 메시지 (기본값: '요청에 실패했습니다.')
     // otherErrorMsg: 기타 에러 메시지 (기본값: '오류가 발생했습니다.')
-    async function sendSafe(url, {method = 'POST', data = null, signal, headers, expect = 'json', clientErrorMsg = '요청에 실패했습니다.', otherErrorMsg = '오류가 발생했습니다.'}={}) {
+    async function sendSafe(url, {method = 'POST', data = null, signal, headers, expect = 'json', clientErrorMsg = '요청에 실패했습니다.', otherErrorMsg = '오류가 발생했습니다.', multipart = false}={}) {
         // send 함수 호출 결과를 out 변수에 저장
         try {
-            const out = await send(url, method, data, headers, signal, expect);
+            const out = await send(url, method, data, headers, signal, expect, multipart);
 
             // 성공 시 결과를 그대로 반환 (ok: true, status: 200, payload: out 등)
             return { ok: true, data: out };
@@ -163,9 +259,9 @@
                 const msg = (e.payload && e.payload.message) ? e.payload.message : clientErrorMsg;
 
                 modalShow({
-                    title: '경고',
+                    title: '알림',
                     message: msg,
-                    buttons: ['close']
+                    buttons: 'close'
                 });
 
                 // 에러 정보 반환
@@ -179,7 +275,7 @@
             modalShow({
                 title: '오류',
                 message: otherErrorMsg,
-                buttons: ['close']
+                buttons: 'close'
             });
 
             // 에러 정보 반환
@@ -347,6 +443,76 @@
         });
         return obj;
     }
+        /**
+         * 일반 table 태그에서 thead 헤더 텍스트 기준으로
+         * tbody 데이터를 DTO 배열 + payload 로 만들어 준다.
+         *
+         * @param {HTMLTableElement|string} tableOrSelector  table 요소 또는 CSS 셀렉터
+         * @param {{
+         *   headerMap: Object<string,string>,   // 정규화된 헤더텍스트 -> DTO 필드명 매핑
+         *   requiredKeys?: string[],            // 반드시 존재해야 하는 필드들
+         *   wrapperKey?: string,                // 최상위 키 이름 (기본: 'list')
+         *   skipEmptyRow?: boolean              // 전부 빈 값인 행은 버릴지 여부 (기본: true)
+         * }} opts
+         * @returns {{ [key: string]: Array<Object<string,string>> }}
+         *
+         * 사용 예:
+         *   const payload = Common.collectTablePayload('#user-grid', {
+         *     headerMap: {
+         *       '사용자id': 'userId',
+         *       '이름': 'userName',
+         *       '이메일': 'email',
+         *       '나이': 'age',
+         *       '전화번호': 'phone'
+         *     },
+         *     requiredKeys: ['userId','userName','email'],
+         *     wrapperKey: 'list'
+         *   });
+         */
+        function collectTablePayload(tableOrSelector, opts = {}) {
+            const {
+                headerMap,
+                requiredKeys = [],
+                wrapperKey = 'list',
+                skipEmptyRow = true
+            } = opts;
+
+            const table = (typeof tableOrSelector === 'string')
+                ? document.querySelector(tableOrSelector)
+                : tableOrSelector;
+
+            if (!table) {
+                throw new Error('collectTablePayload: 테이블을 찾을 수 없습니다.');
+            }
+
+            // 이미 common.js 안에 있는 함수 재사용
+            const indexToKey = buildHeaderKeyMap(table, {
+                headerMap,
+                requiredKeys
+            });
+
+            const rows = table.querySelectorAll('tbody tr');
+            const list = [];
+
+            rows.forEach(tr => {
+                // "조회 결과 없음" placeholder 등은 건너뛰기
+                if (tr.matches('[data-empty-row="true"]')) return;
+
+                const obj = rowToObject(tr, indexToKey);
+
+                // 전부 빈 값이면 스킵 (옵션)
+                if (skipEmptyRow) {
+                    const hasValue = Object.values(obj).some(v =>
+                        v != null && String(v).trim() !== ''
+                    );
+                    if (!hasValue) return;
+                }
+
+                list.push(obj);
+            });
+
+            return { [wrapperKey]: list };
+        }
 
     /**
      * 섹션 행 수집 (div[data-section] 기준)
@@ -1105,77 +1271,112 @@
 
 
 
-    // HTTP 요청을 보내는 비동기 함수
-    // url: 요청할 URL
-    // method: HTTP 메서드 (기본값: 'POST')
-    // data: 요청 본문 데이터 (기본값: null)
-    // headers: 추가 헤더 (기본값: {} )
-    // signal: AbortSignal (선택적)
-    // expect: 응답 형식 기대값 (기본값: 'json')
-    async function send(url, method = 'POST', data = null, headers = {}, signal, expect = 'json') {
-        // 기본 헤더 설정: JSON 형식으로 Accept와 Content-Type 지정
-        // 기존 헤더와 병합
-        headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json; charset=utf-8',
-            ...headers
-        };
+    /// HTTP 요청을 보내는 비동기 함수
+     // url: 요청할 URL
+     // method: HTTP 메서드 (기본값: 'POST')
+     // data: 요청 본문 데이터 (기본값: null)
+     // headers: 추가 헤더 (기본값: {} )
+     // signal: AbortSignal (선택적)
+     // expect: 응답 형식 기대값 (기본값: 'json')
+     // multipart: FormData(multipart/form-data) 전송 여부 (기본값: false)
+     async function send(
+         url,
+         method = 'POST',
+         data = null,
+         headers = {},
+         signal,
+         expect = 'json',
+         multipart = false
+     ) {
+         // 1) 기본 헤더 설정
+         //    - multipart=true 인 경우에는 Content-Type를 강제로 세팅하면 안 되므로,
+         //      일단 Accept만 기본으로 두고, 아래에서 상황에 따라 Content-Type을 채운다.
+         headers = {
+             'Accept': 'application/json',
+             ...headers
+         };
 
-        // Fetch 초기화 객체 설정
-        // 캐시: no-store (캐싱하지 않음)
-        // signal: AbortController 신호 (취소 가능)
-        let init = {
-            method,
-            headers,
-            cache: 'no-store',
-            credentials: 'same-origin',
-            signal: signal || undefined  // signal이 제공되면 사용, 아니면 생략
-        };
+         let init = {
+             method,
+             headers,
+             cache: 'no-store',
+             credentials: 'same-origin',
+             signal: signal || undefined
+         };
 
-        if (data != null) {
-            if (data instanceof FormData) {
-                init.body = data;
-            } else if (data instanceof URLSearchParams) {
-                init.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
-                init.body = data.toString();
-            } else if (headers['Content-Type'] === 'application/x-www-form-urlencoded;charset=UTF-8') {
-                body = new URLSearchParams(data).toString();
-            } else {
-                init.headers['Content-Type'] = 'application/json;charset=UTF-8';
-                init.body = JSON.stringify(data);
-            }
-        }
+         // 2) body 세팅
+         if (data != null) {
+             // 🔥 multipart 모드: FormData 그대로 보내고 Content-Type은 지운다.
+             if (multipart) {
+                 if (!(data instanceof FormData)) {
+                     throw new Error('multipart=true 인 경우 data는 FormData 이어야 합니다.');
+                 }
+                 // 브라우저가 boundary 포함해서 자동으로 세팅하게 하기 위해 제거
+                 delete init.headers['Content-Type'];
+                 init.body = data;
 
-        // show:
-        const res = await fetch(url, init);
-        const ct = res.headers.get('content-type') || '';
-        const text = await res.text();
+             } else if (data instanceof FormData) {
+                 // 개발자가 multipart 플래그를 안 줬어도 최대한 정상 동작하도록 처리
+                 delete init.headers['Content-Type'];
+                 init.body = data;
 
-        if (res.ok) {
-            let payload = null;
-            if (ct.includes('application/json')) {
-                try {
-                    payload = JSON.parse(text);
-                } catch (e) {
-                }
-            }
-        } else {
-            const err = new Error((payload && payload.message) ? payload.message : `HTTP ${res.status}`);
-            err.name = 'FetchJsonError';
-            err.status = res.status;
-            err.payload = payload;
-            err.body = text;
-            err.contentType = ct;
-            throw err;
-        }
+             } else if (data instanceof URLSearchParams) {
+                 init.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
+                 init.body = data.toString();
 
-        if (expect === "text" || ct.includes("application/json")) return text;
-        try {
-            return JSON.parse(text);
-        } catch {
-            return text;
-        }
-    }
+             } else if (headers['Content-Type'] === 'application/x-www-form-urlencoded;charset=UTF-8') {
+                 // data가 평범한 객체인데 Content-Type을 urlencoded로 강제한 경우
+                 init.body = new URLSearchParams(data).toString();
+
+             } else {
+                 // 기본: JSON 전송
+                 init.headers['Content-Type'] = 'application/json;charset=UTF-8';
+                 init.body = JSON.stringify(data);
+             }
+         }
+
+         // 3) fetch 호출
+         const res = await fetch(url, init);
+         const ct = res.headers.get('content-type') || '';
+         const text = await res.text();
+
+         // JSON이면 미리 parse
+         let payload = null;
+         if (ct.includes('application/json')) {
+             try {
+                 payload = JSON.parse(text);
+             } catch (e) {
+                 // JSON 파싱 실패하면 그냥 payload는 null로 두고 text만 사용
+             }
+         }
+
+         // 4) 에러 처리
+         if (!res.ok) {
+             const err = new Error(
+                 (payload && payload.message)
+                     ? payload.message
+                     : `HTTP ${res.status}`
+             );
+             err.name = 'FetchJsonError';
+             err.status = res.status;
+             err.payload = payload;
+             err.body = text;
+             err.contentType = ct;
+             throw err;
+         }
+
+         // 5) 성공 시 반환 형식
+         if (expect === 'text') {
+             return text;
+         }
+         if (expect === 'json') {
+             // JSON이면 객체, 아니면 text
+             return payload != null ? payload : text;
+         }
+
+         // 기타 형식 필요하면 여기서 분기 추가 가능
+         return payload != null ? payload : text;
+     }
     // 전역 상태 및 기본값 정의
 
     const DEFAULTS = {
@@ -1591,9 +1792,11 @@
         collectFromForm,
 
         bindExcelExport,
+        bindExcelImport,
 
         // 재로딩 함수 (reloadList)
         reloadList,
+        collectTablePayload,
 
         // 안전한 요청 함수 (sendSafe)
         sendSafe,

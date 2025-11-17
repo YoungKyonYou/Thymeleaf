@@ -94,11 +94,48 @@
             </div>
 
             <!-- select(dropdown) -->
+
             <div class="spacer"></div>
             <div class="section-content">
                 <div class="title-wrap">
                     <h3 class="section-title">Select(dropdown)</h3>
                 </div>
+                <th:block th:replace="~{common/fragment/cmncd-dropdown :: cmncd('0025','cmnCd','선택하세요')}"></th:block>
+                <script th:inline="javascript">
+                    document.addEventListener('DOMContentLoaded', function () {
+                      // 이 페이지에 삽입한 cmncd-dropdown(0025 그룹) 엘리먼트 찾기
+                      var dd = document.querySelector('.dropdown[data-cmn-grp-id="0025"]');
+                      if (!dd) return;
+
+                      // 공통 핸들러: 현재 선택 상태를 getSelected()로 가져와 활용
+                      function onPick() {
+                        if (typeof dd.getSelected !== 'function') return;
+                        var sel = dd.getSelected();
+                        if (!sel || !sel.ready) {
+                          console.log('[cmncd] 아직 로딩 중…');
+                          return;
+                        }
+
+                        // 필요한 값들: sel.value(코드), sel.label(표시명), sel.row(행 전체)
+                        console.log('[cmncd] 선택됨 =>', sel);         // 전체 객체
+                        console.log('· value:', sel.value);
+                        console.log('· label:', sel.label);
+                        console.log('· row  :', sel.row);
+
+                        // 여기에 선택 후 처리 로직을 작성
+                        // 예) 숨겨진 input 채우기, 다른 드롭다운 갱신 등
+                        // document.querySelector('#someInput').value = sel.value;
+                      }
+
+                      // 준비 완료 시 1회 호출 + 변경 시마다 호출
+                      dd.addEventListener('cmncd:ready', onPick);
+                      dd.addEventListener('cmncd:change', onPick);
+
+                      // 혹시 이미 준비되어 있으면 한 번 즉시 확인
+                      setTimeout(onPick, 0);
+                    });
+                </script>
+
                 <p class="field-title">부서선택</p>
                 <div style="width:240px">
                     <div class="dropdown" data-name="department">

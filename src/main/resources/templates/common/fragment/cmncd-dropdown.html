@@ -73,6 +73,30 @@
             });
             document.addEventListener('click', off, true);
 
+            function getSelected() {
+  var v = String(hidden.value || '');
+  var idx = (v && Object.prototype.hasOwnProperty.call(indexByValue, v)) ? indexByValue[v] : -1;
+  var row = (idx >= 0) ? rowsCache[idx] : null;
+
+  // 화면에 보이는 라벨(placeholder인 경우도 있으니 보정)
+  var labelText = value.textContent ? value.textContent.trim() : '';
+  if ((!labelText || labelText === ph) && row && row.cmnDtlCdNm) {
+    labelText = row.cmnDtlCdNm;
+  }
+
+  return {
+    name: name,           // hidden name
+    value: v,             // 선택된 코드값 (없으면 '')
+    label: labelText,     // 표시 라벨(placeholder일 수 있음)
+    index: (idx >= 0 ? idx : null), // rowsCache 내 인덱스
+    row: row,             // 백엔드 응답의 행 객체(없으면 null)
+    ready: rowsCache.length > 0 // 데이터 로딩 여부
+  };
+}
+
+// 외부에서 호출 가능하도록 인스턴스 메서드로 노출
+root.getSelected = getSelected;
+
             // 선택
             list.addEventListener('click', function(e){
                 var li = e.target.closest('.dropdown_option');
@@ -89,10 +113,6 @@
                 var v = String(hidden.value);
                 var idx = indexByValue[v];
                 var row = (idx != null) ? rowsCache[idx] : null;
-
-
-                console.log('[cmncd] selected value =', v);
-                console.log('[cmncd] selected row =', row);
 
 
                 root.dispatchEvent(new CustomEvent('cmncd:change', {

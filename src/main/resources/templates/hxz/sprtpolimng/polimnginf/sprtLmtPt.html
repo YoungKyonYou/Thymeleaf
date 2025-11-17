@@ -6,9 +6,8 @@
 
         <link rel="stylesheet" th:href="@{/css/page/page.css}" />
 
-        <!-- 인라인 스타일 -->
         <style>
-            /* 분기/월 입력 읽기전용 표시 */
+            /* 읽기전용 표시(분기/월 입력 잠금용) */
             #modal-manager.qtr-readonly .dp-input[readonly] {
                 background: #f3f4f6;
                 color: #6b7280;
@@ -31,14 +30,48 @@
                 border-color: #e5e7eb;
             }
 
-            /* 건수 모달 스크롤 */
             .table-scroll {
                 max-height: 300px;
                 overflow: auto;
             }
 
-            /* 헤더 고정 필요 시 주석 해제
-            #newNcntTable thead th { position:sticky; top:0; background:#fff; z-index:1; } */
+            .tabs .tab.is-active {
+                border-bottom: 2px solid #7c3aed;
+            }
+
+            .tab-panel {
+                display: none;
+            }
+
+            .tab-panel.is-active {
+                display: block;
+            }
+
+            /* 월/건수 탭 레이아웃 보정 */
+            .tab-panel .table {
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            .tab-panel td>.flex.col-2 {
+                gap: 8px;
+                flex-wrap: nowrap;
+            }
+
+            .table-wrap {
+                overflow-x: auto;
+            }
+
+            .text-field.readonly {
+                min-width: 0;
+            }
+
+            /* 비활성 탭 버튼 */
+            .tab[disabled] {
+                opacity: .5;
+                pointer-events: none;
+                cursor: not-allowed;
+            }
         </style>
 
         <section class="section" id="grid">
@@ -50,9 +83,9 @@
                 <div class="box-wrap">
                     <div class="box">
                         <p class="field-title">서비스 선택</p>
-                        <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
-                            'svcPair1','tpwSvcId','tpwSvcTypId'
-                        )}"></th:block>
+                        <th:block
+                                th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId')}">
+                        </th:block>
                     </div>
                 </div>
 
@@ -65,46 +98,39 @@
                     <div class="box">
                         <p class="field-title">사용여부</p>
                         <div class="dropdown" data-name="state">
-                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
-                                aria-label="사용여부 드롭다운">
+                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false">
                                 <span class="dropdown_value" data-placeholder="Y">선택하세요</span>
                             </button>
                             <ul class="dropdown_list" role="listbox" tabindex="-1">
                                 <li role="option" class="dropdown_option" data-value="Y">Y</li>
                                 <li role="option" class="dropdown_option" data-value="N">N</li>
                             </ul>
-                            <input type="hidden" name="state" value="" th:field="*{useYn}">
+                            <input type="hidden" th:field="*{useYn}">
                         </div>
                     </div>
 
                     <div class="box">
                         <p class="field-title">한도구분</p>
                         <div class="dropdown" data-name="limit">
-                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"
-                                aria-label="한도구분 드롭다운">
+                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false">
                                 <span class="dropdown_value" data-placeholder="금액">선택하세요</span>
                             </button>
                             <ul class="dropdown_list" role="listbox" tabindex="-1">
                                 <li role="option" class="dropdown_option" data-value="01">금액</li>
                                 <li role="option" class="dropdown_option" data-value="02">건수</li>
                             </ul>
-                            <input type="hidden" name="limit" value="" th:field="*{tpwLmtDvsCd}">
+                            <input type="hidden" th:field="*{tpwLmtDvsCd}">
                         </div>
                     </div>
                 </div>
 
                 <div class="btn-wrap">
                     <button type="button" class="btn btn-dark-line open-modal" id="new-modal" data-mode="new"
-                        data-target="#modal-manager" sec:authorize="hasPermission('지원한도내역조회', 'WRITE')">신규 한도
-                        설정</button>
-
+                            data-target="#modal-manager" sec:authorize="hasPermission('지원한도내역조회','WRITE')">신규 한도 설정</button>
                     <button type="button" class="btn btn-primary btn-icon-left" data-export="xlsx"
-                        data-provider="지원한도내역조회">
-                        <i class="icon icon-save"></i> 엑셀 다운로드
-                    </button>
-
+                            data-provider="지원한도내역조회"><i class="icon icon-save"></i> 엑셀 다운로드</button>
                     <button type="submit" class="btn btn-primary btn-icon-left"
-                        sec:authorize="hasPermission('지원한도내역조회', 'READ')">검색 <i class="icon icon-search"></i></button>
+                            sec:authorize="hasPermission('지원한도내역조회','READ')">검색 <i class="icon icon-search"></i></button>
                 </div>
 
                 <input th:field="*{sort}" type="hidden" id="sort">
@@ -124,49 +150,46 @@
                     <table class="table">
                         <caption class="blind">지급금 신청 테이블</caption>
                         <thead id="grid-head">
-                            <tr>
-                                <th class="sort-header" scope="col">순번</th>
-                                <th class="sort-header" scope="col"><a data-sort="tpw_svc_id">서비스 ID</a></th>
-                                <th class="sort-header" scope="col"><a data-sort="tpw_svc_nm">교통비지원서비스명</a></th>
-                                <th class="sort-header" scope="col"><a data-sort="tpw_svc_typ_id">서비스유형 ID</a></th>
-                                <th class="sort-header" scope="col"><a data-sort="tpw_svc_typ_nm">서비스유형명</a></th>
-                                <th class="sort-header" scope="col" data-sort="spfn_lmt_mng_no">지원금한도관리번호</th>
-                                <th class="sort-header" scope="col"><a data-sort="lmt_stt_ym">한도시작년월</a></th>
-                                <th class="sort-header" scope="col" th:if="${req.tpwLmtDvsCd == '01'}"><a
-                                        data-sort="min_cndt_val">최소한도</a></th>
-                                <th class="sort-header" scope="col" th:if="${req.tpwLmtDvsCd == '01'}"><a
-                                        data-sort="max_cndt_val">최대한도</a></th>
-                                <th class="sort-header" scope="col">사용여부</th>
-                                <th class="sort-header" scope="col">한도설정</th>
-                            </tr>
+                        <tr>
+                            <th class="sort-header">순번</th>
+                            <th class="sort-header"><a data-sort="tpw_svc_id">서비스 ID</a></th>
+                            <th class="sort-header"><a data-sort="tpw_svc_nm">교통비지원서비스명</a></th>
+                            <th class="sort-header"><a data-sort="tpw_svc_typ_id">서비스유형 ID</a></th>
+                            <th class="sort-header"><a data-sort="tpw_svc_typ_nm">서비스유형명</a></th>
+                            <th class="sort-header" data-sort="spfn_lmt_mng_no">지원금한도관리번호</th>
+                            <th class="sort-header"><a data-sort="lmt_stt_ym">한도시작년월</a></th>
+
+                            <th class="sort-header">사용여부</th>
+                            <th class="sort-header">한도설정</th>
+                        </tr>
                         </thead>
                         <tbody id="grid-tbody">
-                            <th:block th:each="u, stat : ${pageData.content}"
-                                th:if="${pageData != null and pageData.total > 0}" th:object="${u}">
-                                <tr th:if="${u != null}">
-                                    <td th:text="${stat.count}"></td>
-                                    <td th:text="*{tpwSvcId}"></td>
-                                    <td th:text="*{tpwSvcNm}"></td>
-                                    <td th:text="*{tpwSvcTypId}"></td>
-                                    <td th:text="*{tpwSvcTypNm}"></td>
-                                    <td th:text="*{spfnLmtMngNo}"></td>
-                                    <td th:text="*{lmtSttYm} + ' ~ ' + *{lmtEndYm}"></td>
-                                    <td th:if="${req.tpwLmtDvsCd == '01'}" th:text="*{minCndtVal}"></td>
-                                    <td th:if="${req.tpwLmtDvsCd == '01'}" th:text="*{maxCndtVal}"></td>
-                                    <td th:text="*{useYn}"></td>
-                                    <td>
-                                        <button class="btn btn-dark-line open-modal" type="button"
-                                            data-target="#modal-manager" th:data-id="*{tpwSvcTypId}"
-                                            th:data-dvs-code="*{tpwLmtDvsCd}" th:use-yn="*{useYn}"
-                                            sec:authorize="hasPermission('지원한도내역조회', 'UPDATE')">설정하기</button>
-                                    </td>
-                                </tr>
-                            </th:block>
-                            <th:block th:unless="${pageData != null and pageData.total > 0}">
-                                <tr>
-                                    <td aria-live="polite" class="empty" colspan="11">조회 결과가 없습니다.</td>
-                                </tr>
-                            </th:block>
+                        <th:block th:if="${pageData != null and pageData.total > 0}"
+                                  th:each="u, stat : ${pageData.content}" th:object="${u}">
+                            <tr>
+                                <td th:text="${stat.count}"></td>
+                                <td th:text="*{tpwSvcId}"></td>
+                                <td th:text="*{tpwSvcNm}"></td>
+                                <td th:text="*{tpwSvcTypId}"></td>
+                                <td th:text="*{tpwSvcTypNm}"></td>
+                                <td th:text="*{spfnLmtMngNo}"></td>
+                                <td th:text="*{lmtSttYm} + ' ~ ' + *{lmtEndYm}"></td>
+                                <td th:text="*{useYn}"></td>
+                                <td>
+                                    <button class="btn btn-dark-line open-modal" type="button"
+                                            data-target="#modal-manager"
+                                            th:attr="data-tpw-svc-typ-id=*{tpwSvcTypId},data-tpw-svc-id=*{tpwSvcId},data-use-yn=*{useYn}">
+                                        설정하기
+                                    </button>
+                                </td>
+                            </tr>
+                        </th:block>
+                        <th:block th:unless="${pageData != null and pageData.total > 0}">
+                            <!-- ✅ 결과 없음일 때도 컬럼 수에 맞춰 colspan 조정 -->
+                            <tr>
+                                <td class="empty" aria-live="polite" colspan="9">조회 결과가 없습니다.</td>
+                            </tr>
+                        </th:block>
                         </tbody>
                     </table>
                 </div>
@@ -178,8 +201,8 @@
         </section>
 
         <!-- Modal Shell -->
-        <div aria-hidden="true" aria-labelledby="modal-title-basic" aria-modal="true" class="modal modal-lg"
-            id="modal-manager" role="dialog">
+        <div class="modal modal-lg" id="modal-manager" role="dialog" aria-modal="true" aria-hidden="true"
+             aria-labelledby="modal-title-basic">
             <div class="modal-overlay" data-dismiss></div>
             <div class="modal-container" role="document" tabindex="-1"></div>
         </div>
@@ -187,289 +210,188 @@
         <!-- 공통 푸터 -->
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
 
-        <!-- (A) 상세 모달 -->
-        <th:block th:fragment="modal-detail">
+        <!-- 3in1 신규/편집 공용 모달 fragment -->
+        <th:block th:fragment="amt-modal">
             <header class="modal-header">
-                <h3 class="modal-title" id="modal-title-basic" th:text="${dvsCd == '01'} ? '한도(금액) 설정' : '한도(건수) 설정'">
-                </h3>
+                <h3 class="modal-title" id="modal-title-basic">한도 설정</h3>
                 <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
             </header>
-            <input id="dvsCd" th:value="${dvsCd}" type="hidden" />
-            <input id="typCd" th:value="${typCd}" type="hidden" />
-            <form th:object="${form}">
-                <div class="modal-body" th:if="${dvsCd == '01'}">
-                    <div class="flex align-center justify-space-between">
-                        <div class="tabs" role="tablist">
-                            <button aria-controls="panel-1" aria-selected="true" class="tab is-active"
-                                role="tab">분기</button>
-                            <button aria-controls="panel-2" aria-selected="false" class="tab is-active" role="tab"
-                                th:disabled="${typCd == '02'}">월</button>
-                        </div>
-                    </div>
 
-                    <!-- 분기 -->
-                    <div aria-labelledby="tab-1" class="tab-panel is-active" role="tabpanel">
+            <!-- 서버에서 내려주는 현재 상태 -->
+            <input id="mode" th:value="${mode}    ?: 'new-3in1'" type="hidden" />
+            <input id="dvsCd" th:value="${dvsCd}   ?: '01'" type="hidden" />
+            <input id="lmtTypCd" th:value="${typCd} ?: '02'" type="hidden" /><!-- 01=월, 02=분기 -->
+            <input id="tpwSvcTypIdHidden" th:value="${tpwSvcTypId}" type="hidden" />
+
+            <div class="modal-body">
+                <!-- 탭: 분기/월/건수 -->
+                <div class="flex align-center justify-space-between">
+                    <div class="tabs" role="tablist">
+                        <button id="tab-q" class="tab is-active" role="tab" aria-controls="panel-q" aria-selected="true"
+                                type="button">분기</button>
+                        <button id="tab-m" class="tab" role="tab" aria-controls="panel-m" aria-selected="false"
+                                type="button">월</button>
+                        <button id="tab-c" class="tab" role="tab" aria-controls="panel-c" aria-selected="false"
+                                type="button">건수</button>
+                    </div>
+                </div>
+
+                <div class="tab-panels">
+                    <!-- (1) 분기 패널 -->
+                    <div class="tab-panel is-active" id="panel-q" role="tabpanel" aria-labelledby="tab-q">
                         <div class="table-wrap">
-                            <table class="table">
-                                <caption class="blind">지급금 신청 테이블</caption>
-                                <thead>
+                            <form id="qt" th:object="${amtQt}">
+                                <table class="table">
+                                    <!-- 열 폭 지정 -->
+                                    <colgroup>
+                                        <!-- 1열: 순번(좁게) -->
+                                        <col style="width:200px" />
+                                        <!-- 2열: 기간(넓게) -->
+                                        <col />
+                                        <!-- 3열: 금액(고정폭) -->
+                                        <col style="width:220px" />
+                                    </colgroup>
+
+                                    <caption class="blind">분기 한도</caption>
+                                    <thead>
                                     <tr>
-                                        <th scope="col">순번</th>
-                                        <th scope="col">한도 시작, 종료 기간</th>
-                                        <th scope="col">한도금액(원)</th>
+                                        <th>순번</th>
+                                        <th>한도 시작, 종료 기간(분기)</th>
+                                        <th>한도금액(원)</th>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="u, stat : ${sprtLmtDtlList}">
+                                    </thead>
+
+                                    <tbody>
+                                    <tr th:each="u, stat : ${qt}">
                                         <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
                                         <td th:text="${stat.count}"></td>
                                         <td>
                                             <div class="flex align-center col-2">
-                                                <div class="text-field datepicker" style="width: 200px">
-                                                    <input th:attr="id=|detail-start-${stat.index}|" class="dp-input"
-                                                        type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                        autocomplete="off"
-                                                        th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                <!-- 시작 월 -->
+                                                <div class="text-field datepicker" style="width:220px">
+                                                    <input th:attr="id=|qt-start-${stat.index}|" class="dp-input"
+                                                           type="text" placeholder="YYYY-MM" data-dp-type="month"
+                                                           autocomplete="off"
+                                                           th:field="*{list[__${stat.index}__].lmtSttYm}" />
                                                     <button type="button" class="dp-btn" data-dp-toggle
-                                                        aria-label="년 월 선택 열기"></button>
+                                                            aria-label="년 월 선택 열기"></button>
                                                 </div>
                                                 <span>~</span>
-                                                <div class="text-field datepicker" style="width: 200px">
-                                                    <input th:attr="id=|detail-end-${stat.index}|" class="dp-input"
-                                                        type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                        autocomplete="off"
-                                                        th:field="*{list[__${stat.index}__].lmtEndYm}" />
+                                                <!-- 종료 월 -->
+                                                <div class="text-field datepicker" style="width:220px">
+                                                    <input th:attr="id=|qt-end-${stat.index}|" class="dp-input"
+                                                           type="text" placeholder="YYYY-MM" data-dp-type="month"
+                                                           autocomplete="off"
+                                                           th:field="*{list[__${stat.index}__].lmtEndYm}" />
                                                     <button type="button" class="dp-btn" data-dp-toggle
-                                                        aria-label="년 월 선택 열기"></button>
+                                                            aria-label="년 월 선택 열기"></button>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <!-- 금액: 숫자만, 10자리, 표시용 콤마 -->
-                                            <input class="text-field js-amount" inputmode="numeric" autocomplete="off"
-                                                data-maxlen="10" maxlength="20"
-                                                th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
+                                            <input class="text-field js-amount" inputmode="numeric"
+                                                   autocomplete="off" data-maxlen="10" maxlength="20"
+                                                   th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
                                         </td>
                                     </tr>
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </form>
                         </div>
                     </div>
-
-                    <div class="modal-body" th:if="${dvsCd == '02'}">
-                        <div class="flex align-center justify-end">
-                            <div class="tabs" role="tablist"></div>
-                        </div>
-                        <div class="flex col-">
-                            <button class="btn btn-dark-line" id="addRow" type="button">행추가</button>
-                            <button class="btn btn-dark-line" id="removeRow" type="button">행삭제</button>
-                        </div>
-
-                        <div class="table-wrap mt20" id="case">
-                            <table class="table" id="ncntTable">
-                                <caption class="blind">지급금 신청 테이블</caption>
-                                <thead>
-                                    <tr>
-                                        <th scope="col">최소한도건</th>
-                                        <th scope="col">최대한도건</th>
-                                        <th scope="col">지급률(%)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="u, stat : ${sprtLmtDtIList}">
-                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
-                                        <td><input class="text-field js-count" inputmode="numeric" autocomplete="off"
-                                                data-maxlen="10" th:field="*{list[__${stat.index}__].minCndtVal}"
-                                                type="text" /></td>
-                                        <td><input class="text-field js-count" inputmode="numeric" autocomplete="off"
-                                                data-maxlen="10" th:field="*{list[__${stat.index}__].maxCndtVal}"
-                                                type="text" /></td>
-                                        <td><input class="text-field js-percent" inputmode="numeric" autocomplete="off"
-                                                th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" /></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <footer class="modal-footer">
-                        <button class="btn btn-dark-line" data-dismiss type="button">취소</button>
-                        <button class="btn btn-blue" th:attr="data-typ-id=${tpwSvcTypId}" type="button">저장</button>
-                    </footer>
-                </div>
-            </form>
-        </th:block>
-
-        <!-- (B) 금액 신규 모달 (amt) -->
-        <th:block th:fragment="amt-modal">
-            <header class="modal-header">
-                <h3 class="modal-title">한도(금액) 설정</h3>
-                <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
-            </header>
-            <div class="modal-body">
-                <div class="flex align-center justify-space-between">
-                    <div class="tabs" role="tablist">
-                        <button aria-controls="panel-1" aria-selected="true" class="tab is-active" id="tab-1"
-                            role="tab">분기</button>
-                        <button aria-controls="panel-2" aria-selected="false" class="tab" id="tab-2"
-                            role="tab">월</button>
-                    </div>
-                </div>
-                <div class="tab-panels">
-                    <!-- 분기 -->
-                    <div aria-labelledby="tab-1" class="tab-panel is-active" id="panel-1" role="tabpanel">
+                    <!-- (2) 월 패널 -->
+                    <div class="tab-panel" id="panel-m" role="tabpanel" aria-labelledby="tab-m">
                         <div class="table-wrap">
-                            <form id="qt" th:object="${amtQt}">
+                            <form id="mon" th:object="${amtMon}">
                                 <table class="table">
-                                    <caption class="blind">지급금 신청 테이블</caption>
-                                    <colgroup>
-                                        <col width="150px">
-                                        <col width="300px">
-                                        <col width="150px">
-                                    </colgroup>
+                                    <caption class="blind">월 한도</caption>
                                     <thead>
-                                        <tr>
-                                            <th scope="col">순번</th>
-                                            <th scope="col">한도 시작, 종료 기간(분기)</th>
-                                            <th scope="col">한도금액(원)</th>
-                                        </tr>
+                                    <tr>
+                                        <th>순번</th>
+                                        <th>한도 시작(월)</th>
+                                        <th>한도금액(원)</th>
+                                    </tr>
                                     </thead>
                                     <tbody>
-                                        <tr th:each="u, stat : ${qt}">
-                                            <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
-                                            <td th:text="${stat.count}"></td>
-                                            <td>
-                                                <div class="flex align-center col-2">
-                                                    <div class="text-field datepicker" style="width: 200px">
-                                                        <input th:attr="id=|qt-start-${stat.index}|" class="dp-input"
-                                                            type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                            autocomplete="off"
-                                                            th:field="*{list[__${stat.index}__].lmtSttYm}" />
-                                                        <button type="button" class="dp-btn" data-dp-toggle
-                                                            aria-label="년 월 선택 열기"></button>
-                                                    </div>
-                                                    <span>~</span>
-                                                    <div class="text-field datepicker" style="width: 200px">
-                                                        <input th:attr="id=|qt-end-${stat.index}|" class="dp-input"
-                                                            type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                            autocomplete="off"
-                                                            th:field="*{list[__${stat.index}__].lmtEndYm}" />
-                                                        <button type="button" class="dp-btn" data-dp-toggle
-                                                            aria-label="년 월 선택 열기"></button>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <input class="text-field js-amount" inputmode="numeric"
-                                                    autocomplete="off" data-maxlen="10" maxlength="20"
-                                                    th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
-                                            </td>
-                                        </tr>
+                                    <tr th:each="u, stat : ${mon}">
+                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
+                                        <td th:text="${stat.count}"></td>
+                                        <td>
+                                            <div class="text-field datepicker" style="width:200px">
+                                                <input th:attr="id=|mon-start-${stat.index}|" class="dp-input"
+                                                       type="text" placeholder="YYYY-MM" data-dp-type="month"
+                                                       autocomplete="off"
+                                                       th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                <button type="button" class="dp-btn" data-dp-toggle
+                                                        aria-label="년 월 선택 열기"></button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input class="text-field js-amount" inputmode="numeric"
+                                                   autocomplete="off" data-maxlen="10" maxlength="20"
+                                                   th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
+                                        </td>
+                                    </tr>
                                     </tbody>
                                 </table>
                             </form>
                         </div>
                     </div>
 
-                    <!-- 월 -->
-                    <div aria-labelledby="tab-2" class="tab-panel" id="panel-2" role="tabpanel">
-                        <div class="table-wrap">
-                            <form id="mon" th:object="${amtMon}">
-                                <table class="table">
-                                    <caption class="blind">지급금 신청 테이블</caption>
-                                    <thead>
+                    <!-- (3) 건수 패널 -->
+                    <div class="tab-panel" id="panel-c" role="tabpanel" aria-labelledby="tab-c">
+                        <div class="table-wrap mt20">
+                            <form id="ncnt" th:object="${ncnt}">
+                                <div class="flex align-center justify-end">
+                                    <div class="flex col-">
+                                        <button class="btn btn-dark-line" id="newAddRow" type="button">행추가</button>
+                                        <button class="btn btn-dark-line" id="newRemoveRow" type="button">행삭제</button>
+                                    </div>
+                                </div>
+
+                                <div class="table-scroll" id="newNcntTableScroll">
+                                    <table class="table" id="newNcntTable">
+                                        <caption class="blind">건수 한도</caption>
+                                        <thead>
                                         <tr>
-                                            <th scope="col">순번</th>
-                                            <th scope="col">한도 시작, 종료 기간(월)</th>
-                                            <th scope="col">한도금액(원)</th>
+                                            <th>최소한도건</th>
+                                            <th>최대한도건</th>
+                                            <th>지급률(%)</th>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:each="u, stat : ${mon}">
-                                            <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
-                                            <td th:text="${stat.count}"></td>
-                                            <td>
-                                                <div class="flex align-center col-2">
-                                                    <div class="text-field datepicker" style="width: 200px">
-                                                        <input th:attr="id=|mon-start-${stat.index}|" class="dp-input"
-                                                            type="text" placeholder="YYYY-MM" data-dp-type="month"
-                                                            autocomplete="off"
-                                                            th:field="*{list[__${stat.index}__].lmtSttYm}" />
-                                                        <button type="button" class="dp-btn" data-dp-toggle
-                                                            aria-label="년 월 선택 열기"></button>
-                                                    </div>
-                                                </div>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="u, stat : ${arr}">
+                                            <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}"
+                                                   type="hidden" />
+                                            <td><input class="text-field js-count" inputmode="numeric"
+                                                       autocomplete="off" data-maxlen="10"
+                                                       th:field="*{list[__${stat.index}__].minCndtVal}" type="text" />
                                             </td>
-                                            <td>
-                                                <input class="text-field js-amount" inputmode="numeric"
-                                                    autocomplete="off" data-maxlen="10" maxlength="20"
-                                                    th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
+                                            <td><input class="text-field js-count" inputmode="numeric"
+                                                       autocomplete="off" data-maxlen="10"
+                                                       th:field="*{list[__${stat.index}__].maxCndtVal}" type="text" />
+                                            </td>
+                                            <td><input class="text-field js-percent" inputmode="numeric"
+                                                       autocomplete="off"
+                                                       th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
                                             </td>
                                         </tr>
-                                    </tbody>
-                                </table>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
+
             <footer class="modal-footer">
                 <button class="btn btn-dark-line" data-dismiss type="button">취소</button>
-                <button class="btn btn-blue" data-dvs-cd="01" type="button">저장</button>
+                <!-- data-dvs-cd는 런타임에 활성 탭에 따라 스크립트가 결정 -->
+                <button class="btn btn-blue js-save3in1" type="button">저장</button>
             </footer>
         </th:block>
 
-        <!-- (C) 건수 신규 모달 (ncnt) -->
-        <th:block th:fragment="ncnt-modal">
-            <header class="modal-header">
-                <h3 class="modal-title">한도(건수) 설정</h3>
-                <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
-            </header>
-            <form th:object="${ncnt}">
-                <div class="modal-body">
-                    <div class="flex align-center justify-end">
-                        <div class="flex col-">
-                            <button class="btn btn-dark-line" id="newAddRow" type="button">행추가</button>
-                            <button class="btn btn-dark-line" id="newRemoveRow" type="button">행삭제</button>
-                        </div>
-                    </div>
-
-                    <div class="table-wrap mt20">
-                        <div class="table-scroll" id="newNcntTableScroll">
-                            <table class="table" id="newNcntTable">
-                                <caption class="blind">지급금 신청 테이블</caption>
-                                <thead>
-                                    <tr>
-                                        <th scope="col">최소한도건</th>
-                                        <th scope="col">최대한도건</th>
-                                        <th scope="col">지급률(%)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="u, stat : ${arr}">
-                                        <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
-                                        <td><input class="text-field js-count" inputmode="numeric" autocomplete="off"
-                                                data-maxlen="10" th:field="*{list[__${stat.index}__].minCndtVal}"
-                                                type="text" /></td>
-                                        <td><input class="text-field js-count" inputmode="numeric" autocomplete="off"
-                                                data-maxlen="10" th:field="*{list[__${stat.index}__].maxCndtVal}"
-                                                type="text" /></td>
-                                        <td><input class="text-field js-percent" inputmode="numeric" autocomplete="off"
-                                                th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" /></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <footer class="modal-footer">
-                    <button class="btn btn-dark-line" data-dismiss type="button">취소</button>
-                    <button class="btn btn-blue js-save" data-dvs-cd="02" type="button">저장</button>
-                </footer>
-            </form>
-        </th:block>
-
-        <!-- 신규 설정 1단계 모달 -->
         <template id="tpl-selector-modal">
             <div class="__selector-modal-root selector-modal">
                 <header class="modal-header">
@@ -524,12 +446,13 @@
                 </style>
 
                 <div class="modal-body">
-                    <p class="mb12" style="margin:0 0 16px; line-height:1.5;">신규 한도 설정을 진행할 <strong>서비스/유형</strong>을
-                        선택하세요.</p>
+                    <p class="mb12" style="margin:0 0 16px; line-height:1.5;">
+                        신규 한도 설정을 진행할 <strong>서비스/유형</strong>을 선택하세요.
+                    </p>
                     <div style="display:flex; gap:16px; flex-wrap:wrap; margin:0 0 20px;">
-                        <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
-                            'svcPair-modal','tpwSvcIdSel','tpwSvcTypIdSel'
-                        )}"></th:block>
+                        <th:block
+                                th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair-modal','tpwSvcIdSel','tpwSvcTypIdSel')}">
+                        </th:block>
                     </div>
                 </div>
 
@@ -540,46 +463,367 @@
             </div>
         </template>
 
-        el.addEventListener('input', () => {
         <script th:inline="javascript" type="text/javascript">
             (function () {
-                // sendSafe 시그니처 보정
-                if (window.Common && typeof window.Common.sendSafe === 'function') {
-                    const __origSendSafe = window.Common.sendSafe.bind(window.Common);
-                    window.Common.sendSafe = function (arg1, arg2) {
-                        if (typeof arg1 === 'string') return __origSendSafe(Object.assign({ url: arg1 }, arg2 || {}));
-                        return __origSendSafe(arg1 || {});
-                    };
+                'use strict';
+
+                /* 중복 바인딩 방지 (동일 화면 스크립트가 두 번 이상 초기화되는 것 방지) */
+                if (window.__SPRTLMT_BOUND__) {
+                    return;
+                }
+                window.__SPRTLMT_BOUND__ = true;
+
+                /* =============== 공통 핸들/상수 =============== */
+                const baseUrl = '/sprtpolimng/polimnginf/sprtLmtPt.do';
+                const fetchHtml = (url) => Common.fetchHtml(url);
+
+                /* 항상 "현재 DOM" 기준으로 다시 찾도록 getter로 처리 */
+                function getGrid() {
+                    return document.getElementById('grid');
+                }
+                function getHead() {
+                    return document.getElementById('grid-head');
+                }
+                function getSearchForm() {
+                    const grid = getGrid();
+                    return grid ? grid.querySelector('form') : null;
+                }
+                function getSelectSize() {
+                    const form = getSearchForm();
+                    return form ? form.querySelector('select[name="size"]') : null;
+                }
+                function getSortInput() {
+                    return document.getElementById('sort');
+                }
+                function getDirInput() {
+                    return document.getElementById('dir');
+                }
+                function getModal() {
+                    return document.getElementById('modal-manager');
                 }
 
-                const baseUrl = '/sprtpolimng/polimnginf/sprtLmtPt.do';
-                const grid = document.getElementById('grid');
-                const head = document.getElementById('grid-head');
-                const searchForm = grid.querySelector('form');
-                const selectSize = searchForm?.querySelector('select[name="size"]');
-                const inputSort = document.getElementById('sort');
-                const inputDir = document.getElementById('dir');
-                const modal = document.getElementById('modal-manager');
-                let __newFlowSelected = null; // 신규 1단계에서 고른 서비스/유형 보관
-                // 엑셀 버튼
-                grid.addEventListener('click', (e) => {
-                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                    if (!exportBtn) return;
-                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'tpwSvcTypId');
-                });
+                // 현재 상태 (mode: new-3in1 | edit-3in1)
+                const __state = { mode: null, dvs: '01', typ: '02' };
+                let __newFlowSelected = null;
 
-                // 페이징 초기화
-                bindPagination(baseUrl, {
-                    size: parseInt(selectSize?.value || '10', 10),
-                    dir: inputDir?.value || 'asc',
-                    sort: inputSort?.value || 'tpwSvcTypId'
-                });
+                /* =============== 유틸 =============== */
+                function runInlineScripts(root) {
+                    const scripts = Array.from(root.querySelectorAll('script'));
+                    for (const old of scripts) {
+                        const s = document.createElement('script');
+                        if (old.type) s.type = old.type;
+                        if (old.noModule) s.noModule = true;
+                        if (!old.src) s.textContent = old.textContent || '';
+                        old.replaceWith(s);
+                    }
+                }
 
-                // 정렬
-                head.addEventListener('click', (e) => {
+                const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
+                const fmtComma = (s) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+                function bindNumericMasks(scope) {
+                    const root = scope || document;
+
+                    root.querySelectorAll('.js-amount').forEach(el => {
+                        const maxlen = parseInt(el.dataset.maxlen || '10', 10);
+                        el.addEventListener('input', () => {
+                            let v = onlyDigits(el.value).slice(0, maxlen);
+                            el.value = v ? fmtComma(v) : '';
+                            clearFooterError();
+                        });
+                        el.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            const t = (e.clipboardData || window.clipboardData).getData('text');
+                            let v = onlyDigits(t).slice(0, maxlen);
+                            el.value = v ? fmtComma(v) : '';
+                            clearFooterError();
+                        });
+                    });
+
+                    root.querySelectorAll('.js-count').forEach(el => {
+                        const maxlen = parseInt(el.dataset.maxlen || '10', 10);
+                        el.addEventListener('input', () => {
+                            el.value = onlyDigits(el.value).slice(0, maxlen);
+                            clearFooterError();
+                        });
+                        el.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            const t = (e.clipboardData || window.clipboardData).getData('text');
+                            el.value = onlyDigits(t).slice(0, maxlen);
+                            clearFooterError();
+                        });
+                    });
+
+                    root.querySelectorAll('.js-percent').forEach(el => {
+                        function clamp() {
+                            let v = onlyDigits(el.value);
+                            if (v === '') {
+                                el.value = '';
+                                return;
+                            }
+                            let n = parseInt(v, 10);
+                            if (isNaN(n)) n = 0;
+                            if (n > 100) n = 100;
+                            if (n < 0) n = 0;
+                            el.value = String(n);
+                        }
+                        el.addEventListener('input', () => {
+                            el.value = onlyDigits(el.value).slice(0, 3);
+                            clearFooterError();
+                        });
+                        el.addEventListener('blur', () => {
+                            clamp();
+                            clearFooterError();
+                        });
+                        el.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            const t = (e.clipboardData || window.clipboardData).getData('text');
+                            el.value = onlyDigits(t).slice(0, 3);
+                            clamp();
+                            clearFooterError();
+                        });
+                    });
+                }
+
+                function normalizeMonthInputs(scope) {
+                    const root = scope || document;
+                    root.querySelectorAll('.dp-input[data-dp-type="month"]').forEach(el => {
+                        const v = (el.value || '').trim();
+                        if (/^\d{6}$/.test(v)) {
+                            el.value = v.slice(0, 4) + '-' + v.slice(4, 6);
+                        }
+                    });
+                }
+
+                function collectWithoutMutating(formOrScope) {
+                    const src = formOrScope instanceof Element ? formOrScope : (document.querySelector(formOrScope) || document);
+                    const clone = src.cloneNode(true);
+
+                    (function sanitizeOn(cloneRoot) {
+                        cloneRoot.querySelectorAll('.js-amount').forEach(el => {
+                            el.value = onlyDigits(el.value).slice(0, parseInt(el.dataset.maxlen || '10', 10));
+                        });
+                        cloneRoot.querySelectorAll('.js-count').forEach(el => {
+                            el.value = onlyDigits(el.value).slice(0, parseInt(el.dataset.maxlen || '10', 10));
+                        });
+                        cloneRoot.querySelectorAll('.js-percent').forEach(el => {
+                            let v = onlyDigits(el.value);
+                            let n = v ? parseInt(v, 10) : 0;
+                            if (n > 100) n = 100;
+                            if (n < 0) n = 0;
+                            el.value = String(n);
+                        });
+                        cloneRoot.querySelectorAll('.dp-input[data-dp-type="month"]').forEach(el => {
+                            const v = (el.value || '').trim();
+                            if (/^\d{4}-\d{2}$/.test(v)) {
+                                el.value = v.replace('-', ''); // YYYYMM
+                            }
+                        });
+                    })(clone);
+
+                    return Common.collectAsJson(clone);
+                }
+
+                function parseYm(s) {
+                    s = String(s || '').trim();
+                    if (/^\d{4}-\d{2}$/.test(s)) return { y: +s.slice(0, 4), m: +s.slice(5, 7) };
+                    if (/^\d{6}$/.test(s)) return { y: +s.slice(0, 4), m: +s.slice(4, 6) };
+                    return null;
+                }
+
+                const fmtYm = (y, m) => `${y}-${m < 10 ? '0' : ''}${m}`;
+                const addYm = (y, m, off) => {
+                    const z = y * 12 + (m - 1) + off;
+                    return { y: Math.floor(z / 12), m: (z % 12) + 1 };
+                };
+
+                /* ===== 푸터 에러 ===== */
+                function getFooterEl() {
+                    const modal = getModal();
+                    if (!modal) return null;
+                    return modal.querySelector('.modal-container .modal-footer') || modal.querySelector('.modal-footer');
+                }
+
+                function ensureErrorNode() {
+                    const footer = getFooterEl();
+                    if (!footer) return null;
+
+                    let node = footer.querySelector('.js-footer-error');
+                    if (!node) {
+                        node = document.createElement('span');
+                        node.className = 'js-footer-error';
+                        node.style.marginRight = '12px';
+                        node.style.color = '#ef4444';
+                        node.style.fontSize = '0.92rem';
+                        node.style.lineHeight = '32px';
+                        node.style.verticalAlign = 'middle';
+
+                        const cancelBtn = footer.querySelector('button[data-dismiss], .btn.btn-dark-line');
+                        if (cancelBtn) footer.insertBefore(node, cancelBtn);
+                        else footer.appendChild(node);
+                    }
+                    return node;
+                }
+
+                function showFooterError(msg) {
+                    const n = ensureErrorNode();
+                    if (!n) return;
+                    n.textContent = msg || '';
+                    n.style.display = msg ? 'inline-block' : 'none';
+                }
+
+                function clearFooterError() {
+                    const footer = getFooterEl();
+                    if (!footer) return;
+                    const n = footer.querySelector('.js-footer-error');
+                    if (n) {
+                        n.textContent = '';
+                        n.style.display = 'none';
+                    }
+                }
+
+                /* ===== 탭 ===== */
+                function activateTabByIndex(root, idx) {
+                    const tabs = Array.from(root.querySelectorAll('.tabs .tab'));
+                    const panels = Array.from(root.querySelectorAll('.tab-panel'));
+
+                    tabs.forEach(t => {
+                        t.classList.remove('is-active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    panels.forEach(p => p.classList.remove('is-active'));
+
+                    if (tabs[idx]) {
+                        tabs[idx].classList.add('is-active');
+                        tabs[idx].setAttribute('aria-selected', 'true');
+                    }
+                    if (panels[idx]) {
+                        panels[idx].classList.add('is-active');
+                    }
+
+                    if (tabs[idx]?.id === 'tab-q') { __state.dvs = '01'; __state.typ = '02'; } // 금액-분기
+                    if (tabs[idx]?.id === 'tab-m') { __state.dvs = '01'; __state.typ = '01'; } // 금액-월
+                    if (tabs[idx]?.id === 'tab-c') { __state.dvs = '02'; __state.typ = '02'; } // 건수
+
+                    clearFooterError();
+                }
+
+                function enableAllTabs(container) {
+                    ['#tab-q', '#tab-m', '#tab-c'].forEach(sel => container.querySelector(sel)?.removeAttribute('disabled'));
+                }
+
+                /* ===== 분기 자동화 / 월 Readonly ===== */
+                function setupQuarterBehavior(scope) {
+                    const root = scope || document;
+                    const tbody = root.querySelector('#panel-q tbody');
+                    if (!tbody) return;
+
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    if (!rows.length) return;
+
+                    const allInputs = Array.from(tbody.querySelectorAll('.dp-input'));
+                    const allBtns = Array.from(tbody.querySelectorAll('.dp-btn'));
+                    const firstStart = tbody.querySelector('#qt-start-0') || allInputs[0];
+
+                    // 읽기 전용/버튼 비활성: 1행 시작월만 입력 가능
+                    allInputs.forEach(i => {
+                        i.readOnly = true;
+                        i.closest('.text-field')?.classList.add('readonly');
+                    });
+                    allBtns.forEach(b => b.disabled = true);
+
+                    if (firstStart) {
+                        firstStart.readOnly = false;
+                        firstStart.closest('.text-field')?.classList.remove('readonly');
+                        const firstBtn = firstStart.closest('.text-field')?.querySelector('.dp-btn');
+                        if (firstBtn) firstBtn.disabled = false;
+                    }
+
+                    const modal = getModal();
+                    if (modal) modal.classList.add('qtr-readonly');
+
+                    normalizeMonthInputs(tbody);
+
+                    function apply(opts) {
+                        const force = !!(opts && opts.force);
+                        const base = parseYm(firstStart.value);
+                        if (!base) return;
+
+                        rows.forEach((tr, idx) => {
+                            const sInput = tr.querySelector('[id^="qt-start-"]');
+                            const eInput = tr.querySelector('[id^="qt-end-"]');
+                            if (!sInput || !eInput) return;
+
+                            const s = addYm(base.y, base.m, idx * 3);
+                            const e = addYm(s.y, s.m, 2);
+
+                            if (force || (sInput.value || '').trim() === '') sInput.value = fmtYm(s.y, s.m);
+                            if (force || (eInput.value || '').trim() === '') eInput.value = fmtYm(e.y, e.m);
+                        });
+                        clearFooterError();
+                    }
+
+                    // 초기에는 빈 칸만 채움
+                    apply({ force: false });
+                    // 입력 중엔 미리보기(빈 칸만 보충)
+                    firstStart.addEventListener('input', () => apply({ force: false }));
+                    // 변경 확정 시 전체 강제 재계산
+                    firstStart.addEventListener('change', () => apply({ force: true }));
+                }
+
+                function setupMonthlyReadonly(scope, which) {
+                    const root = scope || document;
+                    const panel = root.querySelector(which);
+                    if (!panel) return;
+
+                    const inputs = panel.querySelectorAll('.dp-input');
+                    const btns = panel.querySelectorAll('.dp-btn');
+
+                    inputs.forEach(i => {
+                        i.readOnly = true;
+                        i.closest('.text-field')?.classList.add('readonly');
+                        i.addEventListener('input', clearFooterError);
+                        i.addEventListener('change', clearFooterError);
+                    });
+                    btns.forEach(b => b.disabled = true);
+
+                    const modal = getModal();
+                    if (modal) modal.classList.add('qtr-readonly');
+
+                    normalizeMonthInputs(panel);
+                    bindNumericMasks(panel);
+
+                    const wrap = panel.closest('.table-wrap') || panel.querySelector('.table-wrap') || panel;
+                    const table = panel.querySelector('table');
+                    if (table) {
+                        table.style.tableLayout = 'fixed';
+                        table.style.width = '100%';
+                    }
+                    panel.querySelectorAll('td > .flex').forEach(f => {
+                        f.style.flexWrap = 'nowrap';
+                        f.style.gap = '8px';
+                    });
+                    if (wrap) wrap.style.overflowX = 'auto';
+                    panel.querySelectorAll('.text-field.readonly').forEach(tf => {
+                        tf.style.minWidth = '0';
+                    });
+                }
+
+                /* ===== 정렬 헤더 클릭 (위임) ===== */
+                document.addEventListener('click', (e) => {
+                    const head = getHead();
+                    if (!head || !head.contains(e.target)) return;
+
                     const a = e.target.closest('a[data-sort]');
                     if (!a) return;
+
                     e.preventDefault();
+
+                    const inputSort = getSortInput();
+                    const inputDir = getDirInput();
+                    const searchForm = getSearchForm();
+                    const selectSize = getSelectSize();
+
                     const next = a.dataset.sort;
                     const curr = inputSort?.value || 'tpw_svc_typ_id';
                     let dir = inputDir?.value || 'asc';
@@ -593,407 +837,423 @@
                         page: 0,
                         defaultSortColumn: 'tpw_svc_typ_id',
                         swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-                        selectSize, baseUrl, inputSort, inputDir, applied
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
                     });
                 });
 
-                // 검색 submit
-                searchForm?.addEventListener('submit', (e) => {
+                /* ===== 엑셀 다운로드 (위임) ===== */
+                document.addEventListener('click', (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    if (!exportBtn) return;
+
+                    const searchForm = getSearchForm();
+                    const inputSort = getSortInput();
+                    const inputDir = getDirInput();
+
+                    Common.bindExcelExport(
+                        searchForm,
+                        exportBtn,
+                        inputSort?.value || 'tpwSvcTypId',
+                        inputDir?.value || 'asc',
+                        'tpwSvcTypId'
+                    );
+                });
+
+                /* ===== 페이지네이션 바인딩 (한 번만) ===== */
+                bindPagination(baseUrl, {
+                    size: parseInt(getSelectSize()?.value || '10', 10),
+                    dir: getDirInput()?.value || 'asc',
+                    sort: getSortInput()?.value || 'tpwSvcTypId'
+                });
+
+                /* ===== 검색 submit (위임) ===== */
+                document.addEventListener('submit', (e) => {
+                    const form = e.target;
+                    const grid = getGrid();
+                    if (!grid || !grid.contains(form)) return;
+
                     e.preventDefault();
-                    const applied = Common.collectFromForm(searchForm);
+
+                    const inputSort = getSortInput();
+                    const inputDir = getDirInput();
+                    const selectSize = getSelectSize();
+
+                    const applied = Common.collectFromForm(form);
                     Common.reloadList({
                         page: 0,
                         defaultSortColumn: 'tpw_svc_typ_id',
                         swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-                        selectSize, baseUrl, inputSort, inputDir, applied
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
                     });
                 });
 
-                // template 내 <script> 재실행(폴백)
-                function runInlineScripts(root) {
-                    const scripts = Array.from(root.querySelectorAll('script'));
-                    for (const old of scripts) {
-                        const s = document.createElement('script');
-                        if (old.type) s.type = old.type;
-                        if (old.noModule) s.noModule = true;
-                        if (!old.src) s.textContent = old.textContent || '';
-                        old.replaceWith(s);
-                    }
-                }
-
-                // 숫자 유틸
-                const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
-                const fmtComma = (s) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-                // 숫자 인풋 마스킹/검증 바인딩
-                function bindNumericMasks(scope) {
-                    const root = scope || document;
-
-                    // 금액: 10자리 제한, 표시 콤마
-                    root.querySelectorAll('.js-amount').forEach(el => {
-                        const maxlen = parseInt(el.dataset.maxlen || '10', 10);
-                        el.addEventListener('input', () => {
-                            let v = onlyDigits(el.value).slice(0, maxlen);
-                            el.value = v ? fmtComma(v) : '';
-                        });
-                        el.addEventListener('paste', (e) => {
-                            e.preventDefault();
-                            const text = (e.clipboardData || window.clipboardData).getData('text');
-                            let v = onlyDigits(text).slice(0, maxlen);
-                            el.value = v ? fmtComma(v) : '';
-                        });
-                    });
-
-                    // 건수: 숫자만 10자리
-                    root.querySelectorAll('.js-count').forEach(el => {
-                        const maxlen = parseInt(el.dataset.maxlen || '10', 10);
-                        el.addEventListener('input', () => {
-                            el.value = onlyDigits(el.value).slice(0, maxlen);
-                        });
-                        el.addEventListener('paste', (e) => {
-                            e.preventDefault();
-                            const text = (e.clipboardData || window.clipboardData).getData('text');
-                            el.value = onlyDigits(text).slice(0, maxlen);
-                        });
-                    });
-
-                    // 퍼센트: 0~100
-                    root.querySelectorAll('.js-percent').forEach(el => {
-                        function clamp() {
-                            let v = onlyDigits(el.value);
-                            if (v === '') { el.value = ''; return; }
-                            let n = parseInt(v, 10);
-                            if (isNaN(n)) n = 0;
-                            if (n > 100) n = 100;
-                            if (n < 0) n = 0;
-                            el.value = String(n);
-                        }
-                        el.addEventListener('input', () => { el.value = onlyDigits(el.value).slice(0, 3); });
-                        el.addEventListener('blur', clamp);
-                        el.addEventListener('paste', (e) => {
-                            e.preventDefault();
-                            const text = (e.clipboardData || window.clipboardData).getData('text');
-                            el.value = onlyDigits(text).slice(0, 3);
-                            clamp();
-                        });
-                    });
-                }
-
-                // 전송 전에 콤마 제거/클램프
-                function sanitizeBeforeSubmit(scope) {
-                    const root = scope || document;
-                    root.querySelectorAll('.js-amount').forEach(el => {
-                        el.value = onlyDigits(el.value).slice(0, parseInt(el.dataset.maxlen || '10', 10));
-                    });
-                    root.querySelectorAll('.js-count').forEach(el => {
-                        el.value = onlyDigits(el.value).slice(0, parseInt(el.dataset.maxlen || '10', 10));
-                    });
-                    root.querySelectorAll('.js-percent').forEach(el => {
-                        let v = onlyDigits(el.value);
-                        let n = v ? parseInt(v, 10) : 0;
-                        if (n > 100) n = 100;
-                        if (n < 0) n = 0;
-                        el.value = String(n);
-                    });
-                    // 월 입력(YYYY-MM)을 서버로 보낼 때는 YYYYMM으로 변환
-                    root.querySelectorAll('.dp-input[data-dp-type="month"]').forEach(el => {
-                        const v = (el.value || '').trim();
-                        if (/^\d{4}-\d{2}$/.test(v)) el.value = v.replace('-', '');
-                    });
-                }
-
-                // 분기 탭 편집 제한 + 자동 분기 계산 + 월 탭 readonly
-                function initQuarterOnlyEdit(scope) {
-                    const root = scope || document;
-
-                    // 월 탭 전체 읽기전용
-                    const monForm = root.querySelector('#mon');
-                    if (monForm) {
-                        monForm.querySelectorAll('.dp-input').forEach(i => {
-                            i.readOnly = true;
-                            i.closest('.text-field')?.classList.add('readonly');
-                        });
-                        monForm.querySelectorAll('.dp-btn').forEach(b => { b.disabled = true; });
-                    }
-
-                    const qtForm = root.querySelector('#qt');
-                    if (!qtForm) { bindNumericMasks(root); return; }
-
-                    modal.classList.add('qtr-readonly');
-
-                    const rows = Array.from(qtForm.querySelectorAll('tbody tr'));
-                    if (!rows.length) { bindNumericMasks(root); return; }
-
-                    const allInputs = Array.from(qtForm.querySelectorAll('.dp-input'));
-                    const allBtns = Array.from(qtForm.querySelectorAll('.dp-btn'));
-                    const firstStart = qtForm.querySelector('#qt-start-0') || allInputs[0];
-
-                    // 모두 잠그고 첫 시작만 활성
-                    allInputs.forEach(i => {
-                        i.readOnly = true;
-                        i.closest('.text-field')?.classList.add('readonly');
-                    });
-                    allBtns.forEach(b => { b.disabled = true; });
-                    if (firstStart) {
-                        firstStart.readOnly = false;
-                        firstStart.closest('.text-field')?.classList.remove('readonly');
-                        const firstBtn = firstStart.closest('.text-field')?.querySelector('.dp-btn');
-                        if (firstBtn) firstBtn.disabled = false;
-                    }
-
-                    // 날짜 유틸
-                    function parseYm(val) {
-                        const s = String(val || '').trim();
-                        let y, m;
-                        if (/^\d{4}-\d{2}$/.test(s)) { y = +s.slice(0, 4); m = +s.slice(5, 7); }
-                        else if (/^\d{6}$/.test(s)) { y = +s.slice(0, 4); m = +s.slice(4, 6); }
-                        else return null;
-                        if (m < 1 || m > 12) return null;
-                        return { y, m };
-                    }
-                    const fmtYm = (y, m) => `${y}-${m < 10 ? '0' : ''}${m}`;
-                    const addMonths = (y, m, off) => {
-                        const z = y * 12 + (m - 1) + off;
-                        return { y: Math.floor(z / 12), m: (z % 12) + 1 };
-                    };
-
-                    function applyQuarters() {
-                        const base = parseYm(firstStart.value);
-                        if (!base) return;
-                        rows.forEach((tr, idx) => {
-                            const sInput = tr.querySelector('[id^="qt-start-"]');
-                            const eInput = tr.querySelector('[id^="qt-end-"]');
-                            if (!sInput || !eInput) return;
-                            const s = addMonths(base.y, base.m, idx * 3);
-                            const e = addMonths(s.y, s.m, 2);
-                            sInput.value = fmtYm(s.y, s.m);
-                            eInput.value = fmtYm(e.y, e.m);
-                        });
-                    }
-
-                    applyQuarters();
-                    firstStart.addEventListener('input', applyQuarters);
-                    firstStart.addEventListener('change', applyQuarters);
-
-                    bindNumericMasks(root);
-                }
-
-                // 신규 한도 1단계 모달 표시(모달 컨테이너만 초기화)
+                /* ===== 모달 열기 흐름 ===== */
                 async function showSelectorModal() {
+                    __state.mode = 'new-3in1';
+                    __state.dvs = '01';
+                    __state.typ = '02';
+                    __newFlowSelected = null;
+
+                    const modal = getModal();
+                    if (!modal) return;
+
                     const tpl = document.getElementById('tpl-selector-modal');
                     const container = modal.querySelector('.modal-container');
+                    if (!tpl || !container) return;
+
                     container.innerHTML = '';
                     const clone = document.importNode(tpl.content, true);
                     container.appendChild(clone);
 
-                    if (window.Dropdowns && typeof window.Dropdowns.init === 'function') {
-                        window.Dropdowns.init(container);
-                    } else {
-                        runInlineScripts(container);
-                    }
+                    if (window.Dropdowns?.init) window.Dropdowns.init(container);
+                    else runInlineScripts(container);
 
-                    Common.openModal ? Common.openModal('#modal-manager') : modal.setAttribute('aria-hidden', 'false');
+                    if (Common.openModal) Common.openModal('#modal-manager');
+                    else modal.setAttribute('aria-hidden', 'false');
+
                     modal.classList.add('is-open');
                     document.body.classList.add('modal-open');
                     (container || modal).focus();
+                    clearFooterError();
                 }
 
-                // 1단계 선택 후 2단계 모달 로드(모달 컨테이너만 초기화)
                 async function proceedNewFlow() {
-                    const cas = document.getElementById('svcPair-modal')?.getSelectedObjects?.('svcPair-modal');
+                    const modal = getModal();
+                    if (!modal) return;
+
+                    const cas = document
+                        .getElementById('svcPair-modal')
+                        ?.getSelectedObjects?.('svcPair-modal');
+
                     if (!cas || !cas.valid) {
-                        Common.modalShow({ message: '서비스와 서비스 유형을 선택해 주세요.', title: '알림', buttons: 'close' });
+                        showFooterError('서비스와 서비스 유형을 먼저 선택하세요.');
                         return;
                     }
 
-                    // 🔹 선택값을 메모리 & dataset에 보관
                     __newFlowSelected = cas;
                     modal.dataset.tpwSvcId = cas.child.tpwSvcId;
                     modal.dataset.tpwSvcTypId = cas.child.tpwSvcTypId;
 
+                    const adptYn = (cas.child.trdNcntLtnAdptYn || '').toUpperCase();  // 'Y' | 'N'
                     const container = modal.querySelector('.modal-container');
+
                     try {
-                        if (cas.child.trdNcntLtnAdptYn === 'N') {
-                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/amt');
-                            container.innerHTML = html;
-                            if (window.Dropdowns?.init) { window.Dropdowns.init(container); } else { runInlineScripts(container); }
-                            initQuarterOnlyEdit(container);
-                        } else if (cas.child.trdNcntLtnAdptYn === 'Y') {
-                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new/ncnt');
-                            container.innerHTML = html;
-                            if (window.Dropdowns?.init) { window.Dropdowns.init(container); } else { runInlineScripts(container); }
-                            modal.classList.remove('qtr-readonly');
-                            bindNumericMasks(container);
-                        } else {
-                            Common.modalShow({ message: '선택한 서비스 유형의 한도 유형 정보를 확인할 수 없습니다.', title: '알림', buttons: 'close' });
+                        const html = await fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/new');
+                        container.innerHTML = html;
+
+                        if (window.Dropdowns?.init) window.Dropdowns.init(container);
+                        else runInlineScripts(container);
+
+                        enableAllTabs(container);
+                        applyTabsForNewByAdpt(container, adptYn);
+
+                        bindNumericMasks(container);
+                        setupQuarterBehavior(container);
+                        setupMonthlyReadonly(container, '#panel-m');
+
+                        container.querySelector('#mode')?.setAttribute('value', 'new-3in1');
+                        __state.mode = 'new-3in1';
+
+                        if (Common.openModal) Common.openModal('#modal-manager');
+                        else modal.setAttribute('aria-hidden', 'false');
+
+                        modal.classList.add('is-open');
+                        document.body.classList.add('modal-open');
+                        (container || modal).focus();
+                        clearFooterError();
+                    } catch (e) {
+                        console.error(e);
+                        showFooterError('상세 화면을 불러오지 못했습니다.');
+                    }
+                }
+
+                async function openEdit3In1(tpwSvcTypId) {
+                    const modal = getModal();
+                    if (!modal) return;
+
+                    const html = await fetchHtml(`/sprtpolimng/polimnginf/sprtLmtDtl/${encodeURIComponent(tpwSvcTypId)}/edit`);
+                    const container = modal.querySelector('.modal-container');
+                    if (!container) return;
+
+                    container.innerHTML = html;
+
+                    if (window.Dropdowns?.init) window.Dropdowns.init(container);
+                    else runInlineScripts(container);
+
+                    enableAllTabs(container);
+
+                    const dvs = container.querySelector('#dvsCd')?.value || '01';
+                    const typ = container.querySelector('#lmtTypCd')?.value || '02';
+                    if (dvs === '02')       activateTabByIndex(container, 2); // 건수
+                    else if (typ === '01') activateTabByIndex(container, 1); // 월
+                    else                   activateTabByIndex(container, 0); // 분기
+
+                    bindNumericMasks(container);
+                    setupQuarterBehavior(container);
+                    setupMonthlyReadonly(container, '#panel-m');
+
+                    container.querySelector('#mode')?.setAttribute('value', 'edit-3in1');
+                    __state.mode = 'edit-3in1';
+
+                    if (Common.openModal) Common.openModal('#modal-manager');
+                    else modal.setAttribute('aria-hidden', 'false');
+
+                    modal.classList.add('is-open');
+                    document.body.classList.add('modal-open');
+                    (container || modal).focus();
+                    clearFooterError();
+                }
+
+                /* ===== 클릭 위임: 신규/편집/행추가/저장/취소 등 ===== */
+                document.addEventListener('click', async (e) => {
+                    const modal = getModal();
+
+                    // 신규 플로우 버튼
+                    const newBtn = e.target.closest('#new-modal[data-mode="new"]');
+                    if (newBtn) {
+                        e.preventDefault();
+                        await showSelectorModal();
+                        return;
+                    }
+
+                    // 신규 모달에서 "다음"
+                    const nextBtn = e.target.closest('.js-next');
+                    if (nextBtn && modal && modal.contains(nextBtn)) {
+                        e.preventDefault();
+                        await proceedNewFlow();
+                        return;
+                    }
+
+                    // 건수 행 추가/삭제
+                    if (e.target.id === 'newAddRow') {
+                        e.preventDefault();
+                        addRow('newNcntTable', 'list');
+                        return;
+                    }
+                    if (e.target.id === 'newRemoveRow') {
+                        e.preventDefault();
+                        removeLastRow('newNcntTable');
+                        return;
+                    }
+
+                    // 설정하기 → edit3
+                    const btnOpen = e.target.closest('.open-modal');
+                    if (btnOpen && btnOpen.id !== 'new-modal') {
+                        e.preventDefault();
+
+                        const { tpwSvcTypId, tpwSvcId } = btnOpen.dataset;
+
+                        if (!tpwSvcTypId || !tpwSvcId) {
+                            console.warn('설정하기 클릭: 필요한 식별자 누락', btnOpen.dataset);
+                            showFooterError('서비스/서비스유형 식별자를 확인할 수 없습니다.');
                             return;
                         }
-                    } catch (e) { console.error(e); }
+
+                        if (!modal) return;
+
+                        delete modal.dataset.tpwSvcTypId;
+                        delete modal.dataset.tpwSvcId;
+                        modal.dataset.tpwSvcTypId = tpwSvcTypId;
+                        modal.dataset.tpwSvcId    = tpwSvcId;
+
+                        try {
+                            await openEdit3In1(tpwSvcTypId);
+                        } catch (err) {
+                            console.error(err);
+                            showFooterError('상세 화면을 불러오지 못했습니다.');
+                        }
+                        return;
+                    }
+
+                    // 모달 내 버튼
+                    const modalBtn = e.target.closest('#modal-manager .btn');
+                    if (!modalBtn) return;
+
+                    const label = (modalBtn.textContent || '').trim();
+
+                    // 저장
+                    if (label === '저장') {
+                        try {
+                            if (!modal) return;
+                            const container = modal.querySelector('.modal-container');
+                            if (!container) return;
+
+                            const activeTab =
+                                container.querySelector('#tab-q.is-active') ? 'q' :
+                                container.querySelector('#tab-m.is-active') ? 'm' :
+                                container.querySelector('#tab-c.is-active') ? 'c' : 'q';
+
+                            const selected = __newFlowSelected?.child || {};
+                            const tpwSvcId =
+                                selected.tpwSvcId ||
+                                modal.dataset.tpwSvcId || '';
+                            const tpwSvcTypId =
+                                selected.tpwSvcTypId ||
+                                modal.dataset.tpwSvcTypId ||
+                                container.querySelector('#tpwSvcTypIdHidden')?.value || '';
+
+                            if (!tpwSvcId || !tpwSvcTypId) {
+                                showFooterError('서비스/서비스유형 식별자를 확인할 수 없습니다.');
+                                return;
+                            }
+
+                            let formSel = '#panel-q form';
+                            if (activeTab === 'm') formSel = '#panel-m form';
+                            if (activeTab === 'c') formSel = '#panel-c form#ncnt';
+
+                            const raw = collectWithoutMutating(container.querySelector(formSel)); // { list: [...] }
+
+                            const body = {
+                                tpwSvcId,
+                                tpwSvcTypId,
+                                tpwLmtDvsCd: (activeTab === 'c') ? '02' : '01',  // 금액=01, 건수=02
+                                tpwLmtTypCd: (activeTab === 'm') ? '01' : '02',  // 월=01, 분기/건수=02
+                                amtList: [],
+                                ncntList: []
+                            };
+                            if (activeTab === 'c') body.ncntList = raw.list || [];
+                            else body.amtList = raw.list || [];
+
+                            // 간단 검증
+                            if (body.tpwLmtDvsCd === '01') {
+                                const isQuarter = (body.tpwLmtTypCd === '02');
+                                const rows = Array.from(container.querySelectorAll(
+                                    (isQuarter ? '#panel-q' : '#panel-m') + ' tbody tr'
+                                ));
+                                const valYm = (v) => (/^\d{4}-\d{2}$/.test(v) || /^\d{6}$/.test(v));
+                                for (const r of rows) {
+                                    const mm = r.querySelectorAll('.dp-input[data-dp-type="month"]');
+                                    const sv = (mm[0]?.value || '').trim();
+                                    const ev = isQuarter ? (mm[1]?.value || '').trim() : sv;
+                                    if (!valYm(sv) || !valYm(ev)) {
+                                        showFooterError(
+                                            isQuarter
+                                                ? '분기: 시작/종료 월을 먼저 설정하세요.'
+                                                : '월: 시작 월을 먼저 설정하세요.'
+                                        );
+                                        (mm[0] || mm[1])?.focus();
+                                        return;
+                                    }
+                                }
+                            }
+
+                            const res = await Common.sendSafe('/sprtpolimng/polimnginf/sprtLmt/edit', {
+                                method: 'POST',
+                                data: body
+                            });
+
+                            Common.closeModal('#modal-manager');
+                            if (modal) modal.classList.remove('qtr-readonly');
+                            resModal(res);
+                        } catch (err) {
+                            console.error(err);
+                            showFooterError(err.message || '처리 중 오류가 발생했습니다.');
+                        }
+                    }
+                    // 취소
+                    else if (label === '취소') {
+                        Common.closeModal('#modal-manager');
+                        const m = getModal();
+                        if (m) m.classList.remove('qtr-readonly');
+                        clearFooterError();
+                    }
+                });
+
+                function applyTabsForNewByAdpt(container, adptYn) {
+                    const tabQ = container.querySelector('#tab-q');
+                    const tabM = container.querySelector('#tab-m');
+                    const tabC = container.querySelector('#tab-c');
+
+                    ['#tab-q', '#tab-m', '#tab-c'].forEach(sel => container.querySelector(sel)?.removeAttribute('disabled'));
+
+                    if (adptYn === 'Y') {
+                        // 건수만 가능
+                        tabQ.setAttribute('disabled', 'disabled');
+                        tabM.setAttribute('disabled', 'disabled');
+                        tabC.removeAttribute('disabled');
+                        activateTabByIndex(container, 2);
+                        __state.dvs = '02';
+                        __state.typ = '02';
+                    } else {
+                        // 금액만 가능
+                        tabC.setAttribute('disabled', 'disabled');
+                        tabQ.removeAttribute('disabled');
+                        tabM.removeAttribute('disabled');
+                        activateTabByIndex(container, 0);
+                        __state.dvs = '01';
+                        __state.typ = '02';
+                    }
+                    clearFooterError();
                 }
-                // 신규 ncnt: 행 추가/삭제
+
+                /* ===== 건수 행 추가/삭제 ===== */
                 function addRow(tableId, listName) {
                     const tbody = document.querySelector(`#${tableId} tbody`);
                     if (!tbody) return;
+
                     const index = tbody.querySelectorAll('tr').length;
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                  <td><input type="text" class="text-field js-count"   inputmode="numeric" autocomplete="off" name="${listName}[${index}].minCndtVal"/></td>
-                  <td><input type="text" class="text-field js-count"   inputmode="numeric" autocomplete="off" name="${listName}[${index}].maxCndtVal"/></td>
-                  <td><input type="text" class="text-field js-percent" inputmode="numeric" autocomplete="off" name="${listName}[${index}].tgtAdptVal"/></td>
-                `;
+            <td><input type="text" class="text-field js-count"   inputmode="numeric" autocomplete="off" name="\${listName}[\${index}].minCndtVal"/></td>
+            <td><input type="text" class="text-field js-count"   inputmode="numeric" autocomplete="off" name="\${listName}[\${index}].maxCndtVal"/></td>
+            <td><input type="text" class="text-field js-percent" inputmode="numeric" autocomplete="off" name="\${listName}[\${index}].tgtAdptVal"/></td>
+                    `.replace(/\$\{listName\}/g, listName).replace(/\$\{index\}/g, index);
+
                     tbody.appendChild(row);
                     const sc = document.getElementById('newNcntTableScroll');
                     if (sc) sc.scrollTop = sc.scrollHeight;
+
                     bindNumericMasks(tbody);
+                    clearFooterError();
                 }
+
                 function removeLastRow(tableId) {
                     const tbody = document.querySelector(`#${tableId} tbody`);
                     if (!tbody) return;
+
                     const rows = tbody.querySelectorAll('tr');
                     if (rows.length > 0) rows[rows.length - 1].remove();
+
+                    clearFooterError();
                 }
 
-                // 저장 결과 처리 + 목록 갱신
+                /* ===== 저장 후 리스트 리로드 ===== */
                 function resModal(res) {
-                    if (res?.ok) Common.modalShow({ message: '저장이 완료되었습니다.', title: '알림', buttons: 'close' });
-                    else Common.modalShow({ message: '저장에 실패하였습니다.', title: '알림', buttons: 'close' });
+                    if (res?.ok) {
+                        Common.modalShow?.({ message: '저장이 완료되었습니다.', title: '알림', buttons: 'close' });
+                    } else {
+                        Common.modalShow?.({ message: '저장에 실패하였습니다.', title: '알림', buttons: 'close' });
+                    }
+
+                    const searchForm = getSearchForm();
+                    const inputSort = getSortInput();
+                    const inputDir = getDirInput();
+                    const selectSize = getSelectSize();
 
                     const applied = Common.collectFromForm(searchForm);
                     Common.reloadList({
                         page: 0,
                         defaultSortColumn: 'tpw_svc_typ_id',
                         swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#grid-title'],
-                        selectSize, baseUrl, inputSort, inputDir, applied
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
                     });
                 }
 
-                // 위임 클릭
-                document.addEventListener('click', async (e) => {
-                    const newBtn = e.target.closest('#new-modal[data-mode="new"]');
-                    if (newBtn) { e.preventDefault(); await showSelectorModal(); return; }
-
-                    const nextBtn = e.target.closest('.js-next');
-                    if (nextBtn && modal.contains(nextBtn)) { e.preventDefault(); await proceedNewFlow(); return; }
-
-                    const btnOpen = e.target.closest('.open-modal');
-                    if (btnOpen && btnOpen.id !== 'new-modal') {
-                        e.preventDefault();
-                        const tpwSvcTypId = btnOpen.getAttribute('data-id') || '';
-                        const useYn = btnOpen.getAttribute('data-use-yn') || 'Y';
-                        if (!tpwSvcTypId) return;
-                        try {
-                            const html = await Common.fetchHtml('/sprtpolimng/polimnginf/sprtLmtDtl/' + encodeURIComponent(useYn) + '/' + encodeURIComponent(tpwSvcTypId));
-                            const container = modal.querySelector('.modal-container');
-                            container.innerHTML = html;
-
-                            if (window.Dropdowns && typeof window.Dropdowns.init === 'function') {
-                                window.Dropdowns.init(container);
-                            } else {
-                                runInlineScripts(container);
-                            }
-
-                            initQuarterOnlyEdit(container);
-                            bindNumericMasks(container);
-
-                            modal.setAttribute('aria-hidden', 'false');
-                            modal.classList.add('is-open');
-                            document.body.classList.add('modal-open');
-                            (container || modal).focus();
-                        } catch (err) {
-                            console.error(err);
-                            Common.modalShow({ message: '상세 화면을 불러오지 못했습니다.', title: '오류', buttons: 'close' });
-                        }
-                        return;
-                    }
-
-                    // 모달 내부 버튼 (저장/취소/행추가/행삭제)
-                    const modalBtn = e.target.closest('#modal-manager .btn');
-                    if (!modalBtn) return;
-                    const label = (modalBtn.textContent || '').trim();
-
-                    if (label === '저장') {
-                        const dvsCdEl = document.getElementById('dvsCd');
-                        const dvsCd = dvsCdEl ? dvsCdEl.value : modalBtn.dataset.dvsCd;
-                        try {
-                            if (dvsCd === '01') {
-                                const amountForm = modal.querySelector('form');
-                                sanitizeBeforeSubmit(amountForm);
-                                const applied = Common.collectAsJson(amountForm);
-                                const tpwSvcTypId = modal.querySelector('button.btn-blue')?.getAttribute('data-typ-id')
-                                    || modalBtn.getAttribute('data-typ-id') || '';
-                                const url = '/sprtpolimng/polimnginf/sprtLmt/amt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
-                                e.preventDefault();
-                                const res = await Common.sendSafe(url, { method: 'POST', data: applied.list });
-                                Common.closeModal('#modal-manager'); resModal(res);
-                            } else if (dvsCd === '02') {
-                                const ncntForm = modal.querySelector('form');
-                                sanitizeBeforeSubmit(ncntForm);
-                                const applied = Common.collectAsJson(ncntForm);
-                                const tpwSvcTypId = modal.querySelector('button.btn-blue')?.getAttribute('data-typ-id')
-                                    || modalBtn.getAttribute('data-typ-id') || '';
-                                const url = '/sprtpolimng/polimnginf/sprtLmt/ncnt/' + encodeURIComponent(tpwSvcTypId) + '/edit';
-                                e.preventDefault();
-                                const res = await Common.sendSafe(url, { method: 'POST', data: applied.list });
-                                Common.closeModal('#modal-manager'); resModal(res);
-                            } else {
-                                // 신규 작성 케이스
-                                const tpwLmtDvsCd = modalBtn.dataset.dvsCd;
-
-                                // 🔹 1순위: 1단계 때 보관한 메모리, 2순위: dataset, 3순위: 페이지 상단의 svcPair1(폴백)
-                                let cas = __newFlowSelected;
-                                if (!cas && modal.dataset.tpwSvcId && modal.dataset.tpwSvcTypId) {
-                                    cas = { valid: true, child: { tpwSvcId: modal.dataset.tpwSvcId, tpwSvcTypId: modal.dataset.tpwSvcTypId } };
-                                }
-                                if (!cas) {
-                                    cas = document.getElementById('svcPair1')?.getSelectedObjects?.('svcPair1') || null;
-                                }
-                                if (!cas || !cas.valid) {
-                                    Common.modalShow({ message: '서비스/유형 선택 정보가 없습니다. 다시 선택해 주세요.', title: '알림', buttons: 'close' });
-                                    return;
-                                }
-
-                                if (tpwLmtDvsCd === '01') {
-                                    const amtPanelForm = modal.querySelector('form');
-                                    sanitizeBeforeSubmit(amtPanelForm);
-                                    const applied = Common.collectAsJson(amtPanelForm);
-                                    const url = '/sprtpolimng/polimnginf/sprtLmt/amt';
-                                    e.preventDefault();
-                                    applied.tpwSvcId = cas.child.tpwSvcId;
-                                    applied.tpwSvcTypId = cas.child.tpwSvcTypId;
-                                    applied.tpwLmtDvsCd = '01';
-                                    applied.tpwLmtTypCd = '01';
-                                    const res = await Common.sendSafe(url, { method: 'POST', data: applied });
-                                    Common.closeModal('#modal-manager'); resModal(res);
-                                } else if (tpwLmtDvsCd === '02') {
-                                    const ncntForm = modal.querySelector('form');
-                                    sanitizeBeforeSubmit(ncntForm);
-                                    const applied = Common.collectAsJson(ncntForm);
-                                    const url = '/sprtpolimng/polimnginf/sprtLmt/ncnt';
-                                    applied.tpwSvcId = cas.child.tpwSvcId;
-                                    applied.tpwSvcTypId = cas.child.tpwSvcTypId;
-                                    applied.tpwLmtDvsCd = '02';
-                                    applied.tpwLmtTypCd = '01';
-                                    e.preventDefault();
-                                    const res = await Common.sendSafe(url, { method: 'POST', data: applied });
-                                    Common.closeModal('#modal-manager'); resModal(res);
-                                }
-                            }
-                        } catch (err) {
-                            console.error(err);
-                            alert(err.message || '처리 중 오류가 발생했습니다.');
-                        }
-                    } else if (label === '취소') {
-                        Common.closeModal('#modal-manager');
-                        modal.classList.remove('qtr-readonly');
-                    } else if (label === '행추가') {
-                        addRow('newNcntTable', 'list');
-                    } else if (label === '행삭제') {
-                        removeLastRow('newNcntTable');
-                    }
-                });
-
-                // 최초 숫자 마스킹 바인딩
+                /* ===== 초기 바인딩 ===== */
                 bindNumericMasks(document);
+
             })();
         </script>
 
