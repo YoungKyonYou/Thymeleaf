@@ -1,7 +1,9 @@
 <!-- templates/common/fragment/cmncd-dropdown.html -->
-<th:block th:fragment="cmncd(cmnGrpCdId, name='cmnCd', placeholder='선택하세요')">
+<th:block th:fragment="cmncd(title , cmnGrpCdId, name='cmnCd', placeholder='선택하세요')">
     <div class="field-wrap">
-        <p class="field-title">코드선택</p>
+        <p class="field-title"
+           th:text="${title}"
+           th:attr="data-title=${title}">코드선택</p>
         <div style="width:240px">
             <div class="dropdown"
                  th:attr="data-cmn-grp-id=${cmnGrpCdId},
