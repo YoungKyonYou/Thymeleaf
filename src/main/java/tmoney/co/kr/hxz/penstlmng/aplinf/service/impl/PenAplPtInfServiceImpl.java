@@ -36,13 +36,21 @@ public class PenAplPtInfServiceImpl implements PenAplPtInfService {
 
         // 요청 파라미터 복사
         PenAplPtInfReqVO reqVO = new PenAplPtInfReqVO(
-//                req.getBatTakDt(),
-//                req.getSttDt(),
-//                req.getEndDt(),
-//                offset,
-//                req.getSize(),
-//                req.getSort(),
-//                req.getDir()
+                req.getOrgCd(),       // 기관코드
+                req.getStlmDt(),      // 정산일자
+                req.getAprvStaCd(),   // 승인상태코드
+                req.getMbrsId(),      // 회원ID
+                req.getTpwSvcNm(),    // 서비스명
+                req.getTpwSvcId(),    // 서비스ID
+                req.getTpwSvcTypNm(), // 서비스유형명
+                req.getTpwSvcTypId(), // 서비스유형코드
+                req.getTpwSvcTypSno(),// 서비스유형번호
+                req.getSttDt(),       // 시작기간
+                req.getEndDt(),       // 종료기간
+                req.getPage(),        // 페이지
+                req.getSize(),        // 페이지 사이즈
+                req.getSort(),        // 정렬
+                req.getDir()          // 정렬 방향
         );
 
         // 리스트 조회
@@ -66,14 +74,24 @@ public class PenAplPtInfServiceImpl implements PenAplPtInfService {
         return penAplPtInfMapper.readPenAplPtInfListCnt(req, orgCd);
     }
 
+
+
+
+    @Transactional(readOnly = true)
     @Override
-    public Object readPenAplCntByMonth(String orgCd, String tpwSvcId, String tpwSvcId1) {
-        return null;
+    public List<PenAplPtInfRspVO> readPenAplCntByMonth(PenAplPtInfReqVO req) {
+        return penAplPtInfMapper.readPenAplCntByMonth(req);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PenAplPtInfRspVO> readPenAplCntByDay(PenAplPtInfReqVO req) {
+        return penAplPtInfMapper.readPenAplCntByDay(req);
     }
 
     @Override
-    public Object readPenAplCntByDay(String sttDt, String orgCd, String tpwSvcId, String tpwSvcId1) {
-        return null;
+    public void updateApprove(PenAplPtInfRspVO form) {
+        penAplPtInfMapper.updateApprove(form);
     }
 
 

@@ -33,7 +33,12 @@ public interface PenAplPtInfService {
     @Transactional(readOnly = true)
     long readPenAplPtInfListCnt(PenAplPtInfReqVO req, String orgCd);
 
-    Object readPenAplCntByMonth(String orgCd, String tpwSvcId, String tpwSvcId1);
 
-    Object readPenAplCntByDay(@Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식은 YYYY-MM-DD 형식이어야 합니다.") String sttDt, String orgCd, String tpwSvcId, String tpwSvcId1);
+    @Transactional(readOnly = true)
+    List<PenAplPtInfRspVO> readPenAplCntByMonth(PenAplPtInfReqVO req);
+
+    @Transactional(readOnly = true)
+    List<PenAplPtInfRspVO> readPenAplCntByDay(PenAplPtInfReqVO req);
+
+    void updateApprove(PenAplPtInfRspVO form);
 }

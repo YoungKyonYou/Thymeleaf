@@ -18,4 +18,10 @@ public interface PenAplPtInfMapper {
     );
 
     long readPenAplPtInfListCnt(@Param("req") PenAplPtInfReqVO req, @Param("orgCd") String orgCd);
+
+    List<PenAplPtInfRspVO> readPenAplCntByMonth(@Param("req") PenAplPtInfReqVO req);
+
+    List<PenAplPtInfRspVO> readPenAplCntByDay(@Param("req") PenAplPtInfReqVO req);
+
+    void updateApprove(PenAplPtInfRspVO form);
 }

@@ -1,64 +1,69 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
 
         <section class="section">
-            <div class="section-header">
-                <div class="title-wrap">
-                    <h3 class="section-title">지급금신청내역관리</h3>
-                </div>
+            <form class="section-header" action="/penstlmng/aplinf/penAplPtInf.do" th:object="${req}">
 
-                <div class="box-wrap">
-                    <div class="box">
-                        <p class="field-title">서비스 선택</p>
-                        <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
-                                'svcPair1','tpwSvcId','tpwSvcTypId'
-                            )}"></th:block>
+                <div class="section-header">
+                    <div class="title-wrap">
+                        <h3 class="section-title">지급금신청내역관리</h3>
                     </div>
-                </div>
-                <div class="box-wrap">
-                    <div class="box">
-                        <p class="field-title">정산일자</p>
-                        <div class="text-field datepicker">
-                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                   name="startDate" value="${startDate}"
-                            >
-                            <button type="button" class="dp-btn" data-dp-toggle></button>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 선택</p>
+                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
+                                    'svcPair1','tpwSvcId','tpwSvcTypId'
+                                )}"></th:block>
                         </div>
                     </div>
-                    <div class="box">
-                        <p class="field-title">회원ID</p>
-                        <input type="text" class="dp-input text-field">
-                    </div>
-                    <div class="box">
-                        <p class="field-title">승인상태</p>
-                        <div class="dropdown is-placeholder" data-name="state">
-                            <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="변경유형 드롭다운">
-                                <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
-                            </button>
-                            <ul class="dropdown_list" role="listbox" tabindex="-1">
-                                <li role="option" class="dropdown_option" data-value="amount">Y</li>
-                                <li role="option" class="dropdown_option" data-value="number">N</li>
-                            </ul>
-                            <input type="hidden" name="state" value="">
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">정산일자</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
+                                       name="endDt" th:value="*{sttDt}"
+                                >
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">회원ID</p>
+                            <input type="text" name="mbrsId" class="dp-input text-field" th:value="*{mbrsId}">
+                        </div>
+                        <div class="box">
+                            <p class="field-title">승인상태</p>
+                            <div class="dropdown is-placeholder" data-name="aprvStaCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="변경유형 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">요청</li>
+                                    <li role="option" class="dropdown_option" data-value="02">반려</li>
+                                    <li role="option" class="dropdown_option" data-value="03">승인</li>
+                                </ul>
+                                <input type="hidden" name="aprvStaCd" th:value="*{aprvStaCd}">
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="btn-wrap">
-                    <button type="button" class="btn btn-primary">검색</button>
+                    <div class="btn-wrap">
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
                 </div>
-            </div>
+                <input th:field="*{sort}" type="hidden">
+                <input th:field="*{dir}" type="hidden">
+            </form>
 
             <div class="section-content">
                 <div class="flex justify-space-between">
-                    <b>검색결과: 10건</b>
+                    <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
                     <div class="flex col-">
-                        <button type="button" class="btn btn-primary btn-icon-left">
+                        <a href="/penstlmng/aplinf/exportPenAplPtInf" type="button" class="btn btn-primary btn-icon-left">
                             엑셀 다운로드 <i class="icon icon-save"></i>
-                        </button>
+                        </a>
                         <button type="button" class="btn btn-dark-line">목록</button>
                     </div>
                 </div>
@@ -84,9 +89,8 @@
                             <col width="300px">
                             <col width="150px">
                         </colgroup>
-                        <thead>
+                        <thead id="grid-head">
                         <tr>
-                            <!--<th class="sort-header" scope="col"><a data-sort="tpw_svc_id">서비스 ID</a></th> -->
                             <th>
                                 <div class="control checkbox">
                                     <input type="checkbox" id="cb0">
@@ -110,97 +114,139 @@
                             <th scope="col">신청진행상태</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>2</td>
-                            <td>3</td>
-                            <td>4</td>
-                            <td>5</td>
-                            <td>1</td>
-                            <td>2</td>
-                            <td>3</td>
-                            <td>4</td>
-                            <td>5</td>
-                            <td>1</td>
-                            <td>3</td>
-                            <td>
-                                <button type="button" class="btn ">승인하기</button>
-                            </td>
-                            <td>4</td>
-                            <td>5</td>
-                            <td>5</td>
+                        <tbody id="grid-tbody">
+                        <tr th:if="${pageData == null or #lists.isEmpty(pageData.content)}">
+                            <td class="text-center" th:colspan="16">조회된 데이터가 없습니다.</td>
                         </tr>
-                        <!-- ... -->
+                        <th:block th:if="${pageData != null and !#lists.isEmpty(pageData.content)}">
+                            <th:block th:each="u, stat : ${pageData.content}"
+                                      th:object="${u}"
+                                      th:with="base=${(pageData.page)} * ${pageData.size}">
+                                <tr>
+                                    <td>
+                                        <div class="control checkbox">
+                                            <input type="checkbox" th:id="'cb' + ${stat.index}">
+                                            <label th:for="'cb' + ${stat.index}"></label>
+                                        </div>
+                                    </td>
+
+                                    <td th:text="*{tpwSvcTypNm}"></td>
+
+                                    <td th:text="${#strings.substring(u.stlmDt, 0, 4) + '-' + #strings.substring(u.stlmDt, 4, 6) + '-' + #strings.substring(u.stlmDt, 6, 8)}"></td>
+
+                                    <td th:text="*{mbrsId}"></td>
+
+                                    <td th:text="${#strings.substring(u.aplDt, 0, 4) + '-' + #strings.substring(u.aplDt, 4, 6) + '-' + #strings.substring(u.aplDt, 6, 8)}"></td>
+
+                                    <td th:text="*{cardNo}"></td>
+
+                                    <td th:text="*{bnkCd}"></td>
+
+                                    <td th:text="*{acntNo}"></td>
+
+                                    <td th:text="*{ooaNm}"></td>
+
+                                    <td th:text="*{aproId}"></td>
+
+                                    <td th:text="${#strings.substring(u.aprvDtm, 0, 4) + '-' + #strings.substring(u.aprvDtm, 4, 6) + '-' + #strings.substring(u.aprvDtm, 6, 8) + ' ' + #strings.substring(u.aprvDtm, 8, 10) + ':' + #strings.substring(u.aprvDtm, 10, 12) + ':' + #strings.substring(u.aprvDtm, 12, 14)}"></td>
+
+                                    <td th:text="*{aprvStaCd}"></td>
+
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-approve"
+                                                th:disabled="${u.aprvStaCd == '03'}"
+                                                th:data-tpw-svc-id="*{tpwSvcId}"
+                                                th:data-tpw-svc-typ-sno="*{tpwSvcTypSno}"
+                                                th:data-stlm-dt="*{stlmDt}"
+                                                th:data-mbrs-id="*{mbrsId}"
+                                                th:data-tpw-svc-typ-id="*{tpwSvcTypId}">
+                                            <span th:text="${u.aprvStaCd == '03'} ? '승인완료' : '승인하기'"></span>
+                                        </button>
+                                    </td>
+
+                                    <td th:text="*{tpwMbrsTypCd}"></td>
+
+                                    <td>
+                                        <a href="#" th:text="*{atflMngNo}"></a>
+                                    </td>
+
+                                    <td th:text="*{tpwAplPrgsStaCd}"></td>
+                                </tr>
+                            </th:block>
+                        </th:block>
                         </tbody>
                     </table>
                 </div>
 
-
-
-
-                <div class="mt20">
-                    <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
-                        <button type="button" class="pager-btn prev" aria-label="이전 페이지">Prev</button>
-                        <div class="pager-list">
-                            <button type="button" class="pager-item is-active" aria-current="page">1</button>
-                            <button type="button" class="pager-item">2</button>
-                            <button type="button" class="pager-item">3</button>
-                            <button type="button" class="pager-item">4</button>
-                            <button type="button" class="pager-item">5</button>
-                        </div>
-                        <button type="button" class="pager-btn next" aria-label="다음 페이지">Next</button>
-                    </div>
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
                 </div>
             </div>
             <div class="section-content">
                 <div class="title-wrap"><h3 class="section-title">신청현황</h3></div>
 
-                <!-- 일별 -->
+                <!--일별 -->
                 <div class="table-wrap mt20">
                     <table class="table">
-                        <caption class="blind">신청현황 테이블</caption>
+                        <caption class="blind">신청현황 테이블 (일별)</caption>
                         <colgroup>
-                            <col width="160px"><col width="100px" span="30">
+                            <col width="160px">
+                            <col width="100px" th:each="d : ${daily}" th:if="${not #lists.isEmpty(daily)}"/>
                         </colgroup>
                         <tbody>
-                        <tr>
+
+                        <th:block th:unless="${#lists.isEmpty(daily)}">
+                            <tr>
+                                <th scope="row">일</th>
+                                <td th:each="d : ${daily}" th:text="${d.aplDay}">1</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">신청자 수</th>
+                                <td th:each="d : ${daily}" th:text="${d.aplCnt}">0</td>
+                            </tr>
+                        </th:block>
+
+                        <tr th:if="${#lists.isEmpty(daily)}">
                             <th scope="row">일</th>
-                            <td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td>
-                            <td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td>
-                            <td>20</td><td>21</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
+                            <td class="text-center" colspan="30">-</td>
                         </tr>
-                        <tr>
+                        <tr th:if="${#lists.isEmpty(daily)}">
                             <th scope="row">신청자 수</th>
-                            <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
-                            <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
-                            <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
+                            <td class="text-center" colspan="30">일별 조회된 데이터가 없습니다.</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 월별 -->
+                <!--월별-->
                 <div class="table-wrap mt20">
                     <table class="table">
-                        <caption class="blind">신청현황 테이블</caption>
+                        <caption class="blind">신청현황 테이블 (월별)</caption>
                         <colgroup>
-                            <col width="160px"><col width="100px" span="30">
+                            <col width="160px">
+                            <col width="100px" th:each="m : ${monthly}" th:if="${not #lists.isEmpty(monthly)}"/>
                         </colgroup>
                         <tbody>
-                        <tr>
-                            <th scope="row">일</th>
-                            <td>2023-07</td><td>2023-08</td><td>2023-09</td><td>2023-10</td><td>2023-11</td><td>2023-12</td>
-                            <td>2024-01</td><td>2024-02</td><td>2024-03</td><td>2024-04</td><td>2024-05</td><td>2024-06</td>
-                            <td>2024-07</td><td>2024-08</td><td>2024-09</td><td>2024-10</td><td>2024-11</td><td>2024-12</td>
-                            <td>2025-01</td><td>2025-02</td><td>2025-03</td><td>2025-04</td><td>2025-05</td><td>2025-06</td>
-                            <td>2025-07</td><td>2025-08</td><td>2025-09</td><td>2025-10</td><td>2025-11</td><td>2025-12</td>
+
+                        <th:block th:unless="${#lists.isEmpty(monthly)}">
+                            <tr>
+                                <th scope="row">월</th>
+                                <td th:each="m : ${monthly}" th:text="${m.aplYm}">2025-01</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">신청자 수</th>
+                                <td th:each="m : ${monthly}" th:text="${m.aplCnt}">0</td>
+                            </tr >
+                        </th:block>
+
+                        <tr th:if="${#lists.isEmpty(monthly)}">
+                            <th scope="row">월</th>
+                            <td class="text-center" colspan="30">-</td>
                         </tr>
-                        <tr>
+                        <tr th:if="${#lists.isEmpty(monthly)}">
                             <th scope="row">신청자 수</th>
-                            <td>45</td><td>34</td><td>22</td><td>35</td><td>12</td><td>24</td><td>26</td><td>3</td><td>9</td>
-                            <td>12</td><td>32</td><td>11</td><td>20</td><td>56</td><td>22</td><td>16</td><td>2</td><td>18</td><td>0</td>
-                            <td>30</td><td>12</td><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td>
+                            <td class="text-center" colspan="30">월별 조회된 데이터가 없습니다.</td>
                         </tr>
                         </tbody>
                     </table>
@@ -209,7 +255,138 @@
 
         </section>
 
-        <!-- 공통 푸터 -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', () => {
+                const req = /*[[${req}]]*/ {};
+
+                // 서비스 선택
+                var dd = document.getElementById('svcPair1');
+                setTimeout(() => {
+                    if (dd && typeof dd.selectByValues === 'function') {
+                        dd.selectByValues(req.tpwSvcId, req.tpwSvcTypId);
+                    }
+                }, 100);
+
+                // 정산일자 (endDt 필드만 있으므로 endDt만 처리)
+                const endDtInput = document.querySelector('input[name="endDt"]');
+                if (endDtInput) endDtInput.value = req.endDt || '';
+
+                // 승인상태 드롭다운 초기값 설정
+                setTimeout(() => {
+                    const cd = document.querySelector('[data-name="aprvStaCd"]');
+                    const targetOption = cd?.querySelector(`[data-value="${req.aprvStaCd}"]`);
+                    if (targetOption && typeof targetOption.click === 'function') {
+                        targetOption.click();
+                    }
+                }, 100);
+            });
+        </script>
+
+        <script data-page="penApiPtInf" th:inline="javascript" type="text/javascript">
+            (function(){
+                const APPROVE_URL = '/penstlmng/aplinf/approve'; // 서버 승인 API URL
+
+                let form = document.querySelector('form');
+                let sort = form.querySelector('[name="sort"]');
+                let dir = form.querySelector('[name="dir"]');
+                const tbody = document.getElementById('grid-tbody');
+
+                // 검색 폼 제출 이벤트 (기존의 `return;`을 제거하고 실제 검색 로직을 활성화)
+                form.addEventListener('submit', function(e){
+                    e.preventDefault(); // 기본 폼 제출 방지
+
+                    let applied = Common.collectFromForm(form);
+
+                    // 목록 새로고침 (페이지 0, 쿼리 파라미터는 폼에서 수집)
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: sort.value,
+                        baseUrl: form.getAttribute('action'),
+                        // HTML에 size input이 없으므로 임시로 size 값을 객체 형태로 전달 (Common.reloadList 함수 시그니처 맞춤)
+                        selectSize: { value: '10' },
+                        inputSort: sort,
+                        inputDir: dir,
+                        applied
+                    });
+                });
+
+                // 승인하기 버튼 클릭 이벤트 바인딩
+                if (tbody) {
+                    tbody.addEventListener('click', (e) => {
+                        const btn = e.target.closest('.btn-approve');
+                        if (!btn || btn.disabled) return;
+
+                        // 1. 필요한 데이터 수집 (data-* 속성 사용)
+                        const payload = {
+                            tpwSvcId: btn.dataset.tpwSvcId,
+                            tpwSvcTypSno: btn.dataset.tpwSvcTypSno,
+                            stlmDt: btn.dataset.stlmDt,
+                            mbrsId: btn.dataset.mbrsId,
+                            tpwSvcTypId: btn.dataset.tpwSvcTypId
+                            // 승인 상태 '03'은 서버에서 설정하므로 클라이언트에서 보낼 필요 없음
+                        };
+
+                        // 2. 모달로 사용자 확인
+                        Common.modalShow({
+                            title: '지급금 신청 승인',
+                            message: `회원ID ${payload.mbrsId}의 신청 건을 승인 처리하시겠습니까?`,
+                            buttons: 'ok-close',
+                            okText: '승인',
+                            onOk: () => {
+                                // 3. 승인 API 호출
+                                approveApplication(payload);
+                            }
+                        });
+                    });
+                }
+
+                /**
+                 * 승인 API를 호출하고 결과를 처리합니다.
+                 * @param {Object} payload - 승인에 필요한 식별 정보
+                 */
+                async function approveApplication(payload) {
+                    // Common.sendSafe를 사용하여 POST 요청 및 자동 오류/경고 모달 처리
+                    const result = await Common.sendSafe(APPROVE_URL, {
+                        method: 'POST',
+                        data: payload // RequestBody로 전송될 데이터
+                    });
+
+                    if (result && result.ok) {
+                        // 성공 모달 표시
+                        Common.modalShow({
+                            title: '알림',
+                            message: '성공적으로 승인 처리되었습니다.',
+                            buttons: 'close',
+                            onClose: () => {
+                                // 성공 시 목록 새로고침
+                                reloadListFromForm();
+                            }
+                        });
+                    }
+                    // 실패 시 Common.sendSafe 내부에서 이미 모달을 띄웁니다.
+                }
+
+                /**
+                 * 현재 검색 조건과 페이지를 유지하며 목록을 새로고침합니다.
+                 */
+                function reloadListFromForm() {
+                    let applied = Common.collectFromForm(form);
+                    const baseUrl = form.getAttribute('action');
+
+                    Common.reloadList({
+                        // activePage()로 현재 페이지를 가져와 페이지를 유지
+                        page: Common.activePage(),
+                        defaultSortColumn: sort.value,
+                        baseUrl: baseUrl,
+                        selectSize: { value: '10' },
+                        inputSort: sort,
+                        inputDir: dir,
+                        applied
+                    });
+                }
+            })();
+        </script>
+
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
 
     </th:block>

@@ -1,4 +1,4 @@
-package tmoney.co.kr.file.service;
+package tmoney.co.kr.hxz.common.file.service;
 
 import java.io.File;
 import java.io.InputStream;

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -58,14 +60,21 @@ public class PenAplPtInfRspVO {
     /** 신청진행상태 */
     private String tpwAplPrgsStaCd;
 
+
+    //서비스id
+    private String tpwSvcId;
+
     // 서비스명
     private String tpwSvcNm;
+
+    // 서비스유형id
+    private String tpwSvcTypId;
 
     // 서비스유형명 = 지원유형
     private String tpwSvcTypNm;
 
     // 서비스유형번호
-    private String tpwSvcTypSno;
+    private BigDecimal tpwSvcTypSno;
 
     /* ============================
      * 월별 통계용 필드
