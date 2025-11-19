@@ -55,7 +55,7 @@ public class SprtLmtController {
      * @return return String
      */
 
-    @GetMapping(value = "/sprtLmtDtl/new")
+    @GetMapping(value = "/sprtLmtDtl/new.do")
     public String newSprtLmt(
             Model model
     ) {
@@ -77,7 +77,7 @@ public class SprtLmtController {
      * - 현재 서비스 유형에 이미 설정된 타입(월/분기/건수)이 있으면 해당 탭이 기본 선택되도록 typ/dvs 코드를 내려준다.
      * - 선택된 탭 데이터는 "기존값", 나머지 탭은 "신규 기본값"으로 채운다.
      */
-    @GetMapping("/sprtLmtDtl/{tpwSvcTypId}/edit")
+    @GetMapping("/sprtLmtDtl/{tpwSvcTypId}/edit.do")
     public String openEdit3In1(
             @PathVariable("tpwSvcTypId") String tpwSvcTypId,
             Model model
@@ -109,7 +109,7 @@ public class SprtLmtController {
      * @return return ResponseEntity
      */
 
-    @PostMapping(path = "/sprtLmt/edit")
+    @PostMapping(path = "/sprtLmt/edit.do")
     @ResponseBody
     public ResponseEntity<?> updateSprtLmtAmt(
             @RequestBody InstReqVO req
