@@ -41,8 +41,6 @@ public class TestController {
 
     @GetMapping("/page/guide/{view}")
     public String guide(@PathVariable String view, Model model) {
-
-
         return "page/guide/" + view;
     }
 

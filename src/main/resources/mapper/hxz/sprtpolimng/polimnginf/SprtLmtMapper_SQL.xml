@@ -116,6 +116,7 @@
     </select>
 
     <select id="readSprtLmtDtlByTpwSvcTypId"
+            parameterType="String"
             resultType="tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO">
         /* sql_id : readSprtLmtDtlByTpwSvcTypId */
         /*
@@ -148,19 +149,6 @@
             and lower(d208.use_yn) = lower(#{useYn})
         </if>
     </select>
-
-    <update id="updateSprtLmtUseYn" parameterType="String">
-        /* sql_id : updateSprtLmtUseYn
-        * 설명 : (옵션) tpw_svc_typ_id로 필터하고, 현재 use_yn='Y' 인 행을 'N'으로 변경
-        */
-        update tbhxzd208 d208
-        set use_yn = upper('n')
-        where 1 = 1
-        <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
-            and d208.tpw_svc_typ_id = #{tpwSvcTypId}
-        </if>
-        and upper(d208.use_yn) = 'Y'
-    </update>
 
     <insert id="insertSprtLmt" parameterType="list">
         /* sql_id : insertSprtLmt */
@@ -196,7 +184,7 @@
             (
             #{u.tpwSvcId}
             , #{u.tpwSvcTypId}
-            , #{u.spfnLmtMngNo}
+            , (to_char(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01'), 'FM0000000000'))
             , #{u.spfnLmtSno}
             , #{u.tpwLmtDvsCd}
             , #{u.tpwLmtTypCd}
@@ -228,20 +216,6 @@
             set use_yn = upper('n')
             where spfn_lmt_mng_no = #{u}
         </foreach>
-    </update>
-
-    <update id="updateTrdNcntLtnAdptYn" parameterType="String">
-        /* sql_id : updateTrdNcntLtnAdptYn */
-        /*
-        * 1. 파일 : SprtLmtMapper_SQL.xml
-        * 2. 기능 : 교통복지서비스유형관리 거래건수제한적용여부 업데이트
-        * 3. 작성자 : 유영균
-        * 4. 변경이력 :
-        * 2025.11.09 - 유영균 : 최초작성
-        */
-        update tbhxzm202
-        set trd_ncnt_ltn_adpt_yn = upper(#{adptYn})
-        where tpw_svc_typ_id = #{tpwSvcTypId}
     </update>
 
     <insert id="insertNextSprtLmt" parameterType="list">
@@ -302,11 +276,6 @@
 
     <select id="readSpfnLmtSnoNextVal" parameterType="String" resultType="String">
         select lpad((coalesce(max(cast(#{spfnLmtSno} as integer)),0)+1)::text,10,'0')
-    </select>
-
-    <select id="readNextMngNo" parameterType="int" resultType="string">
-        SELECT lpad(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01')::text, 10, '0')
-        FROM generate_series(1, #{count})
     </select>
 
 </mapper>

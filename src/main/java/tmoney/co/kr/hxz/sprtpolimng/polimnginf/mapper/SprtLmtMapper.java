@@ -2,6 +2,7 @@ package tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import tmoney.co.kr.config.HxzDb;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
@@ -31,10 +32,4 @@ public interface SprtLmtMapper {
     String readSpfnLmtMngNoNextVal();
 
     String readSpfnLmtSnoNextVal(@Param("spfnLmtSno") String spfnLmtSno);
-
-    void updateSprtLmtUseYn(@Param("tpwSvcTypId") String tpwSvcTypId);
-
-    List<String> readNextMngNo(@Param("count") int count);
-
-    void updateTrdNcntLtnAdptYn(@Param("tpwSvcTypId") String tpwSvcTypId, @Param("adptYn") String adptYn);
 }

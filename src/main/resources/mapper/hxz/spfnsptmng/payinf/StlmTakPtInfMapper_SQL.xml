@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.StlmTakPtInfMapper">
+
+<!-- TODO: 정산 작업 내역 조회 -->
+<!--
+<select id="readStlmTakPtInfList" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO">
+
+</select>
+-->
+    <select id="readPerdStlmList" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        select
+        perd.tpw_svc_typ_id as tpwSvcTypId,
+          perd.org_nm as orgNm  <!-- 기관명 -->
+         , perd.apl_stt_dt as  aplSttDt
+        <!-- 신청시작일 -->
+         , perd.apl_end_dt as aplEndDt
+        <!-- 신청종료일 -->
+        , perd.tpw_trd_stt_dt as tpwTrdSttDt <!-- 거래시작일자 -->
+        , perd.tpw_trd_end_dt as tpwTrdEndDt <!-- 거래종료일자 -->
+        , perd.fix_dt as fixDt <!-- 확정일자 -->
+        , perd.stlm_dt as stlmDt <!-- 정산일자 -->
+        , perd.clos_cfm_yn as closCfmYn    <!-- 마감확인여부 -->
+        , perd.stlm_fix_yn as stlmFixYn    <!-- 정산확정여부 -->
+        , perd.acng_prcg_fn_yn as acngPrcgFnYn  <!-- 회계처리완료여부 -->
+        , perd.tpw_svc_nm as tpwSvcNm      <!-- 서비스명 -->
+        , perd.tpw_svc_typ_nm as tpwSvcTypNm  <!-- 서비스유형명 -->
+        , perd.tpw_svc_typ_sno as tpwSvcTypSno  <!-- 서비스유형번호 -->
+
+    from (
+    <!-- ============================== -->
+    <!-- 1. 정기(PERD) 마감확정내역 -->
+    <!-- ============================== -->
+    select
+        'PERD' as exeDiv,
+        m202.tpw_svc_typ_id ,
+        m201.tpw_svc_id ,
+        d215.tpw_svc_typ_sno ,
+        m201.tpw_svc_nm ,
+        m202.tpw_svc_typ_nm ,
+        d215.apl_stt_dt,
+        d215.apl_end_dt,
+        <!-- d215.apl_dt , -->
+        d215.tpw_trd_stt_dt ,
+        d215.tpw_trd_end_dt,
+        d215.stlm_dt ,
+        d215.fix_dt ,
+        d215.clos_cfm_yn ,
+        d215.stlm_fix_yn ,
+        d215.acng_prcg_fn_yn,
+        (select m009.tpw_org_nm
+        FROM tbhxzm009 m009
+        where m009.org_cd = m201.org_cd
+        and m009.use_yn = 'Y'
+        limit 1) as org_nm  <!-- 기관명 -->
+        from tbhxzd215 d215
+            left join tbhxzd214 d214
+            on d214.tpw_svc_id      = d215.tpw_svc_id
+                and d214.tpw_svc_typ_id  = d215.tpw_svc_typ_id
+                and d214.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+                and d214.stlm_dt         = d215.stlm_dt
+            left join tbhxzm201 m201 on m201.tpw_svc_id = d215.tpw_svc_id and m201.use_yn = 'Y'
+            left join tbhxzm202 m202 on m202.tpw_svc_id = d215.tpw_svc_id
+            and m202.tpw_svc_typ_id = d215.tpw_svc_typ_id
+            and m202.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+    where 1=1
+    <if test="req.exeDiv != null and req.exeDiv != ''">
+        and 'PERD' = #{req.exeDiv}
+    </if>
+
+    <choose>
+        <!-- 정산일자 검색 -->
+        <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+            and d215.stlm_dt between #{req.sttDt} and #{req.endDt}
+        </when>
+
+        <!-- 확정일자 검색 -->
+        <when test="req.searchType == 'fixDt' and req.sttDt != null and req.endDt != null">
+            and d215.fix_dt between #{req.sttDt} and #{req.endDt}
+        </when>
+
+        <!-- 신청일자 검색 -->
+        <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+            and d215.apl_stt_dt between #{req.sttDt} and #{req.endDt}
+            and d215.apl_end_dt between #{req.sttDt} and #{req.endDt}
+        </when>
+    </choose>
+
+    <!-- 서비스ID 검색 -->
+    <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+        and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+        <choose>
+            <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+            </when>
+            <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                and m201.tpw_svc_id = m202.tpw_svc_id
+            </when>
+        </choose>
+    </if>
+
+
+    ) perd
+
+    order by perd.${req.sort} ${req.dir}
+    limit #{req.size} offset #{req.page}
+
+</select>
+
+
+    <select id="readPerdStlmListCnt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO" resultType="long">
+
+        <!-- ============================== -->
+        <!-- 1. 정기(PERD) 마감확정내역 -->
+        <!-- ============================== -->
+        select count(1)
+
+            from tbhxzd215 d215
+                left join tbhxzd214 d214
+                on d214.tpw_svc_id      = d215.tpw_svc_id
+                and d214.tpw_svc_typ_id  = d215.tpw_svc_typ_id
+                and d214.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+                and d214.stlm_dt         = d215.stlm_dt
+                left join tbhxzm201 m201 on m201.tpw_svc_id = d215.tpw_svc_id and m201.use_yn = 'Y'
+                left join tbhxzm202 m202 on m202.tpw_svc_id = d215.tpw_svc_id
+                and m202.tpw_svc_typ_id = d215.tpw_svc_typ_id
+                and m202.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+            where 1=1
+            <if test="req.exeDiv != null and req.exeDiv != ''">
+                and 'PERD' = #{req.exeDiv}
+            </if>
+
+            <choose>
+                <!-- 정산일자 검색 -->
+                <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+                    and d215.stlm_dt between #{req.sttDt} and #{req.endDt}
+                </when>
+
+                <!-- 확정일자 검색 -->
+                <when test="req.searchType == 'fixDt' and req.sttDt != null and req.endDt != null">
+                    and d215.fix_dt between #{req.sttDt} and #{req.endDt}
+                </when>
+
+                <!-- 신청일자 검색 -->
+                <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+                    and d215.apl_stt_dt between #{req.sttDt} and #{req.endDt}
+                    and d215.apl_end_dt between #{req.sttDt} and #{req.endDt}
+                </when>
+            </choose>
+
+            <!-- 서비스ID 검색 -->
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        and m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+    </select>
+
+
+    <select id="readSimStlmList" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+
+        <!-- ============================== -->
+        <!-- 2. 시뮬레이션(SIM) 마감확정내역 -->
+        <!-- ============================== -->
+        select
+        sim.exe_div as exeDiv                 <!-- 실행구분 (SIM) -->
+        , sim.tpw_svc_id as tpwSvcId            <!-- 서비스ID -->
+        , sim.tpw_svc_typ_id as tpwSvcTypId     <!-- 서비스유형ID -->
+        , sim.tpw_svc_typ_sno as tpwSvcTypSno   <!-- 서비스유형일련번호 -->
+        , sim.tpw_svc_nm as tpwSvcNm            <!-- 서비스명 -->
+        , sim.tpw_svc_typ_nm as tpwSvcTypNm     <!-- 서비스유형명 -->
+        <!-- 없다나옴 -->
+        <!-- , sim.trpr_act_sqno as trprActSqno -->
+        <!-- 사업자실행순번 -->
+        , sim.apl_dt as aplDt                   <!-- 신청일자 -->
+        , sim.tpw_trd_stt_dt as tpwTrdSttDt     <!-- 거래시작일자 -->
+        , sim.tpw_trd_end_dt as tpwTrdEndDt     <!-- 거래종료일자 -->
+        , sim.stlm_dt as stlmDt                 <!-- 정산일자 (SIM은 aplDt와 동일) -->
+        , sim.fix_dt as fixDt                   <!-- 확정일자 (SIM은 없음, null) -->
+        , sim.clos_cfm_yn as closCfmYn          <!-- 마감확인여부 -->
+        , sim.stlm_fix_yn as stlmFixYn          <!-- 정산확정여부 -->
+        , sim.acng_prcg_fn_yn as acngPrcgFnYn   <!-- 회계처리완료여부 -->
+        , sim.acng_dt as acngDt                 <!-- 회계처리일자 -->
+        , sim.stlm_bat_id as stlmBatId          <!-- 정산배치ID -->
+        , sim.stlm_id as stlmId                 <!-- 정산ID -->
+        , sim.stlm_div as stlmDiv               <!-- 정산구분 -->
+        , sim.stlm_amt as stlmAmt               <!-- 정산금액 -->
+        , sim.prcg_dt as prcgDt                 <!-- 처리일자 -->
+        , sim.reg_id as regId                   <!-- 등록자ID -->
+        , sim.reg_dtm as regDtm                 <!-- 등록일시 -->
+        from (
+        <!-- ============================== -->
+        <!-- SIM 마감확정내역 (시뮬레이션 결과) -->
+        <!-- ============================== -->
+        select
+        'SIM' as exe_div
+        , m201.tpw_svc_id
+        , d222.tpw_svc_typ_id
+        , d222.tpw_svc_typ_sno
+        , m201.tpw_svc_nm
+        , m202.tpw_svc_typ_nm
+        <!-- 없다고나옴 -->
+        <!-- , d222.trpr_act_sqno -->
+        , d222.apl_dt
+        , d222.tpw_trd_stt_dt
+        , d222.tpw_trd_end_dt
+        , d222.apl_dt as stlm_dt             <!-- SIM은 정산일자 = 신청일자 -->
+        , null as fix_dt                     <!-- SIM은 확정일자 없음 -->
+        , d222.prcg_fn_yn as clos_cfm_yn     <!-- 마감확인여부 -->
+        , 'N' as stlm_fix_yn                 <!-- 정산확정여부 없음 -->
+        , 'N' as acng_prcg_fn_yn             <!-- 회계처리완료여부 없음 -->
+        , null as acng_dt                    <!-- 회계처리일자 없음 -->
+        , null as stlm_bat_id                <!-- 정산배치ID 없음 -->
+        , null as stlm_id                    <!-- 정산ID 없음 -->
+        , null as stlm_div                   <!-- 정산구분 없음 -->
+        , null as stlm_amt                   <!-- 정산금액 없음 -->
+        , null as prcg_dt                    <!-- 처리일자 없음 -->
+        , null as reg_id                     <!-- 등록자ID 없음 -->
+        , null as reg_dtm                    <!-- 등록일시 없음 -->
+        from tbhxzd222 d222
+        join tbhxzm201 m201
+        on m201.tpw_svc_id = d222.tpw_svc_id
+        and m201.use_yn = 'Y'
+        join tbhxzm202 m202
+        on m202.tpw_svc_id = d222.tpw_svc_id
+        and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+        and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+        where 1=1
+
+        <!-- 실행구분 필터 -->
+        <if test="req.exeDiv != null and req.exeDiv != ''">
+            and 'SIM' = #{req.exeDiv}
+        </if>
+
+        <!-- 검색조건 -->
+        <choose>
+            <!-- 정산일자 검색 -->
+            <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}  <!-- SIM stlmDt = aplDt -->
+            </when>
+
+            <!-- 신청일자 검색 -->
+            <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+        </choose>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                </when>
+                <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </when>
+            </choose>
+        </if>
+        ) sim
+
+        order by sim.${req.sort} ${req.dir}
+        limit #{req.size} offset #{req.page}
+
+
+    </select>
+
+    <select id="readSimStlmListCnt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+
+        <!-- ============================== -->
+        <!-- 2. 시뮬레이션(SIM) 마감확정내역 -->
+        <!-- ============================== -->
+        select
+            count(1)
+        from tbhxzd222 d222
+            join tbhxzm201 m201
+            on m201.tpw_svc_id = d222.tpw_svc_id
+            and m201.use_yn = 'Y'
+            left join tbhxzm202 m202
+            on m202.tpw_svc_id = d222.tpw_svc_id
+            and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+            and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+        where 1=1
+
+        <!-- 실행구분 필터 -->
+        <if test="req.exeDiv != null and req.exeDiv != ''">
+            and 'SIM' = #{req.exeDiv}
+        </if>
+
+        <!-- 검색조건 -->
+        <choose>
+            <!-- 정산일자 검색 -->
+            <when test="req.searchType == 'stlmDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}  <!-- SIM stlmDt = aplDt -->
+            </when>
+
+            <!-- 신청일자 검색 -->
+            <when test="req.searchType == 'aplDt' and req.sttDt != null and req.endDt != null">
+                and d222.apl_dt between #{req.sttDt} and #{req.endDt}
+            </when>
+        </choose>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                </when>
+                <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </when>
+            </choose>
+        </if>
+    </select>
+
+
+    <!-- PERD 수정 -->
+    <update id="updatePerdStlmTakPtByService" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        UPDATE tbhxzd215
+        SET apl_dt = #{aplDt},
+            tpw_trd_stt_dt = #{tpwTrdSttDt},
+            tpw_trd_end_dt = #{tpwTrdEndDt},
+            stlm_dt = #{stlmDt},
+            fix_dt = #{fixDt},
+            clos_cfm_yn = 'N', <!--#{closCfmYn}-->
+            stlm_fix_yn = 'N', <!--#{stlmFixYn}-->
+            acng_prcg_fn_yn = 'N' <!--#{acngPrcgFnYn}-->
+        WHERE tpw_svc_id = #{tpwSvcId}
+        AND tpw_svc_typ_id = #{tpwSvcTypId}
+        AND tpw_svc_typ_sno = #{tpwSvcTypSno}
+    </update>
+
+    <!-- SIM 수정 -->
+    <update id="updateSimStlmTakPtByService" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        update tbhxzd222 set
+            <!-- apl_dt = #{aplDt}, -->
+            apl_dt = to_char(now(), 'YYYYMMDD'),
+            tpw_trd_stt_dt = #{tpwTrdSttDt},
+            tpw_trd_end_dt = #{tpwTrdEndDt},
+            prcg_fn_yn = 'N', <!--#{closCfmYn}-->
+            tpw_svc_id = #{tpwSvcId},
+            tpw_svc_typ_id = #{tpwSvcTypId},
+            tpw_svc_typ_sno = #{tpwSvcTypSno}
+        where tpw_svc_id = #{tpwSvcId}
+            and tpw_svc_typ_id = #{tpwSvcTypId}
+            and tpw_svc_typ_sno = #{tpwSvcTypSno}
+    </update>
+
+
+
+    <insert id="savePerdStlmTakPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        insert into tbhxzd215 (
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            stlm_dt,
+            tpw_svc_id,
+            apl_stt_dt,
+            apl_end_dt,
+            tpw_trd_stt_dt,
+            tpw_trd_end_dt,
+            rgsr_id,
+            rgt_dtm
+        ) values (
+            #{tpwSvcTypId},
+            #{tpwSvcTypSno},
+            <!-- #{stlmDt}, -->
+            to_char(now(), 'YYYYMMDD'), <!--#{req.stlmDt}-->
+            #{tpwSvcId},
+            #{aplSttDt},
+            #{aplEndDt},
+            #{tpwTrdSttDt},
+            #{tpwTrdEndDt},
+            'system' ,<!-- #{req.rgsrId},-->
+            to_char(now(), 'YYYYMMDDHH24MISS') <!--#{req.rgtDtm}-->
+        );
+    </insert>
+
+
+
+    <insert id="saveSimTakPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        insert into tbhxzd222 (
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            apl_dt,
+            tpw_svc_id,
+            tpw_trd_stt_dt,
+            tpw_trd_end_dt,
+            prcg_fn_yn,
+            rgsr_id,
+            rgt_dtm
+        ) values (
+            #{tpwSvcTypId},
+            #{tpwSvcTypSno},
+            <!-- #{aplDt}, -->
+            to_char(now(), 'YYYYMMDD'), <!--#{aplDt}-->
+            #{tpwSvcId},
+            #{tpwTrdSttDt},
+            #{tpwTrdEndDt},
+            #{prcgFnYn},
+            'system' ,<!-- #{rgsrId},-->
+            to_char(now(), 'YYYYMMDDHH24MISS')<!--#{rgtDtm}-->
+        );
+    </insert>
+
+
+    <!-- ========================================= -->
+    <!-- 정기 (perd) 단건 조회 -->
+    <!-- ========================================= -->
+    <select id="findPerdTakPtInf"
+            parameterType="map"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        select
+            'PERD'                   as exeDiv,
+            d215.tpw_svc_typ_id      as tpwSvcTypId,
+            d215.tpw_svc_typ_sno     as tpwSvcTypSno,
+            d215.stlm_dt             as stlmDt,
+            d215.tpw_svc_id          as tpwSvcId,
+            d215.apl_stt_dt          as aplSttDt,
+            d215.apl_end_dt          as aplEndDt,
+            d215.tpw_trd_stt_dt      as tpwTrdSttDt,
+            d215.tpw_trd_end_dt      as tpwTrdEndDt,
+            d215.fix_dt              as fixDt,
+            d215.clos_cfm_yn         as closCfmYn,
+            d215.stlm_fix_yn         as stlmFixYn,
+            d215.acng_prcg_fn_yn     as acngPrcgFnYn,
+            d215.rgsr_id             as rgsrId,
+            d215.rgt_dtm             as rgtDtm,
+            d215.updr_id             as updrId,
+            d215.upd_dtm             as updDtm,
+            m201.tpw_svc_nm          as tpwSvcNm,
+            m202.tpw_svc_typ_nm      as tpwSvcTypNm,
+            (
+            select m009.tpw_org_nm
+                from tbhxzm009 m009
+                    where m009.org_cd = m201.org_cd
+                        and m009.use_yn = 'Y'
+                        limit 1
+            ) as orgNm
+        from tbhxzd215 d215
+            join tbhxzm201 m201
+                on m201.tpw_svc_id = d215.tpw_svc_id
+                and m201.use_yn = 'Y'
+            join tbhxzm202 m202
+                on m202.tpw_svc_id = d215.tpw_svc_id
+                and m202.tpw_svc_typ_id = d215.tpw_svc_typ_id
+                and m202.tpw_svc_typ_sno = d215.tpw_svc_typ_sno
+            where d215.tpw_svc_typ_id = #{tpwSvcTypId}
+                and d215.tpw_svc_typ_sno = #{tpwSvcTypSno}
+                and d215.tpw_svc_id = #{tpwSvcId}
+    </select>
+
+
+    <!-- ========================================= -->
+    <!-- 시뮬레이션 (sim) 단건 조회 -->
+    <!-- ========================================= -->
+    <select id="findSimTakPtInf"
+            parameterType="map"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO">
+        select
+            'SIM'                    as exeDiv,
+            d222.tpw_svc_typ_id      as tpwSvcTypId,
+            d222.tpw_svc_typ_sno     as tpwSvcTypSno,
+            d222.apl_dt              as aplDt,
+            d222.tpw_svc_id          as tpwSvcId,
+            d222.tpw_trd_stt_dt      as tpwTrdSttDt,
+            d222.tpw_trd_end_dt      as tpwTrdEndDt,
+            d222.prcg_fn_yn          as prcgFnYn,
+            d222.rgsr_id             as rgsrId,
+            d222.rgt_dtm             as rgtDtm,
+            d222.updr_id             as updrId,
+            d222.upd_dtm             as updDtm,
+            m201.tpw_svc_nm          as tpwSvcNm,
+            m202.tpw_svc_typ_nm      as tpwSvcTypNm,
+            (
+                select m009.tpw_org_nm
+                    from tbhxzm009 m009
+                        where m009.org_cd = m201.org_cd
+                        and m009.use_yn = 'Y'
+                            limit 1
+            ) as orgNm
+        from tbhxzd222 d222
+            join tbhxzm201 m201
+            on m201.tpw_svc_id = d222.tpw_svc_id
+                and m201.use_yn = 'Y'
+            join tbhxzm202 m202
+                on m202.tpw_svc_id = d222.tpw_svc_id
+                and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+                and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            where d222.tpw_svc_typ_id = #{tpwSvcTypId}
+                and d222.tpw_svc_typ_sno = #{tpwSvcTypSno}
+                and d222.tpw_svc_id = #{tpwSvcId}
+    </select>
+
+    <!-- 수정폼을 위한 셀렉 없는듯? 아니면 위에 단건 셀렉? -->
+    <!-- 
+        if ("SIM".equalsIgnoreCase(exeDiv)) {
+            return stlmTakPtInfMapper.findSimTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv);
+        } else {
+            return stlmTakPtInfMapper.findPerdTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv);
+        }
+    -->
+
+
+
+</mapper>

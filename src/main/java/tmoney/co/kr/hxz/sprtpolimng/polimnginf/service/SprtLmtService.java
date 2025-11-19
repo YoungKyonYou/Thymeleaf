@@ -1,117 +1,40 @@
 package tmoney.co.kr.hxz.sprtpolimng.polimnginf.service;
 
-import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper.SprtLmtMapper;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.InstReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtLmtModReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtInstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntInstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.*;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtDtlRspVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO;
 
 import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+
 
 @RequiredArgsConstructor
 @Service
-public class SprtLmtService {
+public class SprtLmtService  {
 
     private final SprtLmtMapper sprtLmtMapper;
 
-    public SprtLmtModalVO initModal(){
-        return new SprtLmtModalVO(
-                initQuarterList(),
-                initMonList(),
-                initNcntList()
-        );
-    }
+    /**
+     * 지원 한도 내역 조회
+     *
+     * @return SprtLmtRspVO 지원 한도 내역
+     */
 
-    @Transactional(readOnly = true)
-    public SprtLmtModalDtlVO readSprtLmtByTpwSvcTypId(String tpwSvcTypId) {
-        List<SprtLmtRspVO> rows = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, "Y");
-
-        if (rows == null || rows.isEmpty()) {
-            SprtLmtModalVO m = initModal();
-            return new SprtLmtModalDtlVO(m.getQt(), m.getMon(), m.getArr(), "01", "01");
-        }
-
-        String dvs = rows.get(0).getTpwLmtDvsCd(); // 01=금액, 02=건수
-        String typ = rows.get(0).getTpwLmtTypCd(); // 01=월,   02=분기
-
-        if ("02".equals(dvs))
-            return buildCount(rows, dvs, typ);
-        if ("01".equals(typ))
-            return buildAmountMonthly(rows, dvs, typ);
-        return buildAmountQuarterly(rows, dvs, typ);
-    }
-
-    private SprtLmtModalDtlVO buildAmountMonthly(List<SprtLmtRspVO> rows, String dvs, String typ) {
-        List<AmtReqVO> mon = rows.stream()
-                .map(a -> new AmtReqVO(a.getSpfnLmtMngNo(), a.getLmtSttYm(), a.getLmtEndYm(), a.getTgtAdptVal()))
-                .collect(Collectors.toList());
-        return new SprtLmtModalDtlVO(
-                initQuarterList(),
-                mon,
-                initNcntList(),
-                dvs, typ
-        );
-    }
-
-    private SprtLmtModalDtlVO buildAmountQuarterly(List<SprtLmtRspVO> rows, String dvs, String typ) {
-        List<AmtReqVO> qt = rows.stream()
-                .map(a -> new AmtReqVO(a.getSpfnLmtMngNo(), a.getLmtSttYm(), a.getLmtEndYm(), a.getTgtAdptVal()))
-                .collect(Collectors.toList());
-        return new SprtLmtModalDtlVO(
-                qt,
-                initMonList(),
-                initNcntList(),
-                dvs, typ
-        );
-    }
-
-    private SprtLmtModalDtlVO buildCount(List<SprtLmtRspVO> rows, String dvs, String typ) {
-        List<NcntReqVO> ncnt = rows.stream()
-                .map(a -> new NcntReqVO(a.getSpfnLmtMngNo(), a.getMinCndtVal(), a.getMaxCndtVal(), a.getTgtAdptVal()))
-                .collect(Collectors.toList());
-        return new SprtLmtModalDtlVO(
-                initQuarterList(),
-                initMonList(),
-                ncnt,
-                dvs, typ
-        );
-    }
-
-    private List<AmtReqVO> initQuarterList(){
-        return IntStream.range(0, 4)
-                .mapToObj(i -> new AmtReqVO())
-                .collect(Collectors.toList());
-    }
-
-    private List<AmtReqVO> initMonList(){
-        int year = LocalDate.now().getYear();
-        return IntStream.rangeClosed(1, 12)
-                .mapToObj(i -> {
-                    String yyyymm = String.format("%d%02d", year, i);
-                    return new AmtReqVO("", yyyymm, yyyymm, 0);
-                })
-                .collect(Collectors.toList());
-    }
-
-    private List<NcntReqVO> initNcntList() {
-        return IntStream.range(0, 4)
-                .mapToObj(i -> new NcntReqVO())
-                .collect(Collectors.toList());
-    }
-
-    /** 페이징 조회 */
     @Transactional(readOnly = true)
     public PageDataVO<SprtLmtRspVO> readSprtLmtPtPaging(SprtLmtSrchReqVO req) {
         final int offset = req.getPage() * req.getSize();
+
         long total = readSprtLmtPtListCnt(req);
 
         SprtLmtSrchReqVO reqVO = new SprtLmtSrchReqVO(
@@ -120,60 +43,187 @@ public class SprtLmtService {
         );
 
         List<SprtLmtRspVO> content = readSprtLmtPtList(reqVO);
+
         return new PageDataVO<>(content, req.getPage(), req.getSize(), total);
     }
+
 
     @Transactional(readOnly = true)
     public List<SprtLmtRspVO> readSprtLmtPtList(SprtLmtSrchReqVO req) {
         return sprtLmtMapper.readSprtLmtPtList(req);
     }
 
+
     @Transactional(readOnly = true)
     public long readSprtLmtPtListCnt(SprtLmtSrchReqVO req) {
         return sprtLmtMapper.readSprtLmtPtListCnt(req);
     }
+
+
+    @Transactional(readOnly = true)
+    public SprtLmtDtlRspVO readSprtLmtDtl(String tpwSvcTypId, String useYn) {
+        if (tpwSvcTypId == null) {
+            List<SprtLmtRspVO> list = new ArrayList<>();
+            List<SprtLmtReqVO> reqList = new ArrayList<>();
+            return new SprtLmtDtlRspVO(list, reqList, "01", "01", "Y");
+        }
+
+        List<SprtLmtRspVO> sprtLmtDtlList = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, useYn);
+
+        List<SprtLmtReqVO> sprtLmtReqList = new ArrayList<>();
+        for (SprtLmtRspVO a : sprtLmtDtlList) {
+            SprtLmtReqVO b = new SprtLmtReqVO();
+            b.setSpfnLmtMngNo(a.getSpfnLmtMngNo());
+            b.setLmtSttYm(a.getLmtSttYm());
+            b.setLmtEndYm(a.getLmtEndYm());
+            b.setMinCndtVal(a.getMinCndtVal());
+            b.setMaxCndtVal(a.getMaxCndtVal());
+            b.setTgtAdptVal(a.getTgtAdptVal());
+            sprtLmtReqList.add(b);
+        }
+
+        return new SprtLmtDtlRspVO(
+                sprtLmtDtlList,
+                sprtLmtReqList,
+                sprtLmtDtlList.get(0).getTpwLmtDvsCd(),
+                sprtLmtDtlList.get(0).getTpwLmtTypCd(),
+                sprtLmtDtlList.get(0).getUseYn()
+        );
+    }
+
 
     @Transactional(readOnly = true)
     public List<SprtLmtRspVO> readSprtLmtDtlByTpwSvcTypId(String tpwSvcTypId, String useYn) {
         return sprtLmtMapper.readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, useYn);
     }
 
+
     @Transactional
-    public void updateSprtLmtUseYn(String tpwSvcTypId) {
-        sprtLmtMapper.updateSprtLmtUseYn(tpwSvcTypId);
+    public void insertSprtLmtAmt(AmtInstReqVO req) {
+        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(req.getTpwSvcTypId(), "Y");
+
+        List<SprtLmtReqVO> list = new ArrayList<>();
+        if (resList.isEmpty()) {
+            long num = Long.parseLong(readSpfnLmtMngNoNextVal());
+            for (AmtReqVO a : req.getList()) {
+                num += 1;
+                SprtLmtReqVO reqVO = new SprtLmtReqVO(
+                        req.getTpwSvcId(),
+                        req.getTpwSvcTypId(),
+                        String.format("%010d", num),
+                        "0000000001",
+                        "01",
+                        req.getTpwLmtTypCd(),
+                        a.getLmtSttYm(),
+                        a.getLmtEndYm(),
+                        0,
+                        0,
+                        a.getTgtAdptVal(),
+                        "Y"
+                );
+                list.add(reqVO);
+            }
+            insertSprtLmt(list);
+        } else {
+            // 에러 메시지(기존 데이터 존재)
+        }
     }
 
-    /** insert 메인 (유형 분기) */
+
     @Transactional
-    public void insertSprtLmtAmt(InstReqVO req) {
-        if (req == null) return;
+    public void updateSprtLmtAmt(List<AmtReqVO> req, String tpwSvcTypId) {
+        List<String> updList = new ArrayList<>();
+        List<SprtLmtReqVO> list = new ArrayList<>();
+        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, "Y");
+        SprtLmtRspVO res = resList.get(resList.size() - 1);
 
-        List<SprtLmtRspVO> existing = readSprtLmtDtlByTpwSvcTypId(req.getTpwSvcTypId(), "Y");
-        boolean hasExisting = !existing.isEmpty();
-
-        // 월(01) → 종료월 = 시작월
-        if ("01".equals(req.getTpwLmtTypCd()) && req.getAmtList() != null) {
-            req.getAmtList().forEach(a -> a.setLmtEndYm(a.getLmtSttYm()));
+        for (AmtReqVO a : req) {
+            SprtLmtReqVO reqVO = new SprtLmtReqVO(
+                    res.getTpwSvcId(),
+                    tpwSvcTypId,
+                    a.getSpfnLmtMngNo(),
+                    readSpfnLmtSnoNextVal(res.getSpfnLmtSno()),
+                    res.getTpwLmtDvsCd(),
+                    res.getTpwLmtTypCd(),
+                    a.getLmtSttYm(),
+                    a.getLmtEndYm(),
+                    0,
+                    0,
+                    a.getTgtAdptVal(),
+                    "Y"
+            );
+            updList.add(a.getSpfnLmtMngNo());
+            list.add(reqVO);
         }
 
-        // 통합 빌더 호출
-        List<SprtLmtReqVO> toInsert = buildInserts(req, existing, hasExisting);
-        if (toInsert.isEmpty())
-            return;
-
-        if (hasExisting)
-            updateSprtLmtUseYn(req.getTpwSvcTypId());
-        insertSprtLmt(toInsert);
+        updatePrevSprtLmt(updList, tpwSvcTypId);
+        insertNextSprtLmt(list, tpwSvcTypId);
     }
 
-    private String currentYYYYMM() {
-        LocalDate now = LocalDate.now();
-        return String.format("%04d%02d", now.getYear(), now.getMonthValue());
+
+    @Transactional
+    public void insertSprtLmtNcnt(NcntInstReqVO req) {
+        List<SprtLmtReqVO> list = new ArrayList<>();
+        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(req.getTpwSvcTypId(), "Y");
+        int year = LocalDate.now().getYear();
+        int month = LocalDate.now().getMonthValue();
+        String yyyymm = String.format("%d%02d", year, month);
+
+        if (resList.isEmpty()) {
+            long num = Long.parseLong(readSpfnLmtMngNoNextVal());
+            for (NcntReqVO a : req.getList()) {
+                num += 1;
+                SprtLmtReqVO reqVO = new SprtLmtReqVO(
+                        req.getTpwSvcId(),
+                        req.getTpwSvcTypId(),
+                        String.format("%010d", num),
+                        "0000000001",
+                        "02",
+                        "01",
+                        yyyymm,
+                        yyyymm,
+                        a.getMinCndtVal(),
+                        a.getMaxCndtVal(),
+                        a.getTgtAdptVal(),
+                        "Y"
+                );
+                list.add(reqVO);
+            }
+            insertSprtLmt(list);
+        } else {
+            // 기존 데이터 존재
+        }
     }
 
-    @Transactional(readOnly = true)
-    public List<String> readNextMngNo(int count){
-        return sprtLmtMapper.readNextMngNo(count);
+
+    @Transactional
+    public void updateSprtLmtNcnt(List<NcntReqVO> req, String tpwSvcTypId) {
+        List<String> updList = new ArrayList<>();
+        List<SprtLmtReqVO> list = new ArrayList<>();
+        List<SprtLmtRspVO> resList = readSprtLmtDtlByTpwSvcTypId(tpwSvcTypId, "Y");
+        SprtLmtRspVO res = resList.get(resList.size() - 1);
+
+        for (NcntReqVO a : req) {
+            SprtLmtReqVO reqVO = new SprtLmtReqVO(
+                    res.getTpwSvcId(),
+                    tpwSvcTypId,
+                    a.getSpfnLmtMngNo(),
+                    readSpfnLmtSnoNextVal(res.getSpfnLmtSno()),
+                    res.getTpwLmtDvsCd(),
+                    res.getTpwLmtTypCd(),
+                    res.getLmtSttYm(),
+                    res.getLmtEndYm(),
+                    a.getMinCndtVal(),
+                    a.getMaxCndtVal(),
+                    a.getTgtAdptVal(),
+                    "Y"
+            );
+            updList.add(a.getSpfnLmtMngNo());
+            list.add(reqVO);
+        }
+
+        updatePrevSprtLmt(updList, tpwSvcTypId);
+        insertNextSprtLmt(list, tpwSvcTypId);
     }
 
     @Transactional
@@ -181,102 +231,23 @@ public class SprtLmtService {
         sprtLmtMapper.insertSprtLmt(req);
     }
 
+    @Transactional
+    public void updatePrevSprtLmt(List<String> req, String tpwSvcTypId) {
+        sprtLmtMapper.updatePrevSprtLmt(req, tpwSvcTypId);
+    }
+
+    @Transactional
+    public void insertNextSprtLmt(List<SprtLmtReqVO> req, String tpwSvcTypId) {
+        sprtLmtMapper.insertNextSprtLmt(req, tpwSvcTypId);
+    }
+
+    @Transactional(readOnly = true)
+    public String readSpfnLmtMngNoNextVal() {
+        return sprtLmtMapper.readSpfnLmtMngNoNextVal();
+    }
+
     @Transactional(readOnly = true)
     public String readSpfnLmtSnoNextVal(String spfnLmtSno) {
         return sprtLmtMapper.readSpfnLmtSnoNextVal(spfnLmtSno);
     }
-
-    @Transactional
-    public void updateTrdNcntLtnAdptYn(String tpwSvcTypId, String adptYn) {
-        sprtLmtMapper.updateTrdNcntLtnAdptYn(tpwSvcTypId, adptYn);
-    }
-
-    private void ensureEndYmForMonthly(InstReqVO req) {
-        if ("01".equals(req.getTpwLmtTypCd()) && req.getAmtList() != null) {
-            req.getAmtList().forEach(a -> a.setLmtEndYm(a.getLmtSttYm()));
-        }
-    }
-
-    private Deque<String> prepareMngNoPool(boolean reuse, List<SprtLmtRspVO> existing, int needCount) {
-        if (reuse) {
-            return existing.stream()
-                    .map(SprtLmtRspVO::getSpfnLmtMngNo)
-                    .collect(Collectors.toCollection(ArrayDeque::new));
-        }
-        return new ArrayDeque<>(readNextMngNo(needCount));
-    }
-
-    /** 금액/건수 공통 insert 빌더 (단일 함수) */
-    private List<SprtLmtReqVO> buildInserts(InstReqVO req, List<SprtLmtRspVO> existing, boolean hasExisting) {
-        final String dvs = req.getTpwLmtDvsCd();           // 01=금액, 02=건수
-        final boolean isAmount = "01".equals(dvs);
-
-        final List<AmtReqVO>  amtSrc  = Optional.ofNullable(req.getAmtList()).orElse(Collections.emptyList());
-        final List<NcntReqVO> ncntSrc = Optional.ofNullable(req.getNcntList()).orElse(Collections.emptyList());
-        final int needCount = isAmount ? amtSrc.size() : ncntSrc.size();
-        if (needCount == 0) return Collections.emptyList();
-
-        final String curDvs  = hasExisting ? existing.get(0).getTpwLmtDvsCd() : null;
-        final String curTyp  = hasExisting ? existing.get(0).getTpwLmtTypCd() : null;
-        final String nextTyp = isAmount
-                ? req.getTpwLmtTypCd()                                        // 금액: 01=월, 02=분기
-                : Optional.ofNullable(req.getTpwLmtTypCd()).orElse(curTyp != null ? curTyp : "02"); // 건수: 기존/기본 유지
-
-        // ----- mngNo 풀 구성 -----
-        final Deque<String> mngNoPool;
-        if (isAmount) {
-            // 금액은 동일 유형(금액/월·분기)일 때만 재사용, 아니면 전량 신규
-            final boolean reuseMngNo = hasExisting && Objects.equals(curDvs, dvs) && Objects.equals(curTyp, nextTyp);
-            mngNoPool = prepareMngNoPool(reuseMngNo, existing, needCount);
-        } else {
-            //  건수는 행추가/행삭제가 있어 재사용 금지: 매번 needCount만큼 "신규 채번"
-            mngNoPool = new ArrayDeque<>(readNextMngNo(needCount));
-        }
-
-        // ----- SNO (주의: 현재는 한 건만 사용) -----
-        // 권장: readNextSnos(needCount)로 선채번하여 Iterator로 소비 (동시성 안전)
-        String nextSno = hasExisting
-                ? readSpfnLmtSnoNextVal(existing.get(existing.size() - 1).getSpfnLmtSno())
-                : "0000000001";
-
-        // 건수 한도의 기간(YYYYMM): 신규는 당월, 기존 있으면 유지
-        final String nowYm = currentYYYYMM();
-        final String sttYmForCount = hasExisting ? existing.get(0).getLmtSttYm() : nowYm;
-        final String endYmForCount = hasExisting ? existing.get(0).getLmtEndYm() : nowYm;
-
-        final List<SprtLmtReqVO> out = new ArrayList<>(needCount);
-
-        if (isAmount) {
-            for (AmtReqVO a : amtSrc) {
-                final String mngNo = mngNoPool.removeFirst();
-                final String sno   = nextSno;
-
-                out.add(new SprtLmtReqVO(
-                        req.getTpwSvcId(), req.getTpwSvcTypId(),
-                        mngNo, sno,
-                        "01", nextTyp,               // 금액 / (월|분기)
-                        a.getLmtSttYm(), a.getLmtEndYm(),
-                        0, 0, a.getTgtAdptVal(),
-                        "Y"
-                ));
-            }
-        } else {
-            for (NcntReqVO n : ncntSrc) {
-                final String mngNo = mngNoPool.removeFirst();
-                final String sno   = nextSno;
-                updateTrdNcntLtnAdptYn(req.getTpwSvcTypId(), "Y");
-
-                out.add(new SprtLmtReqVO(
-                        req.getTpwSvcId(), req.getTpwSvcTypId(),
-                        mngNo, sno,
-                        "02", nextTyp,               // 건수
-                        sttYmForCount, endYmForCount,
-                        n.getMinCndtVal(), n.getMaxCndtVal(), n.getTgtAdptVal(),
-                        "Y"
-                ));
-            }
-        }
-        return out;
-    }
-
 }

@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<!-- 공통 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <section class="section" id="grid">
+            <div class="section-header" >
+                <form id="search-form" th:object="${req}" method="get">
+                    <div class="title-wrap">
+                        <h3 class="section-title">정산 작업 내역 조회</h3>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">기간검색</p>
+                            <div class="dropdown" data-name="searchType">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="기간검색 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="" th:data-text="*{searchType}">
+                                        </span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="stlmDt">정산일자</li>
+                                    <li role="option" class="dropdown_option" data-value="fixDt">확정일자</li>
+                                    <li role="option" class="dropdown_option" data-value="aplDt">신청기간</li>
+                                </ul>
+                                <input type="hidden" th:field="*{searchType}">
+                            </div>
+                        </div>
+
+                        <div class="box">
+                            <p class="field-title">기간</p>
+                            <div class="flex align-center col-">
+                                <div class="date-field">
+                                    <input type="text" id="startDate" th:field="*{sttDt}" class="text-field date-text">
+                                </div>
+                                <span>~</span>
+                                <div class="date-field">
+                                    <input type="text" id="endDate" th:field="*{endDt}" class="text-field date-text">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 선택</p>
+                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
+                                'svcPair1','tpwSvcId','tpwSvcTypId'
+                            )}"></th:block>
+                        </div>
+
+                        <div class="box">
+                            <p class="field-title">실행구분</p>
+                            <div class="dropdown" data-name="exeDiv">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="실행구분 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="" th:data-value="${exeDiv}" th:text="${exeDiv == 'PERD' ? '정기' : '시뮬레이션'}"></span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="PERD">정기</li>
+                                    <li role="option" class="dropdown_option" data-value="SIM">시뮬레이션</li>
+                                </ul>
+                                <input type="hidden" th:field="*{exeDiv}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <button type="button" class="btn btn-primary btn-icon-left"
+                        data-export="xlsx" data-provider="">
+                            엑셀 다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
+                        <button id="search-btn" class="btn btn-primary btn-icon-left" type="button">
+                            검색
+                            <i class="icon icon-search"></i>
+                        </button>
+                    </div>
+
+                    <input  th:field="*{sort}" type="hidden" />
+                    <input  th:field="*{dir}" type="hidden" />
+
+                </form>
+
+            <div class="section-content">
+                <div class="flex justify-space-between"
+                    th:with="isPerd=${exeDiv == 'PERD'}, isSim=${exeDiv == 'SIM'}">
+                <b th:if="${isPerd}"
+                    th:text="'[정기 정산 결과] 검색결과 : ' + (${pageData != null} ? ${pageData.total} : 0) + '건'"></b>
+                <b th:if="${isSim}"
+                    th:text="'[시뮬레이션 결과] 검색결과 : ' + (${pageData != null} ? ${pageData.total} : 0) + '건'"></b>
+                <b th:if="${!isPerd and !isSim}"
+                    th:text="'검색결과 : ' + (${pageData != null} ? ${pageData.total} : 0) + '건'"></b>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table class="table">
+                        <caption class="blind">정산 작업 목록 테이블</caption>
+                        
+                        <thead th:with="isPerd=${exeDiv == 'PERD'}, isSim=${exeDiv == 'SIM'}">
+                            <tr>
+                                <th scope="col">구분</th>
+                                <th class="sort-header" scope="col"><a data-sort="org_nme">기관명</a></th>
+                                <th class="sort-header" scope="col"><a data-sort="svc_nm">서비스명</a></th>
+                                <th class="sort-header" scope="col"><a data-sort="svc_typ_nm">서비스유형명</a></th>
+                                <th class="sort-header" scope="col"><a data-sort="tpw_svc_typ_sno">서비스유형번호</a></th>
+
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="apl_stt_dt">신청 시작일자</a></th>
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="apl_end_dt">신청 종료일자</a></th>
+
+                                <th class="sort-header" scope="col" th:if="${isSim}"><a data-sort="apl_dt">적용일자</a></th> 
+
+                                <th class="sort-header" scope="col"><a data-sort="tpw_trd_stt_dt">거래 시작일자</a></th>
+                                <th class="sort-header" scope="col"><a data-sort="tpw_trd_end_dt">거래 종료일자</a></th>
+
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="fix_dt">확정일자</a></th>
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="stlm_dt">정산일자</a></th>
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="clos_cfm_yn">마감확인여부</a></th>
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="stlm_fix_yn">정산확정여부</a></th>
+                                <th class="sort-header" scope="col" th:if="${isPerd}"><a data-sort="acng_prcg_fn_yn">회계처리완료여부</a></th>
+                                
+                                <th class="sort-header" scope="col" th:if="${isSim}"><a data-sort="prcg_fn_yn">처리완료여부</a></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="grid-body" th:with="isPerd=${exeDiv == 'PERD'}, isSim=${exeDiv == 'SIM'}">
+                            <th:block th:if="${pageData != null and !#lists.isEmpty(pageData.content)}">
+                                <th:block th:each="u, stat : ${pageData.content}" 
+                                        th:with="base=${(pageData.page)} * ${pageData.size}" 
+                                        th:object="${u}">
+                                    <tr>
+                                        <input type="hidden" name="tpwSvcTypId" th:value="*{tpwSvcTypId}">
+                                        <input type="hidden" name="tpwSvcTypSno" th:value="*{tpwSvcTypSno}">
+                                        <input type="hidden" name="exeDiv" th:value="*{exeDiv}">
+                                        <input type="hidden" name="tpwSvcId" th:value="*{tpwSvcId}">
+                                        <td th:text="${base + stat.index + 1}">1</td>
+                                        <td th:text="*{orgNm}">기관명</td>
+                                        <td th:text="*{tpwSvcNm}">서비스</td>
+                                        <td th:text="*{tpwSvcTypNm}">서비스유형</td>
+                                        <td th:text="*{tpwSvcTypSno}">서비스유형번호</td>
+
+                                        <td th:if="${isPerd}" th:text="*{aplSttDt}">신청 시작일자</td>
+                                        <td th:if="${isPerd}" th:text="*{aplEndDt}">신청 종료일자</td>
+                                        
+                                        <td th:if="${isSim}" th:text="*{aplDt}">적용일자</td> 
+                                        
+                                        <td th:text="*{tpwTrdSttDt}">거래 시작일자</td>
+                                        <td th:text="*{tpwTrdEndDt}">거래 종료일자</td>
+
+                                        <td th:if="${isPerd}" th:text="*{fixDt}">확정일자</td>
+                                        <td th:if="${isPerd}" th:text="*{stlmDt}">정산일자</td>
+                                        <td th:if="${isPerd}" th:text="*{closCfmYn}">마감확인여부</td>
+                                        <td th:if="${isPerd}" th:text="*{stlmFixYn}">정산확정여부</td>
+                                        <td th:if="${isPerd}" th:text="*{acngPrcgFnYn}">회계처리완료여부</td>
+                                        
+                                        <td th:if="${isSim}" th:text="*{prcgFnYn}">처리완료여부</td>
+                                    </tr>
+                                </th:block>
+                            </th:block>
+
+                            <tr th:if="${pageData == null or #lists.isEmpty(pageData.content)}">
+                                <td th:attr="colspan=${isPerd} ? 14 : 9" class="text-center">조회된 데이터가 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt20"  id="grid-pager">
+                    <button type="button" class="btn btn-primary" onclick="location.href='/spfnsprtmng/payinf/new'">
+                        신규등록
+                    </button>
+
+                </div>
+
+                <div class="mt20">
+                    <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
+                        <button type="button" class="pager-btn prev" aria-label="이전 페이지">Prev</button>
+                        <div class="pager-list">
+                            <button type="button" class="pager-item is-active" aria-current="page">1</button>
+                            <button type="button" class="pager-item">2</button>
+                            <button type="button" class="pager-item">3</button>
+                            <button type="button" class="pager-item">4</button>
+                            <button type="button" class="pager-item">5</button>
+                        </div>
+                        <button type="button" class="pager-btn next" aria-label="다음 페이지">Next</button>
+                    </div>
+                </div>
+            </div>
+
+
+            </div>
+        </section>
+
+        <!-- jQuery datepicker 제거 → 바닐라 JS로 대체 -->
+
+        <script th:inline="javascript" id="zzzzz">
+            /*<![CDATA[*/
+            const tpwSvcId = /*[[${req.tpwSvcId}]]*/ '0';
+            const tpwSvcTypId = /*[[${req.tpwSvcTypId}]]*/ '0';
+            const exeDiv = /*[[${req.exeDiv}]]*/ '0';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                setTimeout(function(){
+                    const root = document.getElementById('svcPair1');
+                    console.log(root)
+                    console.log(root.selectByValues)
+                    root.selectByValues(tpwSvcId, tpwSvcTypId);
+                }, 500);
+            });
+            /*]]>*/
+        </script>
+
+
+        <script>
+
+            // 숫자 유틸
+            const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var ids = ['startDate', 'endDate'];
+                for (var i = 0; i < ids.length; i++) {
+                    var el = document.getElementById(ids[i]);
+                    if (el) el.type = 'date'; // 브라우저 기본 날짜 피커 사용
+                }
+
+                // 줄 누르면 이동
+                // /spfnsprtmng/payinf/edit?tpwSvcTypId=DISCNT&tpwSvcTypSno=3&exeDiv=SIM
+                const rows = document.querySelectorAll('#grid-body tr');
+                for (const tr of rows) {
+                    tr.addEventListener('click', function(e){
+    
+                        const currentTr = e.target.closest('tr');
+                        const tpwsvcTypId = currentTr.querySelector('[name="tpwSvcTypId"]').value;
+                        const tpwSvcTypSno = currentTr.querySelector('[name="tpwSvcTypSno"]').value;
+                        const exeDiv = currentTr.querySelector('[name="exeDiv"]').value;
+                        const tpwSvcId = currentTr.querySelector('[name="tpwSvcId"]').value;
+
+                        // and d222.tpw_svc_id = #{tpwSvcId}
+    
+                        const url = `/spfnsprtmng/payinf/edit?tpwSvcTypId=${tpwsvcTypId}&tpwSvcTypSno=${tpwSvcTypSno}&exeDiv=${exeDiv}&tpwSvcId=${tpwSvcId}`;
+                        location.href = url;
+                    });
+                }
+            });
+
+
+            // const html = await Common.fetchHtml('/spfnsprtmng/payinf/stlmTakPtInf.do');
+
+
+            const form = document.querySelector('#search-form');
+            const searchBtn = document.querySelector('#search-btn');
+            searchBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                // sanitizeBeforeSubmit(form);
+                const dateColumn = ['endDt','sttDt'];
+                const data = Common.collectFromForm(form);
+
+                for (const k in data) {
+                    if ( dateColumn.includes(k) )
+                        data[k] = onlyDigits(data[k]);
+                }
+
+                const url = '/spfnsprtmng/payinf/stlmTakPtInf.do?' + new URLSearchParams(data).toString();
+                location.href = url;
+                // const html = await Common.fetchHtml('/spfnsprtmng/payinf/stlmTakPtInf.do');
+                // console.log(html);
+            });
+
+        </script>
+
+        <!-- 공통 푸터 -->
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+    </th:block>
+</th:block>
+</html>

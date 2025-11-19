@@ -7,11 +7,13 @@ import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 public class SimPtInfReqVO {
 
-    @Size(max = 7, message = "기관코드는 7 이하의 ㅣㄹ이어야 합니다.")
+    @Size(max = 7, message = "기관코드는 7 이하의 값이어야 합니다.")
     private String orgCd; //  기관코드
 
     @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.")
@@ -36,7 +38,7 @@ public class SimPtInfReqVO {
     private String tpwSvcTypId;        // 서비스유형ID
 
     @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.")
-    private String tpwSvcTypSno;       // 서비스유형일련번호
+    private BigDecimal tpwSvcTypSno;       // 서비스유형일련번호
 
     @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.")
     private int page = 0;
@@ -49,8 +51,40 @@ public class SimPtInfReqVO {
     private String sort = "mbrs_id";
     private String dir = "asc";
 
-    public SimPtInfReqVO(String orgCd, @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.") String sttDt, @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.") String endDt, @Size(max = 100, message = "카드번호는 100자리 이하의 길이어야 합니다.") String cardNo, @Size(max = 500, message = "서비스명은 500자리 이하의 길이어야 합니다.") String svcNm, @Size(max = 100, message = "서비스유형은 100자리 이하의 길이어야 합니다.") String svcTypNm, @Size(max = 7, message = "서비스ID는 7자리 이하의 길이어야 합니다.") String tpwSvcId, @Size(max = 10, message = "서비스유형ID는 10자리 이하의 길이어야 합니다.") String tpwSvcTypId, @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.") String tpwSvcTypSno, int offset, @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.") int page, @Positive(message =  "페이지 값은 0보다 커야 합니다.") int size, @Size(max = 10, message = "정랼값의 문자열 길이는  500자리 이하의 길이어야 합니다.") String sort, String dir) {
+    public SimPtInfReqVO(
+            String orgCd,
+            @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.") String sttDt,
+            @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.") String endDt,
+            @Size(max = 100, message = "카드번호는 100자리 이하의 길이어야 합니다.") String cardNo,
+            @Size(max = 500, message = "서비스명은 500자리 이하의 길이어야 합니다.") String svcNm,
+            @Size(max = 100, message = "서비스유형은 100자리 이하의 길이어야 합니다.") String svcTypNm,
+            @Size(max = 7, message = "서비스ID는 7자리 이하의 길이어야 합니다.") String tpwSvcId,
+            @Size(max = 10, message = "서비스유형ID는 10자리 이하의 길이어야 합니다.") String tpwSvcTypId,
+            @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.") BigDecimal tpwSvcTypSno,
+            int offset,
+            @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.") int page,
+            @Positive(message = "페이지 값은 0보다 커야 합니다.") int size,
+            @Size(max = 10, message = "정렬값의 문자열 길이는 10자리 이하의 길이어야 합니다.") String sort,
+            String dir
+    )
+    {
+        this.orgCd = orgCd;
+        this.sttDt = sttDt;
+        this.endDt = endDt;
+        this.cardNo = cardNo;
+        this.svcNm = svcNm;
+        this.svcTypNm = svcTypNm;
+        this.tpwSvcId = tpwSvcId;
+        this.tpwSvcTypId = tpwSvcTypId;
+        this.tpwSvcTypSno = tpwSvcTypSno;
+//        this.offset = offset;
+        this.page = page;
+        this.size = size;
+        this.sort = sort;
+        this.dir = dir;
     }
+
+    public SimPtInfReqVO(){}
 
     public void updateDefaultDate(String startDate, String endDate) {
         this.sttDt = startDate;
