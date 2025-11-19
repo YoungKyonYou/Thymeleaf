@@ -1,19 +1,26 @@
 // src/main/java/com/example/thymeleaf/file/controller/FileController.java
-package tmoney.co.kr.file.controller;
+package tmoney.co.kr.hxz.common.file.controller;
 
-import tmoney.co.kr.file.service.FileStorageService;
+import org.springframework.http.*;
+import org.springframework.util.StringUtils;
+import tmoney.co.kr.hxz.common.file.domain.FilesStorageProperties;
+import tmoney.co.kr.hxz.common.file.service.AttachmentService;
+import tmoney.co.kr.hxz.common.file.service.FileStorageService;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tmoney.co.kr.hxz.common.file.vo.AttachmentVO;
 
+import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
@@ -23,7 +30,8 @@ import java.util.List;
 public class FileController {
 
     private final FileStorageService storageService;
-
+    private final FilesStorageProperties filesStorageProperties;
+    private final AttachmentService attachmentService;
     /** 최초 진입 화면 */
     @GetMapping("/file/upload")
     public String uploadForm(Model model) {
@@ -89,5 +97,48 @@ public class FileController {
     @ResponseBody
     public List<String> listJson() {
         return storageService.listFilenames().collect(Collectors.toList());
+    }
+
+
+
+    @ResponseBody
+    @GetMapping("/attachments/{orgCd}/{atflMngNo}/preview")
+    public ResponseEntity<Resource> preview(@PathVariable("orgCd") String orgCd,
+                                            @PathVariable("atflMngNo") Long atflMngNo,
+                                            HttpServletRequest request) throws IOException {
+
+        // 1) 메타데이터 조회 (여기서 권한 체크도 같이 하는 게 보통)
+        AttachmentVO attachment = attachmentService.getAttachment(orgCd, atflMngNo);
+
+
+        // 2) 실제 파일 Resource
+        Resource resource = attachmentService.loadAsResource(attachment);
+
+        // 3) Content-Type 추론
+        String contentType = null;
+        try {
+            String baseDir = filesStorageProperties.getBaseDir();
+            Path root = Paths.get(baseDir).toAbsolutePath().normalize();
+            Path filePath = root.resolve(attachment.getAtflPathNm()).normalize();
+            contentType = Files.probeContentType(filePath);
+        } catch (IOException ex) {
+            // 무시하고 기본값 사용
+        }
+        if (!StringUtils.hasText(contentType)) {
+            contentType = "application/octet-stream";
+        }
+
+        // 4) 브라우저에서 "미리보기" 되도록 inline
+        String encodedFileName = URLEncoder.encode(
+                        attachment.getOrglAtflNm(),
+                        StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
+
+        String contentDisposition = "inline; filename=\"" + encodedFileName + "\";";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(resource);
     }
 }

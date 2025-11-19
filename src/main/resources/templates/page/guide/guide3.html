@@ -50,6 +50,76 @@
         </div>
 
     </div>
+    <th:block th:replace="~{common/fragment/dropdowns ::
+    cascadingDropdown('svcDropdownRoot', 'tpwSvcId', 'tpwSvcTypId', true)}">
+    </th:block>
+
+    <button type="button" id="btnDumpSvc2">선택값 콘솔 출력(2단)</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          var root = document.getElementById('svcDropdownRoot');
+
+          // 준비 완료
+          root.addEventListener('cascading:ready', function () {
+            console.log('[2단] ready payload:', root.cascadingData);
+          });
+
+          // 변경될 때마다
+          root.addEventListener('cascading:change', function (e) {
+            console.log('[2단] change event:', e.detail, root.getSelectedObjects());
+          });
+
+          // 버튼 클릭 시 현재 선택값 확인
+          document.getElementById('btnDumpSvc2').addEventListener('click', function () {
+            var sel = root.getSelectedObjects();
+            console.log('[2단] getSelectedObjects:', sel);
+            // sel 구조:
+            // {
+            //   rootId, parentId, childId,
+            //   parent: {...}, child: {...},
+            //   validParent: true/false,
+            //   validChild : true/false,
+            //   valid      : true/false (둘 다 선택되었는지)
+            // }
+          });
+        });
+    </script>
+    <th:block th:replace="~{common/fragment/dropdowns ::
+    cascadingDropdown('svcOnlyRoot', 'tpwSvcId', 'tpwSvcTypId', false)}">
+    </th:block>
+
+    <button type="button" id="btnDumpSvc1">선택값 콘솔 출력(1단)</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          var root = document.getElementById('svcOnlyRoot');
+
+          // 준비 완료
+          root.addEventListener('cascading:ready', function () {
+            console.log('[1단] ready payload:', root.cascadingData);
+          });
+
+          // 부모 선택이 바뀔 때마다 호출됨 (level='parent')
+          root.addEventListener('cascading:change', function (e) {
+            console.log('[1단] change event:', e.detail, root.getSelectedObjects());
+          });
+
+          // 버튼 클릭 시 현재 선택값 확인
+          document.getElementById('btnDumpSvc1').addEventListener('click', function () {
+            var sel = root.getSelectedObjects();
+            console.log('[1단] getSelectedObjects:', sel);
+            // 1단 모드에서는:
+            // sel.parentId   : 선택된 서비스 ID
+            // sel.childId    : '' (빈 문자열)
+            // sel.parent     : 서비스 객체
+            // sel.child      : null
+            // sel.validParent: true/false
+            // sel.validChild : false
+            // sel.valid      : false (child까지 채워진 케이스만 true 유지 → 기존 로직과 충돌 안 나게)
+          });
+        });
+    </script>
 
     <!-- textfield -->
     <div class="spacer"></div>
