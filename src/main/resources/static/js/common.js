@@ -1,4 +1,3 @@
-
 (function (global) {
     'use strict'
 
@@ -47,7 +46,7 @@
     //     window.__JQ_PERIOD_FIXED__ = window.__JQ_PERIOD_FIXED__ || false;
     //     if (window.__JQ_PERIOD_FIXED__) return;
     //     window.__JQ_PERIOD_FIXED__ = true;
-
+    //
     //     $("#sttDt, #endDt").datepicker({
     //         dateFormat: "yy-mm-dd",
     //         changeMonth: true,
@@ -61,103 +60,103 @@
     // }
     // initDatePicker();
 
-/**
- * 엑셀 Import 공통 바인딩
- *
- * @param {HTMLInputElement} fileInput  엑셀 업로드 <input type="file">
- * @param {string} provider             서버측 ImportProvider name (ex: "user")
- * @param {function(Object[]):void} onSuccessRows   rows 콜백 (그리드 갱신용)
- * @param {function(Object[]):void} onErrors        에러 콜백 (에러표시용)
- * @param {Object} extraParams          추가 파라미터 (필요시)
- */
-async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, extraParams) {
-    if (!fileInput) return;
+    /**
+     * 엑셀 Import 공통 바인딩
+     *
+     * @param {HTMLInputElement} fileInput  엑셀 업로드 <input type="file">
+     * @param {string} provider             서버측 ImportProvider name (ex: "user")
+     * @param {function(Object[]):void} onSuccessRows   rows 콜백 (그리드 갱신용)
+     * @param {function(Object[]):void} onErrors        에러 콜백 (에러표시용)
+     * @param {Object} extraParams          추가 파라미터 (필요시)
+     */
+    async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, extraParams) {
+        if (!fileInput) return;
 
-    // 한 번이라도 성공적으로 업로드 했는지 여부
-    let hasUploadedOnce = false;
+        // 한 번이라도 성공적으로 업로드 했는지 여부
+        let hasUploadedOnce = false;
 
-    // 실제 업로드 수행 로직을 함수로 분리
-    async function doUpload(file) {
-        const form = new FormData();
-        form.append('provider', provider);
-        form.append('file', file);
+        // 실제 업로드 수행 로직을 함수로 분리
+        async function doUpload(file) {
+            const form = new FormData();
+            form.append('provider', provider);
+            form.append('file', file);
 
-        if (extraParams) {
-            Object.entries(extraParams).forEach(([k, v]) => {
-                form.append(k, v);
-            });
-        }
-
-        const res = await sendSafe('/import/xlsx', {
-            method: 'POST',
-            data: form,
-            multipart : true
-        });
-
-        // Abort 된 경우(null)나, 에러(ok=false)는 여기서 그냥 종료
-        if (!res || !res.ok) {
-            // sendSafe 안에서 이미 모달을 띄웠으므로 추가 처리 없이 리턴
-            fileInput.value = '';   // 그래도 다시 선택 가능하게 리셋
-            return;
-        }
-
-        // sendSafe OK → res.data 에 JSON 이 들어있다고 가정
-        const json = res.data;
-        // json = { rows: [...], errors: [...], totalRows, successRows, errorRows }
-
-        if (onSuccessRows && Array.isArray(json.rows)) {
-            onSuccessRows(json.rows);
-        }
-
-        if (onErrors && Array.isArray(json.errors)) {
-            onErrors(json.errors);
-        }
-
-        // 기본 로그/알림
-        if (json.errorRows && json.errorRows > 0) {
-            console.warn('Import errors: ', json.errors);
-            modalShow({
-                title: '알림',
-                message: `총 ${json.totalRows}건 중 ${json.successRows}건 성공, ${json.errorRows}건 실패했습니다.`
-            });
-        }
-
-        // 여기까지 왔으면 적어도 한 번은 업로드 성공으로 취급
-        hasUploadedOnce = true;
-
-        // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 value 리셋
-        fileInput.value = '';
-    }
-
-    fileInput.addEventListener('change', function () {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-
-        // 아직 한 번도 업로드 안 했으면 바로 업로드
-        if (!hasUploadedOnce) {
-            doUpload(file).catch(console.error);
-            return;
-        }
-
-        // 이미 업로드한 적이 있으면 모달로 한 번 더 확인
-        modalShow({
-            title: '확인',
-            message: '이미 데이터를 한 번 업로드했습니다.\n기존 내용을 지우고 다시 업로드하시겠습니까?',
-            buttons: 'ok-close',
-            okText: '다시 업로드',
-            closeText: '취소',
-            onOk: function () {
-                // 확인 눌렀을 때 다시 업로드
-                doUpload(file).catch(console.error);
-            },
-            onClose: function () {
-                // 취소한 경우도 파일 선택 상태는 비워 줘야
-                // 같은 파일을 다시 선택해도 change가 뜬다
-                fileInput.value = '';
+            if (extraParams) {
+                Object.entries(extraParams).forEach(([k, v]) => {
+                    form.append(k, v);
+                });
             }
+
+            const res = await sendSafe('/import/xlsx', {
+                method: 'POST',
+                data: form,
+                multipart : true
+            });
+
+            // Abort 된 경우(null)나, 에러(ok=false)는 여기서 그냥 종료
+            if (!res || !res.ok) {
+                // sendSafe 안에서 이미 모달을 띄웠으므로 추가 처리 없이 리턴
+                fileInput.value = '';   // 그래도 다시 선택 가능하게 리셋
+                return;
+            }
+
+            // sendSafe OK → res.data 에 JSON 이 들어있다고 가정
+            const json = res.data;
+            // json = { rows: [...], errors: [...], totalRows, successRows, errorRows }
+
+            if (onSuccessRows && Array.isArray(json.rows)) {
+                onSuccessRows(json.rows);
+            }
+
+            if (onErrors && Array.isArray(json.errors)) {
+                onErrors(json.errors);
+            }
+
+            // 기본 로그/알림
+            if (json.errorRows && json.errorRows > 0) {
+                console.warn('Import errors: ', json.errors);
+                modalShow({
+                    title: '알림',
+                    message: `총 ${json.totalRows}건 중 ${json.successRows}건 성공, ${json.errorRows}건 실패했습니다.`
+                });
+            }
+
+            // 여기까지 왔으면 적어도 한 번은 업로드 성공으로 취급
+            hasUploadedOnce = true;
+
+            // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 value 리셋
+            fileInput.value = '';
+        }
+
+        fileInput.addEventListener('change', function () {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+
+            // 아직 한 번도 업로드 안 했으면 바로 업로드
+            if (!hasUploadedOnce) {
+                doUpload(file).catch(console.error);
+                return;
+            }
+
+            // 이미 업로드한 적이 있으면 모달로 한 번 더 확인
+            modalShow({
+                title: '확인',
+                message: '이미 데이터를 한 번 업로드했습니다.\n기존 내용을 지우고 다시 업로드하시겠습니까?',
+                buttons: 'ok-close',
+                okText: '다시 업로드',
+                closeText: '취소',
+                onOk: function () {
+                    // 확인 눌렀을 때 다시 업로드
+                    doUpload(file).catch(console.error);
+                },
+                onClose: function () {
+                    // 취소한 경우도 파일 선택 상태는 비워 줘야
+                    // 같은 파일을 다시 선택해도 change가 뜬다
+                    fileInput.value = '';
+                }
+            });
         });
-    });
-}
+    }
 
     /**
      * 엑셀 출력 API 호출
@@ -283,12 +282,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         }
     }
 
-
-
-
-
-
-
     // (참고) 열 때는 이렇게 저장해주세요.
     function openModal(elOrSelector) {
         const modal =
@@ -370,9 +363,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         }
     }
 
-
-
-
     /**
      * 문자열 정규화
      * - 공백/줄바꿈을 하나로 합치고, &nbsp;를 제거하고, 소문자로 통일한다.
@@ -426,9 +416,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         return indexToKey;
     }
 
-
-
-
     /**
      * <tr> → DTO 변환
      * @param {HTMLTableRowElement} tr
@@ -443,76 +430,77 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         });
         return obj;
     }
-        /**
-         * 일반 table 태그에서 thead 헤더 텍스트 기준으로
-         * tbody 데이터를 DTO 배열 + payload 로 만들어 준다.
-         *
-         * @param {HTMLTableElement|string} tableOrSelector  table 요소 또는 CSS 셀렉터
-         * @param {{
-         *   headerMap: Object<string,string>,   // 정규화된 헤더텍스트 -> DTO 필드명 매핑
-         *   requiredKeys?: string[],            // 반드시 존재해야 하는 필드들
-         *   wrapperKey?: string,                // 최상위 키 이름 (기본: 'list')
-         *   skipEmptyRow?: boolean              // 전부 빈 값인 행은 버릴지 여부 (기본: true)
-         * }} opts
-         * @returns {{ [key: string]: Array<Object<string,string>> }}
-         *
-         * 사용 예:
-         *   const payload = Common.collectTablePayload('#user-grid', {
-         *     headerMap: {
-         *       '사용자id': 'userId',
-         *       '이름': 'userName',
-         *       '이메일': 'email',
-         *       '나이': 'age',
-         *       '전화번호': 'phone'
-         *     },
-         *     requiredKeys: ['userId','userName','email'],
-         *     wrapperKey: 'list'
-         *   });
-         */
-        function collectTablePayload(tableOrSelector, opts = {}) {
-            const {
-                headerMap,
-                requiredKeys = [],
-                wrapperKey = 'list',
-                skipEmptyRow = true
-            } = opts;
 
-            const table = (typeof tableOrSelector === 'string')
-                ? document.querySelector(tableOrSelector)
-                : tableOrSelector;
+    /**
+     * 일반 table 태그에서 thead 헤더 텍스트 기준으로
+     * tbody 데이터를 DTO 배열 + payload 로 만들어 준다.
+     *
+     * @param {HTMLTableElement|string} tableOrSelector  table 요소 또는 CSS 셀렉터
+     * @param {{
+     *   headerMap: Object<string,string>,   // 정규화된 헤더텍스트 -> DTO 필드명 매핑
+     *   requiredKeys?: string[],            // 반드시 존재해야 하는 필드들
+     *   wrapperKey?: string,                // 최상위 키 이름 (기본: 'list')
+     *   skipEmptyRow?: boolean              // 전부 빈 값인 행은 버릴지 여부 (기본: true)
+     * }} opts
+     * @returns {{ [key: string]: Array<Object<string,string>> }}
+     *
+     * 사용 예:
+     *   const payload = Common.collectTablePayload('#user-grid', {
+     *     headerMap: {
+     *       '사용자id': 'userId',
+     *       '이름': 'userName',
+     *       '이메일': 'email',
+     *       '나이': 'age',
+     *       '전화번호': 'phone'
+     *     },
+     *     requiredKeys: ['userId','userName','email'],
+     *     wrapperKey: 'list'
+     *   });
+     */
+    function collectTablePayload(tableOrSelector, opts = {}) {
+        const {
+            headerMap,
+            requiredKeys = [],
+            wrapperKey = 'list',
+            skipEmptyRow = true
+        } = opts;
 
-            if (!table) {
-                throw new Error('collectTablePayload: 테이블을 찾을 수 없습니다.');
+        const table = (typeof tableOrSelector === 'string')
+            ? document.querySelector(tableOrSelector)
+            : tableOrSelector;
+
+        if (!table) {
+            throw new Error('collectTablePayload: 테이블을 찾을 수 없습니다.');
+        }
+
+        // 이미 common.js 안에 있는 함수 재사용
+        const indexToKey = buildHeaderKeyMap(table, {
+            headerMap,
+            requiredKeys
+        });
+
+        const rows = table.querySelectorAll('tbody tr');
+        const list = [];
+
+        rows.forEach(tr => {
+            // "조회 결과 없음" placeholder 등은 건너뛰기
+            if (tr.matches('[data-empty-row="true"]')) return;
+
+            const obj = rowToObject(tr, indexToKey);
+
+            // 전부 빈 값이면 스킵 (옵션)
+            if (skipEmptyRow) {
+                const hasValue = Object.values(obj).some(v =>
+                    v != null && String(v).trim() !== ''
+                );
+                if (!hasValue) return;
             }
 
-            // 이미 common.js 안에 있는 함수 재사용
-            const indexToKey = buildHeaderKeyMap(table, {
-                headerMap,
-                requiredKeys
-            });
+            list.push(obj);
+        });
 
-            const rows = table.querySelectorAll('tbody tr');
-            const list = [];
-
-            rows.forEach(tr => {
-                // "조회 결과 없음" placeholder 등은 건너뛰기
-                if (tr.matches('[data-empty-row="true"]')) return;
-
-                const obj = rowToObject(tr, indexToKey);
-
-                // 전부 빈 값이면 스킵 (옵션)
-                if (skipEmptyRow) {
-                    const hasValue = Object.values(obj).some(v =>
-                        v != null && String(v).trim() !== ''
-                    );
-                    if (!hasValue) return;
-                }
-
-                list.push(obj);
-            });
-
-            return { [wrapperKey]: list };
-        }
+        return { [wrapperKey]: list };
+    }
 
     /**
      * 섹션 행 수집 (div[data-section] 기준)
@@ -681,8 +669,8 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
 
         // 헤더 상태 동기화 (선택된 행이 변경되었으므로)
         if (syncHeader) {
-            syncHeaderCheckbox(fromTbody);
-            syncHeaderCheckbox(toTbody);
+            syncHeaderCheckBox(fromTbody);
+            syncHeaderCheckBox(toTbody);
         }
 
         return selected.length;
@@ -841,10 +829,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         MODAL_PREV_ACTIVE = null; // 이전 활성화 요소 참조 초기화
     }
 
-
-
-
-
     /**
      * 요청을 위한 baseUrl + queryParams를 붙이는 함수
      * @param {string} [base] 기본 요청 url
@@ -872,11 +856,11 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
      */
     const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html'); // HTML 문자열을 DOM Document 객체로 파싱
     /**
-        * 기존 태그를 새로운 데이터가 들어간 태그로 교체
-        * @param {html} html
-        * @param {교체할 태그를 querySelector로 가져온 값} selector
-        * @returns
-        */
+     * 기존 태그를 새로운 데이터가 들어간 태그로 교체
+     * @param {html} html
+     * @param {교체할 태그를 querySelector로 가져온 값} selector
+     * @returns
+     */
     const swap = (html, selector) => {
         if (!html) return; // html이 없으면 아무것도 하지 않음
 
@@ -980,10 +964,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         return payload; // JSON 형태로 구성된 페이로드 객체 반환
     }
 
-
-
-
-
     // 이전 이미지에서 `colle
 
     let listAbort; // 리스트 요청 중단을 위한 변수 (Aborted Request 처리)
@@ -1069,7 +1049,7 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
             if (e.name === "AbortError") return; // 요청이 중단되었으면 아무것도 하지 않음
 
             // HTTP 상태 코드가 400, 422, 409인 경우 (일반적인 오류 응답)
-           if (e?.status >= 400 && e.status < 500) {
+            if (e?.status >= 400 && e.status < 500) {
                 // payload.message가 있으면 해당 메시지를 사용하고, 없으면 기본 메시지
                 const msg = e.payload.message || '요청을 처리할 수 없습니다.';
                 Common.modalShow({
@@ -1084,10 +1064,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
             console.error(e);
         }
     }
-
-
-
-
 
     /**
      * @param {데이터} data: Files | FileList | File[]
@@ -1223,14 +1199,6 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         return `${n.toFixed(n >= 100 ? 0 : n >= 10 ? 1 : 2)} ${u[i]}`;
     }
 
-
-
-
-
-
-
-
-
     // Excel 데이터를 전송하는 비동기 함수
     async function sendExcel(url, { method = 'POST', data = null, headers = {}, signal, expect = 'json' } = {}) {
         const init = {
@@ -1266,524 +1234,113 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         return res; // 응답 객체 반환
     }
 
-
-
-
-
-
     /// HTTP 요청을 보내는 비동기 함수
-     // url: 요청할 URL
-     // method: HTTP 메서드 (기본값: 'POST')
-     // data: 요청 본문 데이터 (기본값: null)
-     // headers: 추가 헤더 (기본값: {} )
-     // signal: AbortSignal (선택적)
-     // expect: 응답 형식 기대값 (기본값: 'json')
-     // multipart: FormData(multipart/form-data) 전송 여부 (기본값: false)
-     async function send(
-         url,
-         method = 'POST',
-         data = null,
-         headers = {},
-         signal,
-         expect = 'json',
-         multipart = false
-     ) {
-         // 1) 기본 헤더 설정
-         //    - multipart=true 인 경우에는 Content-Type를 강제로 세팅하면 안 되므로,
-         //      일단 Accept만 기본으로 두고, 아래에서 상황에 따라 Content-Type을 채운다.
-         headers = {
-             'Accept': 'application/json',
-             ...headers
-         };
+    // url: 요청할 URL
+    // method: HTTP 메서드 (기본값: 'POST')
+    // data: 요청 본문 데이터 (기본값: null)
+    // headers: 추가 헤더 (기본값: {} )
+    // signal: AbortSignal (선택적)
+    // expect: 응답 형식 기대값 (기본값: 'json')
+    // multipart: FormData(multipart/form-data) 전송 여부 (기본값: false)
+    async function send(
+        url,
+        method = 'POST',
+        data = null,
+        headers = {},
+        signal,
+        expect = 'json',
+        multipart = false
+    ) {
+        // 1) 기본 헤더 설정
+        //    - multipart=true 인 경우에는 Content-Type를 강제로 세팅하면 안 되므로,
+        //      일단 Accept만 기본으로 두고, 아래에서 상황에 따라 Content-Type을 채운다.
+        headers = {
+            'Accept': 'application/json',
+            ...headers
+        };
 
-         let init = {
-             method,
-             headers,
-             cache: 'no-store',
-             credentials: 'same-origin',
-             signal: signal || undefined
-         };
+        let init = {
+            method,
+            headers,
+            cache: 'no-store',
+            credentials: 'same-origin',
+            signal: signal || undefined
+        };
 
-         // 2) body 세팅
-         if (data != null) {
-             // 🔥 multipart 모드: FormData 그대로 보내고 Content-Type은 지운다.
-             if (multipart) {
-                 if (!(data instanceof FormData)) {
-                     throw new Error('multipart=true 인 경우 data는 FormData 이어야 합니다.');
-                 }
-                 // 브라우저가 boundary 포함해서 자동으로 세팅하게 하기 위해 제거
-                 delete init.headers['Content-Type'];
-                 init.body = data;
+        // 2) body 세팅
+        if (data != null) {
+            // 🔥 multipart 모드: FormData 그대로 보내고 Content-Type은 지운다.
+            if (multipart) {
+                if (!(data instanceof FormData)) {
+                    throw new Error('multipart=true 인 경우 data는 FormData 이어야 합니다.');
+                }
+                // 브라우저가 boundary 포함해서 자동으로 세팅하게 하기 위해 제거
+                delete init.headers['Content-Type'];
+                init.body = data;
 
-             } else if (data instanceof FormData) {
-                 // 개발자가 multipart 플래그를 안 줬어도 최대한 정상 동작하도록 처리
-                 delete init.headers['Content-Type'];
-                 init.body = data;
+            } else if (data instanceof FormData) {
+                // 개발자가 multipart 플래그를 안 줬어도 최대한 정상 동작하도록 처리
+                delete init.headers['Content-Type'];
+                init.body = data;
 
-             } else if (data instanceof URLSearchParams) {
-                 init.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
-                 init.body = data.toString();
+            } else if (data instanceof URLSearchParams) {
+                init.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
+                init.body = data.toString();
 
-             } else if (headers['Content-Type'] === 'application/x-www-form-urlencoded;charset=UTF-8') {
-                 // data가 평범한 객체인데 Content-Type을 urlencoded로 강제한 경우
-                 init.body = new URLSearchParams(data).toString();
+            } else if (headers['Content-Type'] === 'application/x-www-form-urlencoded;charset=UTF-8') {
+                // data가 평범한 객체인데 Content-Type을 urlencoded로 강제한 경우
+                init.body = new URLSearchParams(data).toString();
 
-             } else {
-                 // 기본: JSON 전송
-                 init.headers['Content-Type'] = 'application/json;charset=UTF-8';
-                 init.body = JSON.stringify(data);
-             }
-         }
-
-         // 3) fetch 호출
-         const res = await fetch(url, init);
-         const ct = res.headers.get('content-type') || '';
-         const text = await res.text();
-
-         // JSON이면 미리 parse
-         let payload = null;
-         if (ct.includes('application/json')) {
-             try {
-                 payload = JSON.parse(text);
-             } catch (e) {
-                 // JSON 파싱 실패하면 그냥 payload는 null로 두고 text만 사용
-             }
-         }
-
-         // 4) 에러 처리
-         if (!res.ok) {
-             const err = new Error(
-                 (payload && payload.message)
-                     ? payload.message
-                     : `HTTP ${res.status}`
-             );
-             err.name = 'FetchJsonError';
-             err.status = res.status;
-             err.payload = payload;
-             err.body = text;
-             err.contentType = ct;
-             throw err;
-         }
-
-         // 5) 성공 시 반환 형식
-         if (expect === 'text') {
-             return text;
-         }
-         if (expect === 'json') {
-             // JSON이면 객체, 아니면 text
-             return payload != null ? payload : text;
-         }
-
-         // 기타 형식 필요하면 여기서 분기 추가 가능
-         return payload != null ? payload : text;
-     }
-    // 전역 상태 및 기본값 정의
-
-    const DEFAULTS = {
-        asideSelector: '#gnb1',  // aside 선택자 (링크가 있는 사이드바)
-        containerSelector: '#contents .container',  // 콘텐츠 컨테이너 선택자
-    };
-
-    const MiniSPAState = {
-        bound: false,
-        opts: { ...DEFAULTS },
-        onClick: null,
-        onPopstate: null,
-    };
-
-
-    function linkDepth(a) {
-        if (a.closest('ul.depth3')) return 3;
-        if (a.closest('ul.depth2')) return 2;
-        return 1;
-    }
-
-    function showLoading() {
-        let el = document.getElementById('mini-sp-loading');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'mini-sp-loading';
-            Object.assign(el.style, {
-                position: 'fixed',
-                right: '16px',
-                bottom: '16px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                background: '#fff',
-                border: '1px solid #ddd',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                zIndex: 9999
-            });
-            el.textContent = '로딩 중...';
-            document.body.appendChild(el);
-        }
-        el.style.display = 'block';
-    }
-
-    function hideLoading() {
-        const el = document.getElementById('mini-sp-loading');
-        if (el) el.style.display = 'none';
-    }
-    /* 콘텐츠를 비동기로 불러와 컨테이너에 삽입
-    * @param {string} url - 불러올 URL
-    * @param {string} html - HTML 문자열 (swapFromHtml에서 사용)
-    */
-
-    function toggleMenu(buttonEl) {
-        const li = buttonEl.closest('li.has-sub');
-        if (!li) return;
-        const subBox = li.querySelector(':scope > .depth-box');
-        const opened = li.classList.toggle('is-open');
-        buttonEl.setAttribute('aria-expanded', opened ? 'true' : 'false');
-        if (subBox) subBox.setAttribute('aria-hidden', opened ? 'false' : 'true');
-    }
-
-    function highlightActiveAside(currentUrl) {
-        const ASIDE_SELECTOR = MiniSPAState.opts.asideSelector || '#gnb1';
-        const links = Array.from(document.querySelectorAll(`${ASIDE_SELECTOR} a.swap-link[href]`));
-        links.forEach(a => a.classList.remove('is-active'));
-
-        const cur = new URL(currentUrl || location.href, location.href);
-        const curKey = cur.pathname + cur.search;
-
-        const candidates = links.map(a => {
-            try {
-                const u = new URL(a.href, location.href);
-                if (u.origin !== location.origin) return null;
-                const key = u.pathname + u.search;
-                return { a, key, len: key.length };
-            } catch { return null; }
-        }).filter(Boolean);
-
-        if (candidates.length === 0) return;
-
-        // 정확 매칭 우선, 없으면 가장 긴 prefix
-        let best = candidates.find(c => c.key === curKey);
-        if (!best) {
-            const pref = candidates.filter(c => curKey.startsWith(c.key));
-            if (pref.length) best = pref.sort((a, b) => b.len - a.len)[0];
-        }
-        if (!best) best = candidates.sort((a, b) => b.len - a.len)[0];
-
-        best.a.classList.add('is-active');
-
-        // 상위 메뉴 열기 (li.has-sub > button + .depth-box)
-        const li = best.a.closest('li.has-sub');
-        const btn = li ? li.querySelector(':scope > button[aria-haspopup="true"]') : null;
-        const box = li ? li.querySelector(':scope > .depth-box') : null;
-        if (li) li.classList.add('is-open');
-        if (btn) btn.setAttribute('aria-expanded', 'true');
-        if (box) box.setAttribute('aria-hidden', 'false');
-    }
-
-
-    async function fetchContent(url) {
-        try {
-            const response = await fetch(url);
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newContent = doc.querySelector(MiniSPAState.opts.containerSelector);
-            if (newContent) {
-                document.querySelector(MiniSPAState.opts.containerSelector).innerHTML = newContent.innerHTML;
+            } else {
+                // 기본: JSON 전송
+                init.headers['Content-Type'] = 'application/json;charset=UTF-8';
+                init.body = JSON.stringify(data);
             }
-            return html;  // swapFromHtml에서 재사용 위해 반환
-        } catch (error) {
-            console.error('콘텐츠 로드 실패:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * HTML 문자열로부터 컨테이너 콘텐츠 교체
-     * @param {string} html - 불러온 HTML
-     * @param {string} url - 현재 URL
-     */
-   async function swapFromHtml(html, url, push) {
-     const doc = new DOMParser().parseFromString(html, 'text/html');
-     const next = doc.querySelector(MiniSPAState.opts.containerSelector)
-         || doc.querySelector("#contents .container")
-         || null;
-     const cur = document.querySelector(MiniSPAState.opts.containerSelector);
-
-     // 컨테이너 못 찾으면 폴백
-     if (!(cur && next)) {
-       hideLoading();
-       location.href = url;
-       return;
-     }
-
-     // 1) 교체 전에 next 안의 inline script를 미리 뽑아둠
-     const inlineScripts = Array.from(next.querySelectorAll('script:not([src])')).map(s => ({
-       type: s.getAttribute('type') || '',
-       noModule: s.hasAttribute('noModule'),
-       code: s.textContent || ''
-     }));
-
-     // 2) 컨테이너 교체
-     cur.innerHTML = next.innerHTML;
-
-     // 3) 인라인 스크립트 재실행
-     for (const s of inlineScripts) {
-       const el = document.createElement('script');
-       if (s.type) el.type = s.type;
-       if (s.noModule) el.noModule = true;
-       el.textContent = s.code;
-       cur.appendChild(el);
-     }
-
-     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-
-     // AOS/기타 위젯 재바인딩 (이미지/폰트 로딩 고려)
-     if (window.Common?.Reinit?.run) {
-       // 컨테이너 노드 기준으로만 스캔하면 성능에 유리
-       await window.Common.Reinit.run(cur);
-     }
-     // =========================
-
-     // 4) 타이틀 변경
-     const title = doc.querySelector('title')?.textContent?.trim();
-     if (title) document.title = title;
-
-     // 5) 히스토리
-     if (push) history.pushState({}, '', url);
-
-     // 6) 네비 하이라이트 갱신
-     highlightActiveAside(url);
-
-     // (Reinit는 위에서 이미 호출함)
-     hideLoading();
-   }
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * 현재 URL에 맞는 aside 링크 하이라이트
-     * @param {string} url - 하이라이트할 URL
-     */
-
-
-    /**
-     * 네비게이션 및 스왑: 콘텐츠 로드 + 히스토리 업데이트 + 하이라이트
-     * @param {string} url - 이동할 URL
-     * @param {boolean} push - pushState 사용 여부 (true: push, false: replace)
-     */
-    async function navigateAndSwap(url, push) {
-        showLoading();
-        let res;
-        try {
-            res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        } catch (e) {
-            hideLoading();
-            alert('네트워크 오류가 발생했습니다.');
-            throw e;
-        }
-        if (!res.ok) {
-            hideLoading();
-            location.href = url; // 풀 브라우저 새로고침
-            return;
-        }
-        const html = await res.text();
-        await swapFromHtml(html, url, push);
-    }
-
-    // 기존 handleClick 전체 교체
-    function handleClick(e) {
-        // 1) 서브 열기/닫기(버튼)
-        const menuBtn = e.target.closest('#gnb1 li.has-sub > button[aria-haspopup="true"]');
-        if (menuBtn) {
-            e.preventDefault();
-            toggleMenu(menuBtn);
-            return;
         }
 
-        // 2) SPA 링크 처리 (.swap-link)
-        const a = e.target.closest('a.swap-link[href]');
-        if (!a) return;
+        // 3) fetch 호출
+        const res = await fetch(url, init);
+        const ct = res.headers.get('content-type') || '';
+        const text = await res.text();
 
-        // 새창/수정키는 그대로
-        if (a.getAttribute('target') === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-
-        // 외부 링크는 패스
-        try {
-            const u = new URL(a.href, location.href);
-            if (u.origin !== location.origin) return;
-        } catch { return; }
-
-        // # 같은 더미도 패스
-        if (!a.href || a.getAttribute('href').trim().endsWith('#')) return;
-
-        e.preventDefault();
-        navigateAndSwap(a.href, true).catch(console.error);
-    }
-    /**
-     * popstate 핸들러: 브라우저 뒤로/앞 가기 시 SPA 전환
-     * @param {Event} e - popstate 이벤트
-     */
-    function handlePopstate(e) {
-        const url = location.href;
-        navigateAndSwap(url, false);
-    }
-
-    const MiniSPA = Object.freeze({
-        /**
-         * SPA(1). aside 링크 + popstate 처리 + aside 표시
-         * @param [{asideSelector}: string, containerSelector?: string] opts
-         */
-        init(opts = {}) {
-            if (MiniSPAState.bound) return;
-
-            MiniSPAState.opts = { ...DEFAULTS, ...opts };
-            MiniSPAState.onClick = handleClick;
-            MiniSPAState.onPopstate = handlePopstate;
-
-            document.addEventListener('click', MiniSPAState.onClick);
-            window.addEventListener('popstate', MiniSPAState.onPopstate);
-
-            // 현재 URL 체크 표시
-            highlightActiveAside(location.href);
-
-            MiniSPAState.bound = true;
-        },
-
-        /**
-         * 파괴: 이벤트 리스너 제거
-         */
-        destroy() {
-            if (!MiniSPAState.bound) return;  // 바인딩되지 않은 경우 스킵 (조건 수정)
-
-            document.removeEventListener('click', MiniSPAState.onClick);
-            window.removeEventListener('popstate', MiniSPAState.onPopstate);
-
-            MiniSPAState.bound = false;
-        },
-
-        /**
-         * GET으로 변경. container만 교체 (pushState-결 true)
-         */
-        go(url, push = true) {
-            return navigateAndSwap(url, push);
-        },
-
-        /**
-         * 동일 URL 변경 처리 (현재페이지 새로고침)
-         */
-        reload() {
-            return navigateAndSwap(location.href, /*push*/ false);
-        },
-
-        /**
-         * 현재 URL 기준 표시
-         */
-        highlight(url = location.href) {
-            highlightActiveAside(url);
-        },
-
-        /**
-         * replaceState 통해 URL 변경 (현재페이지 새로고침)
-         */
-        goReplace(url) {
-            return navigateAndSwap(url, /*push*/ false);
-        },
-
-        /**
-         * a 태그 클릭 SPA 변경 처리
-         */
-        goFromAnchor(event, anchor, { push = true } = {}) {
-            if (event) event.preventDefault();
-            const url = anchor.href;
-            return navigateAndSwap(url, push);
-        },
-
-        /**
-         * GET 방식으로 쿼리 문자열 처리 (버그 수정: &&로 변경, 조건 반전)
-         */
-        goGET(url, params = {}, { push = true } = {}) {
-            const u = new URL(url, location.href);
-            Object.entries(params).forEach(([k, v]) => {
-                if (v !== undefined && v !== null) u.searchParams.set(k, v);  // 수정: 조건 반전
-            });
-            return navigateAndSwap(u.toString(), push);
-        },
-
-        /**
-         * POST 요청 HTML container만 교체 (body 처리 보완: JSON.stringify 가정)
-         */
-        async goPOST(url, body, { headers = {}, push = true } = {}) {
-            showLoading();
-            let res;
+        // JSON이면 미리 parse
+        let payload = null;
+        if (ct.includes('application/json')) {
             try {
-                const postBody = typeof body === 'object' ? JSON.stringify(body) : body;
-                const postHeaders = {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',  // JSON body 가정; 필요시 제거
-                    ...headers
-                };
-                res = await fetch(url, {
-                    method: 'POST',
-                    headers: postHeaders,
-                    body: postBody
-                });
+                payload = JSON.parse(text);
             } catch (e) {
-                hideLoading();
-                alert('네트워크 오류가 발생했습니다.');
-                throw e;
+                // JSON 파싱 실패하면 그냥 payload는 null로 두고 text만 사용
             }
-            if (res.ok) {
-                hideLoading();
-                // SPA 유지 위해 push/replace 사용 (수정: 풀 리로드 대신)
-                return navigateAndSwap(url, push);
-            }
-            const html = await res.text();
-            await swapFromHtml(html, url, push);
         }
-    });
-    const Reinit = {
-      async run(root = document) {
-        // 1) 폰트/이미지 로딩 대기 (레이아웃 확정 후 AOS 계산 정확히)
-        async function imagesReady(scope) {
-          const imgs = Array.from(scope.querySelectorAll('img'));
-          if (!imgs.length) return;
-          await Promise.allSettled(imgs.map(img => {
-            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-            return new Promise(res => {
-              img.addEventListener('load', res, { once: true });
-              img.addEventListener('error', res, { once: true });
-            });
-          }));
+
+        // 4) 에러 처리
+        if (!res.ok) {
+            const err = new Error(
+                (payload && payload.message)
+                    ? payload.message
+                    : `HTTP ${res.status}`
+            );
+            err.name = 'FetchJsonError';
+            err.status = res.status;
+            err.payload = payload;
+            err.body = text;
+            err.contentType = ct;
+            throw err;
         }
-        try {
-          if (document.fonts?.ready) await document.fonts.ready;
-        } catch {}
 
-        await imagesReady(root);
-
-        // 2) AOS 재초기화/리프레시
-        if (window.AOS) {
-          // 최초 1회만 init, 이후에는 refreshHard
-          if (!window.__aosInited) {
-            AOS.init({ duration: 600, once: true });
-            window.__aosInited = true;
-          } else {
-            AOS.refreshHard(); // 새 data-aos 요소까지 재스캔
-          }
+        // 5) 성공 시 반환 형식
+        if (expect === 'text') {
+            return text;
         }
-      }
-    };
+        if (expect === 'json') {
+            // JSON이면 객체, 아니면 text
+            return payload != null ? payload : text;
+        }
 
-    // 사용 예시
-    // MiniSPA.init({ asideSelector: '#myAside', containerSelector: '#content' });
-    // MiniSPA.go('/new-page');
-    // 나중에: MiniSPA.destroy();
+        // 기타 형식 필요하면 여기서 분기 추가 가능
+        return payload != null ? payload : text;
+    }
+    // 전역 상태 및 기본값 정의는 MiniSPA 제거로 사용하지 않음
 
     // 글로벌 common 객체 정의: 자주 사용되는 함수들을 Object.freeze로 동결하여 불변성 보장
     // 이 객체는 Excel 내보내기, 재로딩, 안전한 요청, 스왑, 모달 등 다양한 유틸리티 함수 포함
@@ -1833,8 +1390,34 @@ async function bindExcelImport(fileInput, provider, onSuccessRows, onErrors, ext
         openModal,
 
         // JSON 수집 함수 (collectAsJson)
-        collectAsJson,
-        MiniSPA,
-        Reinit
+        collectAsJson
     })
 })(window);
+/**
+ * showLoading()
+ *
+ * hideLoading()
+ *
+ * toggleMenu() (왼쪽 메뉴 열고 닫는 함수)
+ *
+ * highlightActiveAside() (현재 URL 기준으로 메뉴 강조하는 함수)
+ *
+ * HTML 네비게이션/스왑
+ * fetchContent(url, options)
+ *
+ * swapFromHtml(html, { ... })
+ *
+ * navigateAndSwap(url, options) (pushState + swap 하는 애)
+ *
+ * 이벤트 바인딩
+ * handleClick(event)
+ *
+ * handlePopstate(event)
+ *
+ * Common에 노출되던 것
+ * global.Common.MiniSPA = { ... }
+ *
+ * global.Common.Reinit = function(...) { ... }
+ *
+ * 위 함수들 위에 달려 있던 주석(JSDoc, 사용법 설명) 도 전부
+ */

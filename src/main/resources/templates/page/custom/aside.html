@@ -20,7 +20,6 @@
               lv1IsCategory=${lv1.children != null and !#lists.isEmpty(lv1.children)}
             ">
                     <th:block th:if="${lv1IsCategory or lv1Readable}">
-                    </th:block>
                         <a class="depth1"
                            th:href="${lv1.url} ?: ''"
                            th:text="${lv1.name}">1뎁스</a>
@@ -35,7 +34,6 @@
                     lv2IsCategory=${lv2.children != null and !#lists.isEmpty(lv2.children)}
                   ">
                                 <th:block th:if="${lv2IsCategory or lv2Readable}">
-                                </th:block>
                                     <a th:href="${lv2.url} ?: ''"
                                        th:text="${lv2.name}">2뎁스</a>
 
@@ -62,22 +60,6 @@
             </ul>
         </nav>
     </div>
-    <script>
-        // 중복 init 방지 + common.js 로드 대비
-        (function initMiniSpaWhenReady() {
-          if (window.__miniSpaInited) return;                     // 이미 초기화면 스킵
-          if (window.Common && Common.MiniSPA) {                  // common.js 로드 확인
-            Common.MiniSPA.init({
-              asideSelector: '.aside-nav',                        // 네 마크업 그대로
-              containerSelector: '#contents .container'
-            });
-            window.__miniSpaInited = true;
-            return;
-          }
-          // 아직 Common이 없으면 조금 뒤에 재시도
-          setTimeout(initMiniSpaWhenReady, 50);
-        })();
-    </script>
 </aside>
 </body>
 </html>
