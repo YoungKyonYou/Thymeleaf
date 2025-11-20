@@ -60,8 +60,8 @@ public class SprtSvcTypRspVO {
       102:일반좌석버스
      */
     /** HXZ_교통정산관리 코드 (HXZM00002 코드 테이블 참조) */
-    @Size(max = 10, message = "유지코드는 최대 10자입니다.")
-    @NotBlank(message = "유지코드는 필수 입력 항목입니다.")
+    @Size(max = 10, message = "지원교통수단코드는 최대 10자입니다.")
+    @NotBlank(message = "지원교통수단코드는 필수 입력 항목입니다.")
     private String tpwMntnCd;               // VARCHAR(10)
 
     /**

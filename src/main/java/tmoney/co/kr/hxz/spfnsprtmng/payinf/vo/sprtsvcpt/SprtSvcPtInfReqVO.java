@@ -3,14 +3,13 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ============================================
@@ -39,10 +38,10 @@ public class SprtSvcPtInfReqVO {
 
     // 서비스기간
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "서비스기간은 yyyy-MM-dd 형식이어야 합니다.")
-    private String svcSttDt  =  java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(1).toString(); // 기본값: 오늘날짜;
+    private String svcSttDt  =  LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(1).toString(); // 기본값: 오늘날짜;
 
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "서비스기간은 yyyy-MM-dd 형식이어야 합니다.")
-    private String svcEndDt = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString(); // 기본값: 오늘날
+    private String svcEndDt = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString(); // 기본값: 오늘날
 
     @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.")
     private String sttDt;  // 신청기간 시작일자 (YYYYMMDD)
