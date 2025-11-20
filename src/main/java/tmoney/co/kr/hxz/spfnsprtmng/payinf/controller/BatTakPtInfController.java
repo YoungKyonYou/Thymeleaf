@@ -1,7 +1,6 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
 import lombok.RequiredArgsConstructor;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -12,7 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import tmoney.co.kr.export.ExportColumn;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.common.util.DateUtil;
@@ -21,15 +19,14 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.export.BatTakPtInfExportServi
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.BatTakPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.BatTakPtInfRspVO;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
 
 @Controller
 @RequestMapping("/spfnsprtmng/payinf")
@@ -89,7 +86,7 @@ public class BatTakPtInfController {
         Workbook wb = new XSSFWorkbook();
         Sheet sheet = wb.createSheet(sheetName);
 
-        AtomicInteger rowIdx = new AtomicInteger(1);
+        AtomicInteger rowIdx = new AtomicInteger(0);
 
         // ===== 1. 헤더 작성 =====
         Row headerRow = sheet.createRow(rowIdx.getAndIncrement());
