@@ -32,9 +32,9 @@
         , sprt.use_yn           as useYn         /* 이용여부 */
         from (
         select
-        max(d208.tpw_svc_id)      as tpw_svc_id     /* 서비스ID */
+          d208.tpw_svc_id      as tpw_svc_id     /* 서비스ID */
         , max(m201.tpw_svc_nm)      as tpw_svc_nm     /* 서비스명 */
-        , d208.tpw_svc_typ_id       as tpw_svc_typ_id /* 서비스유형ID */
+        , max(d208.tpw_svc_typ_id)       as tpw_svc_typ_id /* 서비스유형ID */
         , max(m202.tpw_svc_typ_nm)  as tpw_svc_typ_nm /* 서비스유형명 */
         , max(d208.spfn_lmt_mng_no) as spfn_lmt_mng_no/* 지원금한도관리번호 */
         , max(d208.spfn_lmt_sno)    as spfn_lmt_sno   /* 지원금한도일련번호 */
@@ -52,9 +52,6 @@
         join tbhxzm202 m202
         on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
         where 1 = 1
-        <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
-            and lower(m201.tpw_svc_nm) like concat('%', lower(#{req.tpwSvcNm}), '%')
-        </if>
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
         </if>
@@ -67,7 +64,7 @@
         <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
             and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
         </if>
-        group by d208.tpw_svc_typ_id
+        group by d208.tpw_svc_id
         ) sprt
         order by sprt.${req.sort} ${req.dir}
         limit #{req.size}
@@ -95,9 +92,6 @@
         join tbhxzm202 m202
         on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
         where 1 = 1
-        <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
-            and lower(m201.tpw_svc_nm) like concat('%', lower(#{req.tpwSvcNm}), '%')
-        </if>
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
         </if>
@@ -115,10 +109,10 @@
         ) sprt
     </select>
 
-    <select id="readSprtLmtDtlByTpwSvcTypId"
+    <select id="readSprtLmtDtlByTpwSvc"
             parameterType="String"
             resultType="tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO">
-        /* sql_id : readSprtLmtDtlByTpwSvcTypId */
+        /* sql_id : readSprtLmtDtlByTpwSvc */
         /*
         * 1. 파일 : SprtLmtMapper_SQL.xml
         * 2. 기능 : 지원 한도 상세 조회
@@ -144,6 +138,9 @@
         where 1 = 1
         <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
             and d208.tpw_svc_typ_id = #{tpwSvcTypId}
+        </if>
+        <if test="tpwSvcId != null and tpwSvcId != ''">
+            and d208.tpw_svc_id = #{tpwSvcId}
         </if>
         <if test="useYn != null and useYn != ''">
             and lower(d208.use_yn) = lower(#{useYn})
@@ -202,21 +199,30 @@
         </foreach>
     </insert>
 
-    <update id="updatePrevSprtLmt" parameterType="list">
-        /* sql_id : updatePrevSprtLmt */
-        /*
-        * 1. 파일 : SprtLmtMapper_SQL.xml
-        * 2. 기능 : 이전 지원 한도 내역 수정
-        * 3. 작성자 : 최종혁
-        * 4. 변경이력 :
-        * 2025.10.20 - 최종혁 : 최초작성
-        */
-        <foreach collection="req" item="u" separator=";">
-            update tbhxzd208 d208
-            set use_yn = upper('n')
-            where spfn_lmt_mng_no = #{u}
-        </foreach>
+    <update id="updateTrdNcntLtnAdptYn" parameterType="list">
+        update tbhxzd208 d208
+           set trd_ncnt_adpt_yn =upper(#{adptYn})
+        where tpw_svc_typ_id = #{tpwSvcTypId}
     </update>
+
+    <update id="updateSprtLmtUserYn" parameterType="list">
+        update tbhxzd208 d208
+        set use_yn=upper('n')
+        where 1=1
+        <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
+            and d208.tpw_svc_typ_id =#{tpwSvcTypId}
+        </if>
+        and upper(d208.use_yn) = 'Y'
+    </update>
+    <select id="readSprtLmtCntBySvcTyp"
+            parameterType="map"
+            resultType="int">
+        select count(1)
+        from ohxzown.tbhxzd208
+        where tpw_svc_id    = #{tpwSvcId}
+        and tpw_svc_typ_id = #{tpwSvcTypId}
+        and use_yn         = 'Y'
+    </select>
 
     <insert id="insertNextSprtLmt" parameterType="list">
         /* sql_id : insertNextSprtLmt */
@@ -276,6 +282,11 @@
 
     <select id="readSpfnLmtSnoNextVal" parameterType="String" resultType="String">
         select lpad((coalesce(max(cast(#{spfnLmtSno} as integer)),0)+1)::text,10,'0')
+    </select>
+
+    <select id="readNextMngNo" parameterType="int" resultType="string">
+       select lpad(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01')::text, 10, '0')
+        from generate_series(1, #{count})
     </select>
 
 </mapper>

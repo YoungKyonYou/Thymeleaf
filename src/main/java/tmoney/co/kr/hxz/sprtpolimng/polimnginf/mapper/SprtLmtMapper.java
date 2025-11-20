@@ -2,7 +2,6 @@ package tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import tmoney.co.kr.config.HxzDb;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
@@ -21,7 +20,7 @@ public interface SprtLmtMapper {
 
     long readSprtLmtPtListCnt(@Param("req") SprtLmtSrchReqVO req);
 
-    List<SprtLmtRspVO> readSprtLmtDtlByTpwSvcTypId(@Param("tpwSvcTypId") String tpwSvcTypId, @Param("useYn") String useYn);
+    List<SprtLmtRspVO> readSprtLmtDtlByTpwSvc(@Param("tpwSvcId") String tpwSvcId, @Param("tpwSvcTypId") String tpwSvcTypId, @Param("useYn") String useYn);
 
     void insertSprtLmt(List<SprtLmtReqVO> req);
 
@@ -32,4 +31,11 @@ public interface SprtLmtMapper {
     String readSpfnLmtMngNoNextVal();
 
     String readSpfnLmtSnoNextVal(@Param("spfnLmtSno") String spfnLmtSno);
+    List<String> readNextMngNo(@Param("count") int count);
+
+    void updateTrdNcntLtnAdptYn(@Param("tpwSvcTypId") String tpwSvcTypId, @Param("adptYn") String adptYn);
+
+    void updateSprtLmtUseYn(@Param("tpwSvcTypId") String tpwSvcTypId);
+    Integer readSprtLmtCntBySvcTyp(@Param("tpwSvcId") String tpwSvcId,
+                                   @Param("tpwSvcTypId") String tpwSvcTypId);
 }

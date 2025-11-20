@@ -27,6 +27,11 @@ public class SprtLmtSrchReqVO {
     @Size(min = 0, max = 100, message = "교통복지서비스유형명은 0에서 100 이하의 길이어야 합니다.")
     private String tpwSvcTypNm;
 
+    /** 지원금한도관리번호 */
+    private String spfnLmtMngNo;
+    /** 지원금한도일련번호 */
+    private String spfnLmtSno;
+
     /** 사용여부 */
     @Size(min = 0, max = 1, message = "사용여부는 0에서 1 이하의 길이어야 합니다.")
     private String useYn = "Y";
