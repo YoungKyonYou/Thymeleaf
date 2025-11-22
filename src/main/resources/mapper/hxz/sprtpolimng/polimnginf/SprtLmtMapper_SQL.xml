@@ -202,6 +202,22 @@
         where tpw_svc_typ_id = #{tpwSvcTypId}
     </update>
 
+    <update id="updateSprtLmtUseYnByMngNo">
+        update ohxzown.tbhxzd208
+        set use_yn = 'N'
+        where tpw_svc_id      = #{tpwSvcId}
+        and tpw_svc_typ_id  = #{tpwSvcTypId}
+        and tpw_lmt_dvs_cd  = #{tpwLmtDvsCd}
+        and spfn_lmt_sno    = #{prevSno}
+        and use_yn          = 'Y'
+        <if test="mngNos != null and mngNos.size() > 0">
+            and spfn_lmt_mng_no in
+            <foreach collection="mngNos" item="m" open="(" close=")" separator=",">
+                #{m}
+            </foreach>
+        </if>
+    </update>
+
     <update id="updateSprtLmtUseYn">
         update ohxzown.tbhxzd208
         set use_yn = 'N'
