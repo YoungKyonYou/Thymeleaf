@@ -26,16 +26,18 @@ public interface SprtLmtMapper {
 
     void updatePrevSprtLmt(List<String> req, @Param("tpwSvcTypId") String tpwSvcTypId);
 
-    void insertNextSprtLmt(List<SprtLmtReqVO> req, @Param("tpwSvcTypId") String tpwSvcTypId);
+
+    void insertNextSprtLmt(@Param("list") List<SprtLmtReqVO> list,
+                           @Param("tpwSvcTypId") String tpwSvcTypId);
 
     String readSpfnLmtMngNoNextVal();
 
-    String readSpfnLmtSnoNextVal(@Param("spfnLmtSno") String spfnLmtSno);
+
     List<String> readNextMngNo(@Param("count") int count);
 
     void updateTrdNcntLtnAdptYn(@Param("tpwSvcTypId") String tpwSvcTypId, @Param("adptYn") String adptYn);
 
-    void updateSprtLmtUseYn(@Param("tpwSvcTypId") String tpwSvcTypId);
+    void updateSprtLmtUseYn(@Param("tpwSvcId") String tpwSvcId, @Param("tpwSvcTypId") String tpwSvcTypId, @Param("tpwLmtDvsCd") String tpwLmtDvsCd);
     Integer readSprtLmtCntBySvcTyp(@Param("tpwSvcId") String tpwSvcId,
                                    @Param("tpwSvcTypId") String tpwSvcTypId);
 }

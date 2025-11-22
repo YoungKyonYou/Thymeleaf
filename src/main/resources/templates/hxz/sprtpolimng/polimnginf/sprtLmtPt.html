@@ -1278,32 +1278,23 @@
                         return;
                     }
 
-                    // 기존 설정 여부 먼저 확인
+                    // 1) 기존 한도 존재 여부 체크
                     const exists = await checkExistingLimit(cas.child.tpwSvcId, cas.child.tpwSvcTypId);
 
                     if (exists) {
-                        const goEdit = window.confirm(
+                        const ok = window.confirm(
                             '선택한 서비스/서비스유형에 대해 기존 한도 설정이 존재합니다.\n' +
-                            '설정하기 화면으로 이동하시겠습니까?'
+                            '기존 한도는 종료 처리(useYn=N)하고, 새 한도를 이어서 등록하시겠습니까?'
                         );
-
-                        if (!goEdit) {
-                            // 취소 누르면 그냥 선택 모달에 머무름
+                        if (!ok) {
+                            // 취소하면 그냥 선택 모달에 머무름
                             return;
                         }
-
-                        // 확인 누르면 "설정하기" 모달로 이동
-                        const modal = getModal();
-                        if (!modal) return;
-
-                        modal.dataset.tpwSvcId = cas.child.tpwSvcId;
-                        modal.dataset.tpwSvcTypId = cas.child.tpwSvcTypId;
-
-                        await openEdit3In1(cas.child.tpwSvcId, cas.child.tpwSvcTypId);
-                        return;
+                        // 확인을 눌렀다고 해서 "설정하기(edit)"로 가지 않고,
+                        // 아래에서 설명하는 것처럼 "완전 신규 화면"으로 바로 진입한다.
                     }
 
-                    // 여기까지 왔다는 건 기존 설정 없음 → 신규 3in1 등록 진행
+                    // 2) 여기부터는 기존 한도 유무와 상관없이 "신규 3in1" 플로우로 진입
                     __newFlowSelected = cas;
                     modal.dataset.tpwSvcId = cas.child.tpwSvcId;
                     modal.dataset.tpwSvcTypId = cas.child.tpwSvcTypId;
@@ -1334,7 +1325,9 @@
                         if (modeInput) modeInput.value = 'new-3in1';
                         __state.mode = 'new-3in1';
 
-                        updateSearchVisibility(container); // 신규에서는 검색조건 숨김
+                        // 신규에서는 검색조건 숨김
+                        updateSearchVisibility(container);
+
                         resetIfAllEmpty(container.querySelector('#panel-q tbody'), 3);
                         resetIfAllEmpty(container.querySelector('#panel-m tbody'), 3);
                         resetIfAllEmpty(container.querySelector('#newNcntTable tbody'), 3);

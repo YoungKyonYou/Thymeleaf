@@ -152,86 +152,6 @@
         /*
         * 1. 파일 : SprtLmtMapper_SQL.xml
         * 2. 기능 : 지원 한도 내역 생성
-        * 3. 작성자 : 최종혁
-        * 4. 변경이력 :
-        * 2025.10.22 - 최종혁 : 최초작성
-        */
-        <foreach collection="req" item="u" separator=";">
-            insert
-            into tbhxzd208
-            (
-            tpw_svc_id
-            , tpw_svc_typ_id
-            , spfn_lmt_mng_no
-            , spfn_lmt_sno
-            , tpw_lmt_dvs_cd
-            , tpw_lmt_typ_cd
-            , lmt_stt_ym
-            , lmt_end_ym
-            , min_cndt_val
-            , max_cndt_val
-            , tgt_adpt_val
-            , use_yn
-            , rgsr_id
-            , rgt_dtm
-            , updr_id
-            , upd_dtm
-            )
-            values
-            (
-            #{u.tpwSvcId}
-            , #{u.tpwSvcTypId}
-            , (to_char(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01'), 'FM0000000000'))
-            , #{u.spfnLmtSno}
-            , #{u.tpwLmtDvsCd}
-            , #{u.tpwLmtTypCd}
-            , #{u.lmtSttYm}
-            , #{u.lmtEndYm}
-            , #{u.minCndtVal}
-            , #{u.maxCndtVal}
-            , #{u.tgtAdptVal}
-            , upper('y')
-            , 'system'
-            , to_char(now(), 'YYYYMMDDHH24MISS')
-            , 'system'
-            , to_char(now(), 'YYYYMMDDHH24MISS')
-            )
-        </foreach>
-    </insert>
-
-    <update id="updateTrdNcntLtnAdptYn" parameterType="list">
-        update tbhxzd208 d208
-           set trd_ncnt_adpt_yn =upper(#{adptYn})
-        where tpw_svc_typ_id = #{tpwSvcTypId}
-    </update>
-
-    <update id="updateSprtLmtUserYn" parameterType="list">
-        update tbhxzd208 d208
-        set use_yn=upper('n')
-        where 1=1
-        <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
-            and d208.tpw_svc_typ_id =#{tpwSvcTypId}
-        </if>
-        and upper(d208.use_yn) = 'Y'
-    </update>
-    <select id="readSprtLmtCntBySvcTyp"
-            parameterType="map"
-            resultType="int">
-        select count(1)
-        from ohxzown.tbhxzd208
-        where tpw_svc_id    = #{tpwSvcId}
-        and tpw_svc_typ_id = #{tpwSvcTypId}
-        and use_yn         = 'Y'
-    </select>
-
-    <insert id="insertNextSprtLmt" parameterType="list">
-        /* sql_id : insertNextSprtLmt */
-        /*
-        * 1. 파일 : SprtLmtMapper_SQL.xml
-        * 2. 기능 : 지원 한도 내역 추가 생성
-        * 3. 작성자 : 최종혁
-        * 4. 변경이력 :
-        * 2025.10.20 - 최종혁 : 최초작성
         */
         <foreach collection="req" item="u" separator=";">
             insert
@@ -264,9 +184,9 @@
             , #{u.tpwLmtTypCd}
             , #{u.lmtSttYm}
             , #{u.lmtEndYm}
-            , cast(#{u.minCndtVal} as integer)
-            , cast(#{u.maxCndtVal} as integer)
-            , cast(#{u.tgtAdptVal} as integer)
+            , #{u.minCndtVal}
+            , #{u.maxCndtVal}
+            , #{u.tgtAdptVal}
             , upper('y')
             , 'system'
             , to_char(now(), 'YYYYMMDDHH24MISS')
@@ -276,13 +196,77 @@
         </foreach>
     </insert>
 
+    <update id="updateTrdNcntLtnAdptYn" parameterType="list">
+        update tbhxzd208 d208
+           set trd_ncnt_adpt_yn =upper(#{adptYn})
+        where tpw_svc_typ_id = #{tpwSvcTypId}
+    </update>
+
+    <update id="updateSprtLmtUseYn">
+        update ohxzown.tbhxzd208
+        set use_yn = 'N'
+        where tpw_svc_id     = #{tpwSvcId}
+          and tpw_svc_typ_id = #{tpwSvcTypId}
+          and tpw_lmt_dvs_cd = #{tpwLmtDvsCd}
+          and use_yn         = 'Y'
+    </update>
+    <select id="readSprtLmtCntBySvcTyp"
+            parameterType="map"
+            resultType="int">
+        select count(1)
+        from ohxzown.tbhxzd208
+        where tpw_svc_id    = #{tpwSvcId}
+        and tpw_svc_typ_id = #{tpwSvcTypId}
+        and use_yn         = 'Y'
+    </select>
+
+    <insert id="insertNextSprtLmt" parameterType="map">
+        insert into ohxzown.tbhxzd208 (
+        tpw_svc_id,
+        tpw_svc_typ_id,
+        spfn_lmt_mng_no,
+        spfn_lmt_sno,
+        tpw_lmt_dvs_cd,
+        tpw_lmt_typ_cd,
+        lmt_stt_ym,
+        lmt_end_ym,
+        min_cndt_val,
+        max_cndt_val,
+        tgt_adpt_val,
+        use_yn,
+        rgsr_id,
+        rgt_dtm,
+        updr_id,
+        upd_dtm
+        )
+        values
+        <foreach collection="req" item="u" separator=",">
+            (
+            #{u.tpwSvcId}
+            , #{tpwSvcTypId}
+            , #{u.spfnLmtMngNo}
+            , #{u.spfnLmtSno}
+            , #{u.tpwLmtDvsCd}
+            , #{u.tpwLmtTypCd}
+            , #{u.lmtSttYm}
+            , #{u.lmtEndYm}
+            , #{u.minCndtVal}
+            , #{u.maxCndtVal}
+            , #{u.tgtAdptVal}
+            , #{u.useYn}
+            , 'system'
+            , to_char(now(), 'yyyymmddhh24miss')
+            , 'system'
+            , to_char(now(), 'yyyymmddhh24miss')
+            )
+        </foreach>
+    </insert>
+
+
     <select id="readSpfnLmtMngNoNextVal" resultType="String">
         select nextval('sq_tbhxzd208_spfn_lmt_mng_no_01')
     </select>
 
-    <select id="readSpfnLmtSnoNextVal" parameterType="String" resultType="String">
-        select lpad((coalesce(max(cast(#{spfnLmtSno} as integer)),0)+1)::text,10,'0')
-    </select>
 
     <select id="readNextMngNo" parameterType="int" resultType="string">
        select lpad(nextval('sq_tbhxzd208_spfn_lmt_mng_no_01')::text, 10, '0')
