@@ -1,5 +1,6 @@
 package tmoney.co.kr.hxz.sprtpolimng.polimnginf.controller;
 
+import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -7,17 +8,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.service.SprtLmtService;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtInstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.AmtReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.amt.InstReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.AmtLstVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.LstVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.lst.NcntLstVO;
-import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.*;
 
-import javax.validation.Valid;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +109,16 @@ public class SprtLmtController {
         return "hxz/sprtpolimng/polimnginf/sprtLmtPt :: amt-modal";
     }
 
+    @PostMapping("/sprtLmt/edit.do")
+    @ResponseBody
+    public ResponseEntity<?> saveSprtLmt(@RequestBody InstReqVO req) {
+        sprtLmtService.insertSprtLmtAmt(req);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("ok", true);
+        return ResponseEntity.ok(body);
+    }
+
 
     /**
      * 지원 한도(금액) 수정 API
@@ -121,22 +127,22 @@ public class SprtLmtController {
      * @return return ResponseEntity
      */
 
-    @PostMapping(path = "/sprtLmt/edit.do")
-    @ResponseBody
-    public ResponseEntity<?> updateSprtLmtAmt(
-            @RequestBody InstReqVO req
-    ) {
-        sprtLmtService.insertSprtLmtAmt(req);
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping("/sprtLmtDtl/check-exist.do")
     @ResponseBody
     public ResponseEntity<?> checkExistingLimit(
             @RequestParam String tpwSvcId,
             @RequestParam String tpwSvcTypId
     ) {
-        boolean exists = sprtLmtService.hasExistingLimit(tpwSvcId, tpwSvcTypId);
-        return ResponseEntity.ok(Map.of("exists", exists));
+        // 기존 한도 중 "분기" 타입만 뽑아오는 메서드 하나 만들면 좋음
+        List<QuarterRangeVO> qtRanges =
+                sprtLmtService.readQuarterRanges(tpwSvcId, tpwSvcTypId);
+
+        boolean exists = !qtRanges.isEmpty();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("exists", exists);
+        body.put("qtRanges", qtRanges);
+
+        return ResponseEntity.ok(body);
     }
 }

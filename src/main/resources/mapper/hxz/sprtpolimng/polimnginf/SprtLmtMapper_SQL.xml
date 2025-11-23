@@ -17,24 +17,24 @@
         */
 
         select
-        sprt.tpw_svc_id       as tpwSvcId      /* 서비스ID */
-        , sprt.tpw_svc_nm       as tpwSvcNm      /* 서비스명 */
-        , sprt.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
-        , sprt.tpw_svc_typ_nm   as tpwSvcTypNm   /* 서비스유형명 */
-        , sprt.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */
-        , sprt.spfn_lmt_sno     as spfnLmtSno    /* 지원금한도일련번호 */
-        , sprt.tpw_lmt_dvs_cd   as tpwLmtDvsCd   /* 교통복지한도구분코드 */
-        , sprt.tpw_lmt_typ_cd   as tpwLmtTypCd   /* 교통복지한도유형코드 */
-        , sprt.lmt_stt_ym       as lmtSttYm      /* 한도시작년월 */
-        , sprt.lmt_end_ym       as lmtEndYm      /* 한도종료년월 */
-        , sprt.min_cndt_val     as minCndtVal    /* 최소조건값 */
-        , sprt.max_cndt_val     as maxCndtVal    /* 최대조건값 */
-        , sprt.use_yn           as useYn         /* 이용여부 */
+        sprt.tpw_svc_id      as tpwSvcId      /* 서비스ID */
+        , sprt.tpw_svc_nm      as tpwSvcNm      /* 서비스명 */
+        , sprt.tpw_svc_typ_id  as tpwSvcTypId   /* 서비스유형ID */
+        , sprt.tpw_svc_typ_nm  as tpwSvcTypNm   /* 서비스유형명 */
+        , sprt.spfn_lmt_mng_no as spfnLmtMngNo  /* 지원금한도관리번호 */
+        , sprt.spfn_lmt_sno    as spfnLmtSno    /* 지원금한도일련번호 */
+        , sprt.tpw_lmt_dvs_cd  as tpwLmtDvsCd   /* 교통복지한도구분코드 */
+        , sprt.tpw_lmt_typ_cd  as tpwLmtTypCd   /* 교통복지한도유형코드 */
+        , sprt.lmt_stt_ym      as lmtSttYm      /* 한도시작년월 */
+        , sprt.lmt_end_ym      as lmtEndYm      /* 한도종료년월 */
+        , sprt.min_cndt_val    as minCndtVal    /* 최소조건값 */
+        , sprt.max_cndt_val    as maxCndtVal    /* 최대조건값 */
+        , sprt.use_yn          as useYn         /* 이용여부 */
         from (
         select
-          d208.tpw_svc_id      as tpw_svc_id     /* 서비스ID */
-        , max(m201.tpw_svc_nm)      as tpw_svc_nm     /* 서비스명 */
-        , max(d208.tpw_svc_typ_id)       as tpw_svc_typ_id /* 서비스유형ID */
+        d208.tpw_svc_id      as tpw_svc_id     /* 서비스ID */
+        , max(m201.tpw_svc_nm) as tpw_svc_nm     /* 서비스명 */
+        , d208.tpw_svc_typ_id  as tpw_svc_typ_id /* 서비스유형ID */
         , max(m202.tpw_svc_typ_nm)  as tpw_svc_typ_nm /* 서비스유형명 */
         , max(d208.spfn_lmt_mng_no) as spfn_lmt_mng_no/* 지원금한도관리번호 */
         , max(d208.spfn_lmt_sno)    as spfn_lmt_sno   /* 지원금한도일련번호 */
@@ -64,7 +64,7 @@
         <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
             and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
         </if>
-        group by d208.tpw_svc_id
+        group by d208.tpw_svc_id, d208.tpw_svc_typ_id
         ) sprt
         order by sprt.${req.sort} ${req.dir}
         limit #{req.size}
@@ -104,9 +104,22 @@
         <if test="req.tpwLmtDvsCd != null and req.tpwLmtDvsCd != ''">
             and lower(d208.tpw_lmt_dvs_cd) = #{req.tpwLmtDvsCd}
         </if>
-        group by d208.tpw_svc_typ_id
+        group by d208.tpw_svc_id, d208.tpw_svc_typ_id
         having 1 = 1
         ) sprt
+    </select>
+
+    <!-- 동일 서비스(tpw_svc_id)에 대해 현재 사용중인 한도유형 목록 조회 -->
+    <select id="readSvcLmtKinds"
+            parameterType="string"
+            resultType="tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtKindVO">
+
+        select distinct
+            d208.tpw_lmt_dvs_cd as dvsCd,
+            d208.tpw_lmt_typ_cd as lmtTypCd
+        from tbhxzd208 d208
+        where tpw_svc_id = #{tpwSvcId}
+          and use_yn     = 'Y'
     </select>
 
     <select id="readSprtLmtDtlByTpwSvc"
@@ -289,4 +302,19 @@
         from generate_series(1, #{count})
     </select>
 
+    <select id="readQuarterRanges"
+            parameterType="map"
+            resultType="tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.QuarterRangeVO">
+
+        select
+            min(lmt_stt_ym) as lmtSttYm,
+            max(lmt_end_ym) as lmtEndYm
+        from ohxzown.tbhxzd208
+        where tpw_svc_id     = #{tpwSvcId}
+          and tpw_svc_typ_id = #{tpwSvcTypId}
+          and tpw_lmt_dvs_cd = '01'   -- 금액
+          and tpw_lmt_typ_cd = '02'   -- 분기
+          and use_yn         = 'Y'
+        group by spfn_lmt_mng_no
+    </select>
 </mapper>

@@ -4,6 +4,8 @@ import org.apache.ibatis.annotations.Mapper;
 
 import org.apache.ibatis.annotations.Param;
 import tmoney.co.kr.config.HxzDb;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.QuarterRangeVO;
+import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtKindVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtRspVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.SprtLmtSrchReqVO;
@@ -29,6 +31,13 @@ public interface SprtLmtMapper {
 
     void insertNextSprtLmt(@Param("list") List<SprtLmtReqVO> list,
                            @Param("tpwSvcTypId") String tpwSvcTypId);
+
+    List<SprtLmtKindVO> readSvcLmtKinds(@Param("tpwSvcId") String tpwSvcId);
+
+    List<QuarterRangeVO> readQuarterRanges(
+            @Param("tpwSvcId") String tpwSvcId,
+            @Param("tpwSvcTypId") String tpwSvcTypId
+    );
 
     String readSpfnLmtMngNoNextVal();
 

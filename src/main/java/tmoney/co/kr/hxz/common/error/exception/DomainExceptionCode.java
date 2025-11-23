@@ -30,6 +30,9 @@ public enum DomainExceptionCode {
     EXCEL(3500, "정의되지 않은 에러입니다."),
     EXCEL_FILE_INVALID(EXCEL.code+1, "%s"),
 
+    VALIDATION(4000, "정의되지 않은 에러입니다."),
+    VALIDATION_ERROR(VALIDATION.code+1, "%s"),
+
     NTC(2500, "정의되지 않은 에러입니다."),
     NTC_EXCEPTION(NTC.code+1, "%s");
 
