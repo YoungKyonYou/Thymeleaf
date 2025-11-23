@@ -239,8 +239,13 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     public void insertSprtLmtAmt(InstReqVO req) {
         if (req == null) return;
 
+        // 0) 과거(현재 월 이전) 연월 금지
+        periodValidator.validateNotPast(req);
+
         // 1) 도메인 검증 (기간 겹침/중복 등)
         periodValidator.validate(req);
+
+
 
         // 1-1) 실제로 저장할 유형(특히 건수일 때 typCd null 처리) 계산
         final String effectiveTyp = "01".equals(req.getTpwLmtDvsCd())

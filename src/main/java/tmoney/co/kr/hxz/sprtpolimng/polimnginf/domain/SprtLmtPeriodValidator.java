@@ -108,6 +108,87 @@ public class SprtLmtPeriodValidator {
     }
 
     /**
+     * 과거(현재 월 이전) 연월 입력 금지 검증
+     * - 금액(분기/월): 시작/종료 월
+     * - 건수: 적용 연월(lmtSttYm)
+     */
+    public void validateNotPast(InstReqVO req) {
+
+        YearMonth minYm = YearMonth.now(); // 예: 2025-11
+        String minLabel = formatYm(minYm); // "2025-11"
+
+        String dvs = req.getTpwLmtDvsCd(); // 01=금액, 02=건수
+
+        // 1) 금액 한도(분기/월)
+        if ("01".equals(dvs)) {
+            List<AmtReqVO> list =
+                    Optional.ofNullable(req.getAmtList()).orElse(Collections.emptyList());
+
+            for (AmtReqVO a : list) {
+                YearMonth stt = toYearMonth(a.getLmtSttYm());
+                YearMonth end = toYearMonth(a.getLmtEndYm());
+
+                // 시작월 체크
+                if (stt != null && stt.isBefore(minYm)) {
+                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                            "과거(" + minLabel + " 이전)의 한도 시작월은 등록할 수 없습니다."
+                    );
+                }
+
+                // 종료월도 같이 막고 싶으면
+                if (end != null && end.isBefore(minYm)) {
+                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                            "과거(" + minLabel + " 이전)의 한도 종료월은 등록할 수 없습니다."
+                    );
+                }
+            }
+        }
+
+        // 2) 건수 한도
+        if ("02".equals(dvs)) {
+            List<NcntReqVO> list =
+                    Optional.ofNullable(req.getNcntList()).orElse(Collections.emptyList());
+
+            for (NcntReqVO n : list) {
+                YearMonth ym = toYearMonth(n.getLmtSttYm());
+                if (ym != null && ym.isBefore(minYm)) {
+                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                            "과거(" + minLabel + " 이전 연월의 건수 한도는 등록할 수 없습니다."
+                    );
+                }
+            }
+        }
+    }
+
+    /** YYYY-MM / YYYYMM → YearMonth (잘못된 형식이면 null) */
+    private YearMonth toYearMonth(String v) {
+        String norm = normalizeYm(v);   // → "YYYYMM" 또는 null
+        if (norm == null) return null;
+        int year = Integer.parseInt(norm.substring(0, 4));
+        int month = Integer.parseInt(norm.substring(4, 6));
+        return YearMonth.of(year, month);
+    }
+
+    /** YearMonth → "YYYY-MM" (에러 메시지 표기용) */
+    private String formatYm(YearMonth ym) {
+        return ym.toString(); // 기본이 "YYYY-MM"
+    }
+
+    private String normalizeYm(String v) {
+        if (v == null) return null;
+        String s = v.trim();
+        if (s.isEmpty()) return null;
+
+        if (s.matches("^\\d{4}-\\d{2}$")) {      // YYYY-MM
+            return s.substring(0, 4) + s.substring(5, 7);
+        }
+        if (s.matches("^\\d{6}$")) {            // YYYYMM
+            return s;
+        }
+        return null;
+    }
+
+    /**
      * 월 한도: 같은 연월이 두 번 이상 나오면 안 됨
      * 예) 2025-01, 2025-02, 2025-03 → OK
      *     2025-01, 2025-01 → 중복(에러)

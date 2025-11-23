@@ -503,6 +503,17 @@
                 }
 
                 const fmtYm = (y, m) => (y + '-' + (m < 10 ? '0' : '') + m);
+                const MIN_YM = (() => {
+                    const now = new Date();
+                    const y   = now.getFullYear();
+                    const m   = now.getMonth() + 1; // 0-base → 1-base
+                    return {
+                        y,
+                        m,
+                        num: y * 12 + m,      // 비교용 숫자
+                        label: fmtYm(y, m)    // 메시지용 문자열 "YYYY-MM"
+                    };
+                })();
 
                 /* ===== 푸터 에러 ===== */
 
@@ -1653,7 +1664,7 @@
                     for (const tr of rows) {
                         const mm = tr.querySelectorAll('.dp-input[data-dp-type="month"]');
                         const startVal = (mm[0] && mm[0].value || '').trim();
-                        const endVal = (mm[1] && mm[1].value || '').trim();
+                        const endVal   = (mm[1] && mm[1].value || '').trim();
 
                         const s = parseYm(startVal);
                         const e = parseYm(endVal);
@@ -1669,6 +1680,13 @@
 
                         if (sNum > eNum) {
                             showFooterError('분기: 시작월이 종료월보다 클 수 없습니다.');
+                            if (mm[0]) mm[0].focus();
+                            return false;
+                        }
+
+                        /* 🔹 과거(기준 월 이전) 금지 */
+                        if (sNum < MIN_YM.num) {
+                            showFooterError('분기: ' + MIN_YM.label + ' 이전 분기는 등록할 수 없습니다.');
                             if (mm[0]) mm[0].focus();
                             return false;
                         }
@@ -1723,6 +1741,45 @@
 
                     return true;
                 }
+                function validateCountRows(container) {
+                    const tbody = container.querySelector('#newNcntTable tbody');
+                    if (!tbody) return true;
+
+                    const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+                    if (rows.length === 0) return true;
+
+                    const seen = new Set();
+
+                    for (const tr of rows) {
+                        const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
+                        const raw = (inp && inp.value || '').trim();
+                        const ym  = parseYm(raw);
+
+                        if (!ym) {
+                            showFooterError('건수 한도: 적용 연월 형식이 잘못되었습니다.');
+                            if (inp) inp.focus();
+                            return false;
+                        }
+
+                        const num = ymToNum(ym);
+
+                        /*  과거(기준 월 이전) 금지 */
+                        if (num < MIN_YM.num) {
+                            showFooterError('건수 한도: ' + MIN_YM.label + ' 이전 연월은 등록할 수 없습니다.');
+                            if (inp) inp.focus();
+                            return false;
+                        }
+
+                        const key = ym.y + '-' + (ym.m < 10 ? '0' + ym.m : ym.m);
+                        if (seen.has(key)) {
+                            showFooterError('건수 한도: 동일한 연월이 두 번 이상 설정될 수 없습니다. (' + key + ')');
+                            if (inp) inp.focus();
+                            return false;
+                        }
+                        seen.add(key);
+                    }
+                    return true;
+                }
                 function validateMonthRows(container, panelSelector, label) {
                     const tbody = container.querySelector(panelSelector + ' tbody');
                     if (!tbody) return true;
@@ -1735,7 +1792,7 @@
                     for (const tr of rows) {
                         const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
                         const raw = (inp && inp.value || '').trim();
-                        const ym = parseYm(raw);
+                        const ym  = parseYm(raw);
 
                         if (!ym) {
                             showFooterError(label + ': 적용 월 형식이 잘못되었습니다.');
@@ -1743,8 +1800,16 @@
                             return false;
                         }
 
-                        const key = ym.y + '-' + (ym.m < 10 ? '0' + ym.m : ym.m);
+                        const num = ymToNum(ym);
 
+                        /* 🔹 과거(기준 월 이전) 금지 */
+                        if (num < MIN_YM.num) {
+                            showFooterError(label + ': ' + MIN_YM.label + ' 이전 월은 등록할 수 없습니다.');
+                            if (inp) inp.focus();
+                            return false;
+                        }
+
+                        const key = ym.y + '-' + (ym.m < 10 ? '0' + ym.m : ym.m);
                         if (seen.has(key)) {
                             showFooterError(label + ': 동일한 월이 두 번 이상 설정될 수 없습니다. (' + key + ')');
                             if (inp) inp.focus();
@@ -1939,10 +2004,11 @@
 
                             // === 추가 검증: 기간/연월 중복 방지 ===
                             if (activeTab === 'q') {
-                                // 👉 신규 3in1 에서는 __prevQuarterRanges 에 기존 분기 있음
                                 if (!validateQuarterRows(container, __prevQuarterRanges)) return;
                             } else if (activeTab === 'm') {
                                 if (!validateMonthRows(container, '#panel-m', '월 한도')) return;
+                            } else if (activeTab === 'c') {
+                                if (!validateCountRows(container)) return;
                             }
 
                             const res = await Common.sendSafe('/sprtpolimng/polimnginf/sprtLmt/edit.do', {
