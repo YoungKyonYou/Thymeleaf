@@ -111,8 +111,15 @@
                 <div class="box-wrap">
                     <div class="box">
                         <p class="field-title">서비스 선택</p>
+
+                        <!--  전체 서비스/유형 검색 체크 -->
+                        <div class="control checkbox" style="margin-bottom: 8px;">
+                            <input type="checkbox" id="allSvcYn" name="allSvcYn" value="Y">
+                            <label for="allSvcYn">전체 서비스/유형 검색</label>
+                        </div>
+
                         <th:block
-                            th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId', true)}">
+                                th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId', true)}">
                         </th:block>
                     </div>
                 </div>
@@ -1972,6 +1979,51 @@
                         (searchForm && searchForm.getAttribute('action'))
                         || (searchForm && searchForm.dataset.baseUrl)
                         || window.location.pathname;
+
+
+                    //  "전체 서비스/유형 검색" 체크박스 + 서비스/유형 드롭다운 제어
+                    const allSvcCheckbox = searchForm && searchForm.querySelector('#allSvcYn');
+                    const svcRoot = document.getElementById('svcPair1'); // cascadingDropdown root
+
+                    function applyAllSvcState() {
+                        if (!allSvcCheckbox || !svcRoot) return;
+
+                        const checked = allSvcCheckbox.checked;
+
+                        // hidden input (tpwSvcId, tpwSvcTypId)
+                        const svcIdInput  = svcRoot.querySelector('input[name="tpwSvcId"]');
+                        const svcTypInput = svcRoot.querySelector('input[name="tpwSvcTypId"]');
+
+                        // 드롭다운 버튼 비활성/활성
+                        svcRoot.querySelectorAll('.dropdown_button').forEach(btn => {
+                            btn.disabled = checked;
+                        });
+
+                        if (checked) {
+                            //  전체 검색 모드: 값 비워서 서버에서 조건 안 타게
+                            if (svcIdInput)  svcIdInput.value  = '';
+                            if (svcTypInput) svcTypInput.value = '';
+
+                            // 라벨도 "전체 서비스" / "전체 유형" 느낌으로 바꿔주기 (선택값 리셋)
+                            const svcLabel = svcRoot.querySelector('.dropdown[data-name="tpwSvcId"] .dropdown_value');
+                            const typLabel = svcRoot.querySelector('.dropdown[data-name="tpwSvcTypId"] .dropdown_value');
+                            if (svcLabel) svcLabel.textContent = '전체 서비스';
+                            if (typLabel) typLabel.textContent = '전체 유형';
+                        } else {
+                            //  체크 해제: 다시 선택 가능만 만들고, 값은 그대로 두거나
+                            // 필요하면 여기서 초기화 해도 됨.
+                            // 지금은 "기존에 선택한 값"을 살려두는 쪽으로 둔다.
+                        }
+                    }
+
+                    if (allSvcCheckbox && svcRoot) {
+                        // 페이지 진입 시 한 번 적용
+                        applyAllSvcState();
+
+                        // 체크 상태 변경 시마다 적용
+                        allSvcCheckbox.addEventListener('change', applyAllSvcState);
+                    }
+
                     // 0) 검색조건 기본값 (사용여부=Y, 한도구분=금액)
                     if (searchForm) {
                         // 사용여부 (Y / N)
