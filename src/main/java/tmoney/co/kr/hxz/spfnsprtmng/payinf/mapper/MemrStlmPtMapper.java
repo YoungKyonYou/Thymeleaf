@@ -2,9 +2,7 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-//import tmoney.co.kr.hxz.config.HxzDb;
 import tmoney.co.kr.config.HxzDb;
-
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO;
 

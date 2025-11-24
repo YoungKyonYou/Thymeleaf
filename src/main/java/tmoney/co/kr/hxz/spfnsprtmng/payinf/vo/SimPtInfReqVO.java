@@ -3,10 +3,10 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
-
 import java.math.BigDecimal;
 
 @Getter
@@ -16,11 +16,17 @@ public class SimPtInfReqVO {
     @Size(max = 7, message = "기관코드는 7 이하의 값이어야 합니다.")
     private String orgCd; //  기관코드
 
+    @Size(max = 8, message = "신청기간은 8자리 이하의 길이어야 합니다.")
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "신청기간은 yyyy-MM-dd 형식이어야 합니다.")
+    private String aplDt;
+
     @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.")
-    private String sttDt;              // 신청기간 시작일자 (YYYYMMDD)
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "시작일자는 yyyy-MM-dd 형식이어야 합니다.")
+    private String sttDt = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString(); // 기본값: 오늘날짜         // 신청기간 시작일자 (YYYYMMDD)
 
     @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.")
-    private String endDt;              // 신청기간 종료일자 (YYYYMMDD)
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "종료일자는 yyyy-MM-dd 형식이어야 합니다.")
+    private String endDt = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();          // 신청기간 종료일자 (YYYYMMDD)
 
     @Size(max = 100, message = "카드번호는 100자리 이하의 길이어야 합니다.")
     private String cardNo;             // 카드번호

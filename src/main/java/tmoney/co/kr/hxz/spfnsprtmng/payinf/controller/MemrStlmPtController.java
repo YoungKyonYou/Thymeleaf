@@ -1,7 +1,6 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
 import lombok.RequiredArgsConstructor;
-//import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,13 +8,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.common.util.DateUtil;
-//import tmoney.co.kr.hxz.common.vo.MngrVO; // @MgrVO가 포함된 패키지라고 가정
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.MemrStlmPtService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.validation.Valid;
 

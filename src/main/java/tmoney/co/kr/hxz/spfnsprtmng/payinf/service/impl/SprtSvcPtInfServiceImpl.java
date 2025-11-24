@@ -16,6 +16,7 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * ============================================
@@ -37,8 +38,14 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
     public PageDataVO<SprtSvcDtlRspVO> readSprtSvcPtInfList(SprtSvcPtInfReqVO reqVO, String orgCd) {
         long total = sprtSvcPtInfMapper.readSprtSvcPtInfListCnt(reqVO, orgCd);
         List<SprtSvcDtlRspVO> content = sprtSvcPtInfMapper.readSprtSvcPtInfList(reqVO, orgCd);
+
+        List<SprtSvcDtlRspVO> distinctContent = content.stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        
         return new PageDataVO<>(
-                content,
+                distinctContent,
                 reqVO.getPage(),
                 reqVO.getSize(),
                 total
@@ -58,7 +65,7 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
 
         // BeanUtils로 DtlRspVO로 변환
         SprtSvcDtlRspVO main = new SprtSvcDtlRspVO();
-        org.springframework.beans.BeanUtils.copyProperties(baseInfo, main);
+        BeanUtils.copyProperties(baseInfo, main);
 
         // TODO: PageDataVo로 해줘야 할듯?
         // 하위 서비스유형 리스트 추가 조회
