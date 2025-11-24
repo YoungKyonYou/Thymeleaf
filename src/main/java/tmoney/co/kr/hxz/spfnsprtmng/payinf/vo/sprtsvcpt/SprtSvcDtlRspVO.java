@@ -1,5 +1,6 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 @Getter
 @Setter
+@EqualsAndHashCode(of = {"tpwSvcId"})
 public class SprtSvcDtlRspVO  {
 
     // 지원서비스내역 상세관리 목록 조회
@@ -53,7 +55,4 @@ public class SprtSvcDtlRspVO  {
     private List<SprtSvcTypRspVO> svcTypList = new ArrayList<>();
 
 
-    public void setTpwSvcId(String tpwSvcId) {
-        this.tpwSvcId = tpwSvcId;
-    }
 }

@@ -1,17 +1,15 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
 import lombok.RequiredArgsConstructor;
-
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
 import tmoney.co.kr.export.ExportColumn;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.common.util.DateUtil;
@@ -24,7 +22,6 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -259,7 +256,7 @@ public class SprtSvcPtInfController {
         Workbook wb = new XSSFWorkbook();
         Sheet sheet = wb.createSheet(sheetName);
 
-        AtomicInteger rowIdx = new AtomicInteger(1);
+        AtomicInteger rowIdx = new AtomicInteger(0);
 
         // ===== 1. 헤더 작성 =====
         Row headerRow = sheet.createRow(rowIdx.getAndIncrement());

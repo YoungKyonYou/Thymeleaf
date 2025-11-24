@@ -1,12 +1,14 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 
-import lombok.*;
-//import org.hibernate.validator.constraints.time.Pattern; // javax.validation.constraints.Pattern으로 대체될 수 있음
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 

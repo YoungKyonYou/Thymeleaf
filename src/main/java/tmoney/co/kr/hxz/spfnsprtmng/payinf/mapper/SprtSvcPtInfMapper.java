@@ -1,10 +1,10 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper;
 
-import tmoney.co.kr.config.HxzDb;
 import org.apache.ibatis.annotations.Mapper;
+import tmoney.co.kr.config.HxzDb;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO;
-import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO; // 💡 변경된 Req VO 경로
-import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfRspVO; // 💡 변경된 Rsp VO 경로
+import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO;
+import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfRspVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO;
 
 import javax.validation.constraints.NotBlank;

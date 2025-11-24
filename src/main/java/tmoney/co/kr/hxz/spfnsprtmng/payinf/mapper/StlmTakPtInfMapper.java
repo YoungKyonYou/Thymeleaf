@@ -1,13 +1,13 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 import tmoney.co.kr.config.HxzDb;
-import org.apache.ibatis.annotations.Mapper;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO;
 
-import java.util.List;
 import java.math.BigDecimal;
+import java.util.List;
 
 @HxzDb
 @Mapper

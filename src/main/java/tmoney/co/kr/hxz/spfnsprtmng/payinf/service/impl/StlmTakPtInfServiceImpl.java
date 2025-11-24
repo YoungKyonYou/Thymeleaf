@@ -9,9 +9,8 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.StlmTakPtInfService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO;
 
-import java.util.List;
-
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * ==========================================================
