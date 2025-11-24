@@ -53,7 +53,25 @@
         </div>
     </div>
 
-    <!-- 사용 예: bindPagination('/user', { dir: 'asc', email: 'kim@test.com', username: 'young' }) -->
+    <!--
+      사용 예)
+
+      1) 기존 화면들(그대로 사용)
+      bindPagination(baseUrl, {
+          page: 0,
+          size: parseInt(selectSize?.value || '10', 10),
+          dir:  inputDir?.value || 'asc',
+          sort: inputSort?.value || 'mbrs_id',
+      });
+
+      2) 셀렉터까지 명시하고 싶은 화면
+      bindPagination(baseUrl, {
+          page: 0,
+          size: parseInt(selectSize?.value || '10', 10),
+          dir:  inputDir?.value || 'asc',
+          sort: inputSort?.value || 'mbrs_id',
+      }, ['#grid-header', '#grid-tbody', '#grid-pager', '#grid-title', '#grid-head']);
+    -->
     <script>
         function putParam(params, key, value) {
           if (value === null || value === undefined || value === '') return;
@@ -61,42 +79,66 @@
           else params.set(key, value);
         }
 
-        async function fetchAndSwap(u) {
+        /**
+         * fetchAndSwap(u, selectors?)
+         * - selectors를 안 넘기면 기본(grid-*) 셀렉터 세트를 사용
+         * - 넘기면 그 리스트대로 for문 돌면서 교체
+         */
+        async function fetchAndSwap(u, selectors) {
+          // 기본 교체 규칙 (기존 동작 유지: pager는 innerHTML, 나머지는 replaceWith)
+          const defaultSwaps = [
+            { selector: '#grid-header', mode: 'replace' },
+            { selector: '#grid-tbody',  mode: 'replace' },
+            { selector: '#grid-pager',  mode: 'inner'   },
+            { selector: '#grid-title',  mode: 'replace' },
+            { selector: '#grid-head',   mode: 'replace' },
+          ];
+
+          // 사용자가 배열을 넘겼으면 그걸로 덮어씀. (사용자 셀렉터는 전부 replace 모드)
+          const swaps = (Array.isArray(selectors) && selectors.length > 0)
+            ? selectors.map(sel => ({ selector: sel, mode: 'replace' }))
+            : defaultSwaps;
+
           const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const html = await res.text();
 
           const doc = new DOMParser().parseFromString(html, 'text/html');
 
-          const newHead  = doc.querySelector('#grid-header');
-          const newTbody = doc.querySelector('#grid-tbody');
-          const newPager = doc.querySelector('#grid-pager');
-          const newTitle = doc.querySelector('#grid-title');
-          const newTHead = doc.querySelector('#grid-head');
 
-          const curHead  = document.querySelector('#grid-header');
-          const curTbody = document.querySelector('#grid-tbody');
-          const curPager = document.querySelector('#grid-pager');
-          const curTitle = document.querySelector('#grid-title');
-          const curTHead = document.querySelector('#grid-head');
+          for (const cfg of swaps) {
+            const sel  = cfg.selector;
+            const mode = cfg.mode || 'replace';
 
-          if (newTbody && curTbody) curTbody.replaceWith(newTbody);
-          if (newPager && curPager) curPager.innerHTML = newPager.innerHTML;
-          if (newHead  && curHead)  curHead.replaceWith(newHead);
-          if (newTitle && curTitle) curTitle.replaceWith(newTitle);
-          if (newTHead && curTHead) curTHead.replaceWith(newTHead);
+            if (!sel) continue;
+
+            const newEl = doc.querySelector(sel);
+            const curEl = document.querySelector(sel);
+
+            if (!newEl || !curEl) continue;
+
+            if (mode === 'inner') {
+              curEl.innerHTML = newEl.innerHTML;
+            } else {
+              curEl.replaceWith(newEl);
+            }
+          }
 
           // 주소창만 갱신 (전체 새로고침 X)
           history.pushState(null, '', u.toString());
         }
 
-        function bindPagination(url, ...args) {
-          const baseUrl  = new URL(url, window.location.origin);
-          const baseArgs = Object.assign({}, ...args);
+        /**
+         * 시그니처 유지:
+         *   bindPagination(url, baseArgs, selectors?)
+         */
+        function bindPagination(url, baseArgs, selectors) {
+          const baseUrl = new URL(url, window.location.origin);
+          const args    = Object.assign({}, baseArgs || {});
 
           // 브라우저 뒤로/앞으로 가기 지원
           window.addEventListener('popstate', () => {
-            fetchAndSwap(new URL(window.location.href)).catch(console.error);
+            fetchAndSwap(new URL(window.location.href), selectors).catch(console.error);
           });
 
           document.addEventListener('click', function (e) {
@@ -111,21 +153,25 @@
             const u = new URL(baseUrl.toString());
             const p = new URLSearchParams(u.search);
 
-            const size = baseArgs.size ?? null; // null이면 생략
-            const dir  = baseArgs.dir  ?? 'asc';
-            const sort = baseArgs.sort ?? null; // null/''이면 생략
+            const size = args.size ?? null; // null이면 생략
+            const dir  = args.dir  ?? 'asc';
+            const sort = args.sort ?? null; // null/''이면 생략
 
             putParam(p, 'size', size);
             putParam(p, 'page', page); // 0-base 그대로
             putParam(p, 'dir',  dir);
-            if (sort !== null && sort !== undefined && sort !== '') putParam(p, 'sort', sort);
+            if (sort !== null && sort !== undefined && sort !== '') {
+              putParam(p, 'sort', sort);
+            }
 
             const skip = new Set(['size','page','dir','sort']);
-            Object.entries(baseArgs).forEach(([k, v]) => { if (!skip.has(k)) putParam(p, k, v); });
+            Object.entries(args).forEach(([k, v]) => {
+              if (!skip.has(k)) putParam(p, k, v);
+            });
 
             u.search = p.toString();
 
-            fetchAndSwap(u).catch(console.error);
+            fetchAndSwap(u, selectors).catch(console.error);
           });
         }
     </script>

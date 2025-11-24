@@ -11,6 +11,7 @@
             #modal-common {
                 z-index: 2000;
             }
+
             /* 읽기전용 표시 */
             #modal-manager .dp-input[readonly] {
                 background: #f3f4f6;
@@ -119,7 +120,7 @@
                         </div>
 
                         <th:block
-                                th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId', true)}">
+                            th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId', true)}">
                         </th:block>
                     </div>
                 </div>
@@ -505,8 +506,8 @@
                 const fmtYm = (y, m) => (y + '-' + (m < 10 ? '0' : '') + m);
                 const MIN_YM = (() => {
                     const now = new Date();
-                    const y   = now.getFullYear();
-                    const m   = now.getMonth() + 1; // 0-base → 1-base
+                    const y = now.getFullYear();
+                    const m = now.getMonth() + 1; // 0-base → 1-base
                     return {
                         y,
                         m,
@@ -646,7 +647,7 @@
                         __state.dvs = '02';
                         __state.typ = '02';
                     } else {
-                        // ✅ 금액형: typCd 로 월/분기 중 하나만 허용
+                        //  금액형: typCd 로 월/분기 중 하나만 허용
                         if (typ === '01') {
                             // 월 설정: 월 탭만 활성
                             if (tabQ) tabQ.setAttribute('disabled', 'disabled');
@@ -679,7 +680,7 @@
                     else modal.classList.remove('qtr-readonly');
 
                     // 검색조건 input id 모음
-                    const SEARCH_IDS = new Set(['qt-search-year', 'mon-search-from', 'mon-search-to', 'cnt-search-ym' ]);
+                    const SEARCH_IDS = new Set(['qt-search-year', 'mon-search-from', 'mon-search-to', 'cnt-search-ym']);
 
                     // 날짜 입력
                     container.querySelectorAll('.dp-input').forEach(el => {
@@ -1099,30 +1100,27 @@
                         '<input type="hidden" name="' + namePrefix + '.spfnLmtMngNo"/>' +
                         '<input type="hidden" name="' + namePrefix + '.spfnLmtSno"/>' +
 
-                        //  연월(월) 컬럼
-                        '<td>' +
-                        '  <div class="text-field datepicker" style="width:200px">' +
-                        '    <input class="dp-input" type="text" placeholder="YYYY-MM" ' +
-                        '           data-dp-type="month" autocomplete="off" ' +
-                        '           name="' + namePrefix + '.lmtSttYm" />' +
-                        '    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>' +
-                        '  </div>' +
-                        '</td>' +
+                        '<td>' + (index + 1) + '</td>' +
 
                         '<td><input type="text" class="text-field js-count" ' +
-                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.minCndtVal"/></td>' +
+                        'inputmode="numeric" autocomplete="off" data-maxlen="10" ' +
+                        'name="' + namePrefix + '.minCndtVal"/></td>' +
+
                         '<td><input type="text" class="text-field js-count" ' +
-                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.maxCndtVal"/></td>' +
+                        'inputmode="numeric" autocomplete="off" data-maxlen="10" ' +
+                        'name="' + namePrefix + '.maxCndtVal"/></td>' +
+
                         '<td><input type="text" class="text-field js-percent" ' +
-                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.tgtAdptVal"/></td>';
+                        'inputmode="numeric" autocomplete="off" ' +
+                        'name="' + namePrefix + '.tgtAdptVal"/></td>';
 
                     tbody.appendChild(row);
 
                     const sc = document.getElementById('newNcntTableScroll');
                     if (sc) sc.scrollTop = sc.scrollHeight;
 
-                    bindNumericMasks(tbody);
-                    normalizeMonthInputs(tbody);   //  YYYYMM → YYYY-MM 자동 정규화
+                    // 숫자 마스크 적용
+                    bindNumericMasks(row);
                     clearFooterError();
                 }
 
@@ -1133,7 +1131,7 @@
                     const rows = tbody.querySelectorAll('tr:not(.empty-row)');
                     if (rows.length > 0) rows[rows.length - 1].remove();
 
-                    const colspan = (tableId === 'newNcntTable') ? 4 : 3; // ✅ 건수 테이블만 4
+                    const colspan = (tableId === 'newNcntTable') ? 4 : 3; //  건수 테이블만 4
                     ensureEmptyRow(tbody, colspan);
                     clearFooterError();
                 }
@@ -1368,7 +1366,7 @@
                     const info = await checkExistingLimit(cas.child.tpwSvcId, cas.child.tpwSvcTypId);
                     const exists = info && info.exists;
 
-                    // 👉 기존 분기 리스트는 전역에 저장 (신규 저장 시 겹침 체크용)
+                    //  기존 분기 리스트는 전역에 저장 (신규 저장 시 겹침 체크용)
                     __prevQuarterRanges = (info && Array.isArray(info.qtRanges)) ? info.qtRanges : [];
 
                     if (exists) {
@@ -1410,7 +1408,7 @@
                         bindQuarterSearch(container);
                         bindMonthSearch(container);
                         bindQuarterAutoCalc(container);
-                        bindCountSearch(container);
+
 
                         const modeInput = container.querySelector('#mode');
                         if (modeInput) modeInput.value = 'new-3in1';
@@ -1538,7 +1536,7 @@
                     bindQuarterSearch(container);
                     bindMonthSearch(container);
                     bindQuarterAutoCalc(container);
-                    bindCountSearch(container);
+
 
                     const modeInput = container.querySelector('#mode');
                     if (modeInput) modeInput.value = 'edit-3in1';
@@ -1613,44 +1611,7 @@
                     }
                 }
 
-                function bindCountSearch(container) {
-                    const ymInput = container.querySelector('#cnt-search-ym');
-                    const btn = container.querySelector('#btn-cnt-search');
-                    const tbody = container.querySelector('#newNcntTable tbody');
-                    if (!ymInput || !btn || !tbody) return;
 
-                    function normalizeYm(v) {
-                        v = (v || '').trim();
-                        if (/^\d{6}$/.test(v)) return v.slice(0, 4) + '-' + v.slice(4, 6); // YYYYMM → YYYY-MM
-                        return v;
-                    }
-
-                    function filter() {
-                        const target = normalizeYm(ymInput.value);
-                        const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
-
-                        if (!target) {
-                            rows.forEach(tr => { tr.style.display = ''; });
-                            clearFooterError();
-                            return;
-                        }
-
-                        rows.forEach(tr => {
-                            const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
-                            const v = normalizeYm(inp && inp.value);
-                            tr.style.display = (v === target ? '' : 'none');
-                        });
-                        clearFooterError();
-                    }
-
-                    btn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        filter();
-                    });
-
-                    // 처음 열릴 때 기본값(현재 연월)이 들어가 있으면 바로 필터
-                    filter();
-                }
 
                 function validateQuarterRows(container, prevRanges) {
                     const tbody = container.querySelector('#panel-q tbody');
@@ -1664,7 +1625,7 @@
                     for (const tr of rows) {
                         const mm = tr.querySelectorAll('.dp-input[data-dp-type="month"]');
                         const startVal = (mm[0] && mm[0].value || '').trim();
-                        const endVal   = (mm[1] && mm[1].value || '').trim();
+                        const endVal = (mm[1] && mm[1].value || '').trim();
 
                         const s = parseYm(startVal);
                         const e = parseYm(endVal);
@@ -1684,7 +1645,7 @@
                             return false;
                         }
 
-                        /* 🔹 과거(기준 월 이전) 금지 */
+                        //  과거(기준 월 이전) 금지
                         if (sNum < MIN_YM.num) {
                             showFooterError('분기: ' + MIN_YM.label + ' 이전 분기는 등록할 수 없습니다.');
                             if (mm[0]) mm[0].focus();
@@ -1718,18 +1679,28 @@
                                 const s = parseYm(r.lmtSttYm);
                                 const e = parseYm(r.lmtEndYm);
                                 if (!s || !e) return null;
-                                return { sNum: ymToNum(s), eNum: ymToNum(e) };
+                                return {
+                                    sNum: ymToNum(s),
+                                    eNum: ymToNum(e),
+                                    label: fmtYm(s.y, s.m) + ' ~ ' + fmtYm(e.y, e.m)
+                                };
                             })
                             .filter(Boolean);
 
                         if (prevNorm.length > 0) {
                             for (const curr of ranges) {
                                 for (const p of prevNorm) {
-                                    // 구간 겹침 여부: (시작 ≤ 상대 종료) && (상대 시작 ≤ 종료)
-                                    if (curr.sNum <= p.eNum && p.sNum <= curr.eNum) {
+                                    const isSamePeriod =
+                                        curr.sNum === p.sNum && curr.eNum === p.eNum;   //  완전 동일 기간
+                                    const isOverlap =
+                                        curr.sNum <= p.eNum && p.sNum <= curr.eNum;     // 구간 겹침 여부
+
+                                    //  "겹치면서, 완전 동일 기간이 아닌 경우"만 에러
+                                    if (isOverlap && !isSamePeriod) {
                                         showFooterError(
-                                            '분기: 기존에 이미 등록된 분기와 기간이 겹칩니다.\n' +
-                                            '기존 한도(이미 저장된 분기)와 겹치지 않도록 기간을 다시 설정해주세요.'
+                                            '분기: 기존에 이미 등록된 분기(' + p.label +
+                                            ')와 기간이 일부 겹칩니다.\n' +
+                                            '기존 분기와 동일한 기간(시작/종료년월이 모두 일치)만 다시 등록할 수 있습니다.'
                                         );
                                         if (curr.startInput) curr.startInput.focus();
                                         return false;
@@ -1748,36 +1719,43 @@
                     const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
                     if (rows.length === 0) return true;
 
-                    const seen = new Set();
-
                     for (const tr of rows) {
-                        const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
-                        const raw = (inp && inp.value || '').trim();
-                        const ym  = parseYm(raw);
+                        const minInput = tr.querySelector('input[name$=".minCndtVal"]');
+                        const maxInput = tr.querySelector('input[name$=".maxCndtVal"]');
 
-                        if (!ym) {
-                            showFooterError('건수 한도: 적용 연월 형식이 잘못되었습니다.');
-                            if (inp) inp.focus();
+                        if (!minInput || !maxInput) continue;
+
+                        const minVal = onlyDigits(minInput.value);
+                        const maxVal = onlyDigits(maxInput.value);
+
+                        if (!minVal || !maxVal) {
+                            showFooterError('건수 한도: 최소/최대 건수를 모두 입력해주세요.');
+                            (minVal ? maxInput : minInput).focus();
                             return false;
                         }
 
-                        const num = ymToNum(ym);
+                        const min = parseInt(minVal, 10);
+                        const max = parseInt(maxVal, 10);
 
-                        /*  과거(기준 월 이전) 금지 */
-                        if (num < MIN_YM.num) {
-                            showFooterError('건수 한도: ' + MIN_YM.label + ' 이전 연월은 등록할 수 없습니다.');
-                            if (inp) inp.focus();
+                        if (isNaN(min) || isNaN(max)) {
+                            showFooterError('건수 한도: 최소/최대 건수는 숫자만 입력 가능합니다.');
+                            (isNaN(min) ? minInput : maxInput).focus();
                             return false;
                         }
 
-                        const key = ym.y + '-' + (ym.m < 10 ? '0' + ym.m : ym.m);
-                        if (seen.has(key)) {
-                            showFooterError('건수 한도: 동일한 연월이 두 번 이상 설정될 수 없습니다. (' + key + ')');
-                            if (inp) inp.focus();
+                        if (min < 0 || max < 0) {
+                            showFooterError('건수 한도: 최소/최대 건수는 0 이상이어야 합니다.');
+                            (min < 0 ? minInput : maxInput).focus();
                             return false;
                         }
-                        seen.add(key);
+
+                        if (min > max) {
+                            showFooterError('건수 한도: 최소 건수가 최대 건수보다 클 수 없습니다.');
+                            minInput.focus();
+                            return false;
+                        }
                     }
+
                     return true;
                 }
                 function validateMonthRows(container, panelSelector, label) {
@@ -1792,7 +1770,7 @@
                     for (const tr of rows) {
                         const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
                         const raw = (inp && inp.value || '').trim();
-                        const ym  = parseYm(raw);
+                        const ym = parseYm(raw);
 
                         if (!ym) {
                             showFooterError(label + ': 적용 월 형식이 잘못되었습니다.');
@@ -1949,7 +1927,7 @@
                                 ncntList: []
                             };
 
-// === 서비스 단위 한도유형(분기/월/건수) 강제 일치 검증 ===
+                            // === 서비스 단위 한도유형(분기/월/건수) 강제 일치 검증 ===
                             if (__svcLimitKind && __svcLimitKind.dvs && __svcLimitKind.typ) {
                                 const sameDvs = (__svcLimitKind.dvs === body.tpwLmtDvsCd);
                                 const sameTyp = (__svcLimitKind.typ === body.tpwLmtTypCd);
@@ -1958,7 +1936,7 @@
                                     const kindLabel = (dvs, typ) => {
                                         if (dvs === '01' && typ === '02') return '금액-분기';
                                         if (dvs === '01' && typ === '01') return '금액-월';
-                                        if (dvs === '02')               return '건수';
+                                        if (dvs === '02') return '건수';
                                         return '알 수 없는 유형';
                                     };
 
@@ -2057,7 +2035,7 @@
                         const checked = allSvcCheckbox.checked;
 
                         // hidden input (tpwSvcId, tpwSvcTypId)
-                        const svcIdInput  = svcRoot.querySelector('input[name="tpwSvcId"]');
+                        const svcIdInput = svcRoot.querySelector('input[name="tpwSvcId"]');
                         const svcTypInput = svcRoot.querySelector('input[name="tpwSvcTypId"]');
 
                         // 드롭다운 버튼 비활성/활성
@@ -2067,7 +2045,7 @@
 
                         if (checked) {
                             //  전체 검색 모드: 값 비워서 서버에서 조건 안 타게
-                            if (svcIdInput)  svcIdInput.value  = '';
+                            if (svcIdInput) svcIdInput.value = '';
                             if (svcTypInput) svcTypInput.value = '';
 
                             // 라벨도 "전체 서비스" / "전체 유형" 느낌으로 바꿔주기 (선택값 리셋)
@@ -2398,18 +2376,9 @@
                     <div class="tab-panel" id="panel-c" role="tabpanel" aria-labelledby="tab-c">
                         <div class="table-wrap mt20">
                             <form id="ncnt" th:object="${ncnt}">
-                                <!-- 상단: 검색조건(연월) + 건수 한도 / 우측: 행추가/행삭제 -->
+                                <!-- 상단: 건수 한도 라벨 + 수정 버튼 / 우측: 행추가/행삭제 -->
                                 <div class="flex align-center justify-space-between mb12">
                                     <div class="flex align-center gap8 js-search-cond">
-                                        <span class="search-label">검색조건(적용 연월)</span>
-                                        <div class="text-field datepicker" style="width:160px">
-                                            <input id="cnt-search-ym" type="text" class="dp-input"
-                                                   placeholder="YYYY-MM" data-dp-type="month" autocomplete="off" />
-                                            <button type="button" class="dp-btn" data-dp-toggle
-                                                    aria-label="적용 연월 선택 열기"></button>
-                                        </div>
-                                        <button class="btn btn-dark-line" id="btn-cnt-search" type="button">검색</button>
-
                                         <span class="search-label">건수 한도</span>
                                         <!-- 설정하기에서 readOnly 풀기용 -->
                                         <button class="btn btn-dark-line js-edit-toggle" type="button">수정</button>
@@ -2425,51 +2394,40 @@
                                     <table class="table" id="newNcntTable">
                                         <caption class="blind">건수 한도</caption>
                                         <thead>
-                                        <tr>
-                                            <th>적용 연월</th>
-                                            <th>최소한도건</th>
-                                            <th>최대한도건</th>
-                                            <th>지급률(%)</th>
-                                        </tr>
+                                            <tr>
+                                                <th>순번</th>
+                                                <th>최소한도건</th>
+                                                <th>최대한도건</th>
+                                                <th>지급률(%)</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-                                        <tr class="empty-row" th:if="${arr == null or #lists.isEmpty(arr)}">
-                                            <td class="empty" colspan="4">행을 추가해주세요.</td>
-                                        </tr>
+                                            <tr class="empty-row" th:if="${arr == null or #lists.isEmpty(arr)}">
+                                                <td class="empty" colspan="4">행을 추가해주세요.</td>
+                                            </tr>
 
-                                        <tr th:each="u, stat : ${arr}" class="data-row">
-                                            <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}" type="hidden" />
-                                            <input th:field="*{list[__${stat.index}__].spfnLmtSno}" type="hidden" />
+                                            <tr th:each="u, stat : ${arr}" class="data-row">
+                                                <input th:field="*{list[__${stat.index}__].spfnLmtMngNo}"
+                                                    type="hidden" />
+                                                <input th:field="*{list[__${stat.index}__].spfnLmtSno}" type="hidden" />
 
-                                            <!--  신규: 연월(월) 컬럼 -->
-                                            <td>
-                                                <div class="text-field datepicker" style="width:200px">
-                                                    <input class="dp-input"
-                                                           type="text"
-                                                           placeholder="YYYY-MM"
-                                                           data-dp-type="month"
-                                                           autocomplete="off"
-                                                           th:field="*{list[__${stat.index}__].lmtSttYm}" />
-                                                    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>
-                                                </div>
-                                            </td>
-
-                                            <td>
-                                                <input class="text-field js-count" inputmode="numeric"
-                                                       autocomplete="off" data-maxlen="10"
-                                                       th:field="*{list[__${stat.index}__].minCndtVal}" type="text" />
-                                            </td>
-                                            <td>
-                                                <input class="text-field js-count" inputmode="numeric"
-                                                       autocomplete="off" data-maxlen="10"
-                                                       th:field="*{list[__${stat.index}__].maxCndtVal}" type="text" />
-                                            </td>
-                                            <td>
-                                                <input class="text-field js-percent" inputmode="numeric"
-                                                       autocomplete="off"
-                                                       th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
-                                            </td>
-                                        </tr>
+                                                <td th:text="${stat.count}"></td>
+                                                <td>
+                                                    <input class="text-field js-count" inputmode="numeric"
+                                                        autocomplete="off" data-maxlen="10"
+                                                        th:field="*{list[__${stat.index}__].minCndtVal}" type="text" />
+                                                </td>
+                                                <td>
+                                                    <input class="text-field js-count" inputmode="numeric"
+                                                        autocomplete="off" data-maxlen="10"
+                                                        th:field="*{list[__${stat.index}__].maxCndtVal}" type="text" />
+                                                </td>
+                                                <td>
+                                                    <input class="text-field js-percent" inputmode="numeric"
+                                                        autocomplete="off"
+                                                        th:field="*{list[__${stat.index}__].tgtAdptVal}" type="text" />
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>

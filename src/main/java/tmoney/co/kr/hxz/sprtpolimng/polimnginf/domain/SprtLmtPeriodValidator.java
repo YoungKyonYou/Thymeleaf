@@ -144,20 +144,6 @@ public class SprtLmtPeriodValidator {
             }
         }
 
-        // 2) 건수 한도
-        if ("02".equals(dvs)) {
-            List<NcntReqVO> list =
-                    Optional.ofNullable(req.getNcntList()).orElse(Collections.emptyList());
-
-            for (NcntReqVO n : list) {
-                YearMonth ym = toYearMonth(n.getLmtSttYm());
-                if (ym != null && ym.isBefore(minYm)) {
-                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
-                            "과거(" + minLabel + " 이전 연월의 건수 한도는 등록할 수 없습니다."
-                    );
-                }
-            }
-        }
     }
 
     /** YYYY-MM / YYYYMM → YearMonth (잘못된 형식이면 null) */
@@ -222,12 +208,6 @@ public class SprtLmtPeriodValidator {
 
         for (int i = 0; i < list.size(); i++) {
             NcntReqVO row = list.get(i);
-            // 적용 연월 필수
-            if (isBlank(row.getLmtSttYm())) {
-                throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
-                        String.format("건수 한도: 적용 연월은 필수입니다. (행 %d)", i + 1)
-                );
-            }
             // 최소/최대 건수 기본 관계 검증
             if (row.getMinCndtVal() > 0 && row.getMaxCndtVal() > 0
                     && row.getMaxCndtVal() < row.getMinCndtVal()) {
