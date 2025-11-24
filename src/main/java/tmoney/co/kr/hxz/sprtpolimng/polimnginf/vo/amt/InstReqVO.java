@@ -14,9 +14,9 @@ import java.util.List;
 @Setter
 @Getter
 public class InstReqVO {
-    List<AmtReqVO> amtList = new ArrayList<>();
-    List<NcntReqVO>  ncntList = new ArrayList<>();
-
+    private List<AmtReqVO> amtList = new ArrayList<>();
+    private List<NcntReqVO>  ncntList = new ArrayList<>();
+    private String mode;
     private String tpwSvcId;
 
     private String tpwSvcTypId;

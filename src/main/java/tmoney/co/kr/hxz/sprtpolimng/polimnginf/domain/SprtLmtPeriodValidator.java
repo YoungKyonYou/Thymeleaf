@@ -107,44 +107,6 @@ public class SprtLmtPeriodValidator {
         }
     }
 
-    /**
-     * 과거(현재 월 이전) 연월 입력 금지 검증
-     * - 금액(분기/월): 시작/종료 월
-     * - 건수: 적용 연월(lmtSttYm)
-     */
-    public void validateNotPast(InstReqVO req) {
-
-        YearMonth minYm = YearMonth.now(); // 예: 2025-11
-        String minLabel = formatYm(minYm); // "2025-11"
-
-        String dvs = req.getTpwLmtDvsCd(); // 01=금액, 02=건수
-
-        // 1) 금액 한도(분기/월)
-        if ("01".equals(dvs)) {
-            List<AmtReqVO> list =
-                    Optional.ofNullable(req.getAmtList()).orElse(Collections.emptyList());
-
-            for (AmtReqVO a : list) {
-                YearMonth stt = toYearMonth(a.getLmtSttYm());
-                YearMonth end = toYearMonth(a.getLmtEndYm());
-
-                // 시작월 체크
-                if (stt != null && stt.isBefore(minYm)) {
-                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
-                            "과거(" + minLabel + " 이전)의 한도 시작월은 등록할 수 없습니다."
-                    );
-                }
-
-                // 종료월도 같이 막고 싶으면
-                if (end != null && end.isBefore(minYm)) {
-                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
-                            "과거(" + minLabel + " 이전)의 한도 종료월은 등록할 수 없습니다."
-                    );
-                }
-            }
-        }
-
-    }
 
     /** YYYY-MM / YYYYMM → YearMonth (잘못된 형식이면 null) */
     private YearMonth toYearMonth(String v) {
@@ -208,6 +170,12 @@ public class SprtLmtPeriodValidator {
 
         for (int i = 0; i < list.size(); i++) {
             NcntReqVO row = list.get(i);
+            // 적용 연월 필수
+            if (isBlank(row.getLmtSttYm())) {
+                throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                        String.format("건수 한도: 적용 연월은 필수입니다. (행 %d)", i + 1)
+                );
+            }
             // 최소/최대 건수 기본 관계 검증
             if (row.getMinCndtVal() > 0 && row.getMaxCndtVal() > 0
                     && row.getMaxCndtVal() < row.getMinCndtVal()) {

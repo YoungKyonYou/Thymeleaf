@@ -1,6 +1,8 @@
 package tmoney.co.kr.hxz.sprtpolimng.polimnginf.service.impl;
 
+
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,11 +32,7 @@ import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.ncnt.NcntReqVO;
 import tmoney.co.kr.hxz.sprtpolimng.polimnginf.vo.sprtlmt.*;
 
 /**
- * 지원 한도(금액/건수) 조회/저장 서비스 구현체.
- * <p>
- * - 지원 한도 모달 진입/조회/저장<br/>
- * - 금액/건수 한도 공통 빌더 및 기간/중복 검증 연계<br/>
- * - 서비스 단위 한도유형(금액-분기/월/건수) 강제 일치 검증
+ * 지원 한도(금액/건수) 조회/저장 서비스 구현체
  */
 @RequiredArgsConstructor
 @Service
@@ -43,14 +41,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     private final SprtLmtMapper sprtLmtMapper;
     private final SprtLmtPeriodValidator periodValidator; // 기간/중복 검증 컴포넌트
 
-    /**
-     * 지원 한도 설정 모달 초기 템플릿 생성.
-     * <p>
-     * - 분기/월/건수 기본 행 템플릿 생성<br/>
-     * - 실제 데이터가 없을 때 화면 진입 시 사용
-     *
-     * @return 분기/월/건수 기본 템플릿 정보를 포함한 모달 VO
-     */
     @Override
     public SprtLmtModalVO initModal() {
         return new SprtLmtModalVO(
@@ -60,14 +50,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         );
     }
 
-    /**
-     * 서비스유형별 거래(건수) 적용여부 수정.
-     * <p>
-     * - trd_ncnt_adpt_yn 필드를 Y/N 으로 갱신
-     *
-     * @param tpwSvcTypId 서비스유형 ID
-     * @param adptYn      거래적용여부(Y/N)
-     */
     @Override
     @Transactional
     public void updateTrdNcntLtnAdptYn(String tpwSvcTypId, String adptYn) {
@@ -75,44 +57,92 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     }
 
     /**
-     * 설정하기(3in1) 모달 진입 시, 서비스/유형 기준 현재 설정된 한도 조회.
-     * <p>
-     * - 데이터가 없으면 기본 템플릿(분기/월/건수) 리턴<br/>
-     * - 금액(월/분기)·건수 유형에 따라 각각 다른 DTO 구조로 매핑
-     *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @return 모달에 바인딩할 상세 한도 정보 VO
+     * 설정하기(3in1) 모달 진입 시 데이터 조회
      */
     @Override
     @Transactional(readOnly = true)
     public SprtLmtModalDtlVO readSprtLmtByTpwSvcTypId(String tpwSvcId, String tpwSvcTypId) {
+        // 해당 서비스/유형의 전체 활성 한도(금액/건수, 월/분기 포함)를 한 번에 조회
         List<SprtLmtRspVO> rows = readSprtLmtDtlByTpwSvc(tpwSvcId, tpwSvcTypId, "Y");
 
-        // 기존 한도 없을 때 : 기본 템플릿
+        // 기존 한도 없을 때 : 기존과 동일하게 기본 템플릿 리턴
         if (rows == null || rows.isEmpty()) {
             SprtLmtModalVO m = initModal();
             return new SprtLmtModalDtlVO(m.getQt(), m.getMon(), m.getArr(), "01", "01");
         }
 
-        String dvs = rows.get(0).getTpwLmtDvsCd(); // 01=금액, 02=건수
-        String typ = rows.get(0).getTpwLmtTypCd(); // 01=월,   02=분기/건수
+        // 1) rows 를 유형별로 분리
+        List<SprtLmtRspVO> qtRows = rows.stream()
+                .filter(r -> "01".equals(r.getTpwLmtDvsCd()))   // 금액
+                .filter(r -> "02".equals(r.getTpwLmtTypCd()))   // 분기
+                .collect(Collectors.toList());
 
-        if ("02".equals(dvs)) return buildCount(rows, dvs, typ);
-        if ("01".equals(typ)) return buildAmountMonthly(rows, dvs, typ);
-        return buildAmountQuarterly(rows, dvs, typ);
+        List<SprtLmtRspVO> monRows = rows.stream()
+                .filter(r -> "01".equals(r.getTpwLmtDvsCd()))   // 금액
+                .filter(r -> "01".equals(r.getTpwLmtTypCd()))   // 월
+                .collect(Collectors.toList());
+
+        List<SprtLmtRspVO> ncntRows = rows.stream()
+                .filter(r -> "02".equals(r.getTpwLmtDvsCd()))   // 건수
+                .collect(Collectors.toList());
+
+        // 2) 각 유형별 리스트를 DTO 로 변환
+        //    - 데이터가 없으면 기존처럼 initXXXList() 템플릿 사용
+        List<AmtReqVO> qt;
+        if (qtRows.isEmpty()) {
+            qt = initQuarterList();
+        } else {
+            // 기존 buildAmountQuarterly 로 매핑 로직 재사용
+            qt = qtRows.stream()
+                    .map(a -> new AmtReqVO(
+                            a.getSpfnLmtMngNo(),
+                            a.getSpfnLmtSno(),
+                            a.getLmtSttYm(),
+                            a.getLmtEndYm(),
+                            a.getTgtAdptVal()))
+                    .collect(Collectors.toList());
+        }
+
+        List<AmtReqVO> mon;
+        if (monRows.isEmpty()) {
+            mon = initMonList();
+        } else {
+            mon = monRows.stream()
+                    .map(a -> new AmtReqVO(
+                            a.getSpfnLmtMngNo(),
+                            a.getSpfnLmtSno(),
+                            a.getLmtSttYm(),
+                            a.getLmtEndYm(),
+                            a.getTgtAdptVal()))
+                    .collect(Collectors.toList());
+        }
+
+        List<NcntReqVO> ncnt;
+        if (ncntRows.isEmpty()) {
+            ncnt = initNcntList();
+        } else {
+            ncnt = ncntRows.stream()
+                    .map(a -> new NcntReqVO(
+                            a.getSpfnLmtMngNo(),
+                            a.getSpfnLmtSno(),
+                            a.getLmtSttYm(),
+                            a.getLmtEndYm(),
+                            a.getMinCndtVal(),
+                            a.getMaxCndtVal(),
+                            a.getTgtAdptVal()
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        // 3) modal 의 "대표 dvs/typ" 은 기존대로 첫 행 기준 유지
+        String dvs = rows.get(0).getTpwLmtDvsCd(); // 01=금액, 02=건수
+        String typ = rows.get(0).getTpwLmtTypCd(); // 01=월, 02=분기/건수
+
+        return new SprtLmtModalDtlVO(qt, mon, ncnt, dvs, typ);
     }
 
     /* ===================== Modal DTO 빌더 ===================== */
 
-    /**
-     * 금액-월 한도 모달 DTO 빌드.
-     *
-     * @param rows 조회된 한도 엔티티 리스트
-     * @param dvs  한도구분(01=금액)
-     * @param typ  한도유형(01=월)
-     * @return 금액-월 기준 모달 상세 VO
-     */
     private SprtLmtModalDtlVO buildAmountMonthly(List<SprtLmtRspVO> rows, String dvs, String typ) {
         List<AmtReqVO> mon = rows.stream()
                 .map(a -> new AmtReqVO(
@@ -131,14 +161,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         );
     }
 
-    /**
-     * 금액-분기 한도 모달 DTO 빌드.
-     *
-     * @param rows 조회된 한도 엔티티 리스트
-     * @param dvs  한도구분(01=금액)
-     * @param typ  한도유형(02=분기)
-     * @return 금액-분기 기준 모달 상세 VO
-     */
     private SprtLmtModalDtlVO buildAmountQuarterly(List<SprtLmtRspVO> rows, String dvs, String typ) {
         List<AmtReqVO> qt = rows.stream()
                 .map(a -> new AmtReqVO(
@@ -157,19 +179,13 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         );
     }
 
-    /**
-     * 건수 한도 모달 DTO 빌드.
-     *
-     * @param rows 조회된 한도 엔티티 리스트
-     * @param dvs  한도구분(02=건수)
-     * @param typ  한도유형(02)
-     * @return 건수 기준 모달 상세 VO
-     */
     private SprtLmtModalDtlVO buildCount(List<SprtLmtRspVO> rows, String dvs, String typ) {
         List<NcntReqVO> ncnt = rows.stream()
                 .map(a -> new NcntReqVO(
                         a.getSpfnLmtMngNo(),
                         a.getSpfnLmtSno(),
+                        a.getLmtSttYm(),
+                        a.getLmtEndYm(),
                         a.getMinCndtVal(),
                         a.getMaxCndtVal(),
                         a.getTgtAdptVal()
@@ -186,13 +202,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
     /* ===================== 초기 템플릿 리스트 ===================== */
 
-    /**
-     * 분기용 금액 한도 초기 템플릿 리스트 생성.
-     * <p>
-     * - 분기는 UI에서 직접 행추가/기간 설정하므로 비어 있는 VO 4건 생성
-     *
-     * @return 빈 분기 금액 한도 VO 리스트
-     */
     private List<AmtReqVO> initQuarterList() {
         // 분기는 UI에서 직접 행추가/기간 설정하므로 비어있는 4행 템플릿만 생성
         return IntStream.range(0, 4)
@@ -200,14 +209,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 금액-월 한도 초기 템플릿 리스트 생성.
-     * <p>
-     * - 현재 연도의 1~12월까지 월별 기본 행 생성<br/>
-     * - 시작/종료년월 동일, 기본 금액 0
-     *
-     * @return 월별 기본 금액 한도 VO 리스트
-     */
     private List<AmtReqVO> initMonList() {
         int year = LocalDate.now().getYear();
         return IntStream.rangeClosed(1, 12)
@@ -218,13 +219,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 건수 한도 초기 템플릿 리스트 생성.
-     * <p>
-     * - 빈 건수 VO 4건 생성
-     *
-     * @return 건수 한도 VO 리스트
-     */
     private List<NcntReqVO> initNcntList() {
         return IntStream.range(0, 4)
                 .mapToObj(i -> new NcntReqVO())
@@ -233,15 +227,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
     /* ===================== 페이징 조회 ===================== */
 
-    /**
-     * 지원 한도 내역 페이징 조회.
-     * <p>
-     * - page/size 기반 offset 계산<br/>
-     * - 목록/전체건수 조회 후 PageDataVO 로 래핑
-     *
-     * @param req 검색 조건(서비스/서비스유형/한도유형 등 포함)
-     * @return 페이징 처리된 지원 한도 내역
-     */
     @Override
     @Transactional(readOnly = true)
     public PageDataVO<SprtLmtRspVO> readSprtLmtPtPaging(SprtLmtSrchReqVO req) {
@@ -267,37 +252,18 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         return new PageDataVO<>(content, req.getPage(), req.getSize(), total);
     }
 
-    /**
-     * 지원 한도 내역 리스트 조회.
-     *
-     * @param req 검색 조건
-     * @return 지원 한도 내역 리스트
-     */
     @Override
     @Transactional(readOnly = true)
     public List<SprtLmtRspVO> readSprtLmtPtList(SprtLmtSrchReqVO req) {
         return sprtLmtMapper.readSprtLmtPtList(req);
     }
 
-    /**
-     * 지원 한도 내역 카운트 조회.
-     *
-     * @param req 검색 조건
-     * @return 해당 조건의 전체 건수
-     */
     @Override
     @Transactional(readOnly = true)
     public long readSprtLmtPtListCnt(SprtLmtSrchReqVO req) {
         return sprtLmtMapper.readSprtLmtPtListCnt(req);
     }
 
-    /**
-     * 서비스/유형 기준 활성 한도 존재 여부 조회.
-     *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @return 활성 한도(use_yn=Y)가 1건 이상 존재하면 true
-     */
     @Override
     @Transactional(readOnly = true)
     public boolean hasExistingLimit(String tpwSvcId, String tpwSvcTypId) {
@@ -305,14 +271,6 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         return cnt != null && cnt > 0;
     }
 
-    /**
-     * 서비스/유형 기준 지원 한도 상세 조회.
-     *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @param useYn       사용여부(Y/N)
-     * @return 조건에 해당하는 한도 상세 리스트
-     */
     @Override
     @Transactional(readOnly = true)
     public List<SprtLmtRspVO> readSprtLmtDtlByTpwSvc(String tpwSvcId,
@@ -322,16 +280,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     }
 
     /**
-     * 이전 버전 한도 N 처리.
-     * <p>
-     * - (서비스, 서비스유형, 한도구분, 직전 일련번호, 관리번호 집합) 기준으로 use_yn = 'N'<br/>
-     * - 금액 한도에서 기간 단위로 관리번호 재사용 시, 이전 버전 비활성화 목적
-     *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @param tpwLmtDvsCd 한도구분 코드(01=금액, 02=건수)
-     * @param prevSno     직전 버전 일련번호
-     * @param mngNos      N 처리 대상 관리번호 집합
+     * 이전 버전 N 처리 – (svcId, svcTypId, dvs, 직전 sno, 관리번호 집합) 기준
      */
     @Override
     @Transactional
@@ -347,44 +296,58 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     /* ===================== 메인 저장 ===================== */
 
     /**
-     * 메인 저장 (금액/건수 공통).
-     * <p>
-     * 1) 과거(현재 월 이전) 연월 금지 검증<br/>
-     * 2) 기간/중복 등 도메인 검증<br/>
-     * 3) 건수일 경우 유형코드 보정(기본 02)<br/>
-     * 4) 서비스 단위 한도유형(금액-월/분기/건수) 강제 일치 검증<br/>
-     * 5) 기존 활성 한도 조회 후, BuildResult 기반 이전버전 N 처리 및 신규 insert
-     *
-     * @param req 금액/건수 공통 저장 요청 VO
+     * 메인 저장 (금액/건수 공통)
      */
     @Override
     @Transactional
     public void insertSprtLmtAmt(InstReqVO req) {
         if (req == null) return;
 
-        // 0) 과거(현재 월 이전) 연월 금지
-        periodValidator.validateNotPast(req);
-
-        // 1) 도메인 검증 (기간 겹침/중복 등)
         periodValidator.validate(req);
 
-        // 1-1) 실제로 저장할 유형(특히 건수일 때 typCd null 처리) 계산
         final String effectiveTyp = "01".equals(req.getTpwLmtDvsCd())
-                ? req.getTpwLmtTypCd()                 // 금액: 화면에서 온 typ 그대로
-                : Optional.ofNullable(req.getTpwLmtTypCd())
-                .orElse("02");               // 건수: null이면 기본 02
+                ? req.getTpwLmtTypCd()
+                : Optional.ofNullable(req.getTpwLmtTypCd()).orElse("02");
 
-        // 1-2) 서비스 단위 한도유형 강제 일치 검증
-        validateSvcLimitKind(
-                req.getTpwSvcId(),
-                req.getTpwLmtDvsCd(),
-                effectiveTyp
-        );
+        final boolean editMode =
+                "edit-3in1".equalsIgnoreCase(Optional.ofNullable(req.getMode()).orElse(""));
 
-        // 2) 기존 활성(Y) 한도 조회
         List<SprtLmtRspVO> existing =
                 readSprtLmtDtlByTpwSvc(req.getTpwSvcId(), req.getTpwSvcTypId(), "Y");
         boolean hasExisting = !existing.isEmpty();
+
+        //  신규등록에서 가장 이른 YYYYMM 기준으로 기존 한도 N 처리
+        YearMonth cutOffYm = null;
+
+        if (editMode) {
+            filterChangedRowsForEdit(req, existing, effectiveTyp);
+            if ((req.getAmtList() == null || req.getAmtList().isEmpty())
+                    && (req.getNcntList() == null || req.getNcntList().isEmpty())) {
+                return;
+            }
+        } else {
+            // 신규등록 모드 + 금액(dvs=01)
+            if (hasExisting
+                    && "01".equals(req.getTpwLmtDvsCd())
+                    && req.getAmtList() != null
+                    && !req.getAmtList().isEmpty()) {
+
+                cutOffYm = deactivateFromMinYmForNewRegistration(req, existing);
+
+                // 신규등록 모드 + 건수(dvs=02)
+            } else if (hasExisting
+                    && "02".equals(req.getTpwLmtDvsCd())
+                    && req.getNcntList() != null
+                    && !req.getNcntList().isEmpty()) {
+
+                // cutOffYm은 현재 cross-type 검증(금액)에서만 사용하지만
+                // 패턴 맞춰서 리턴값만 받아두면 됩니다.
+                cutOffYm = deactivateCountFromMinYmForNewRegistration(req, existing);
+            }
+        }
+
+        // 월 vs 분기 cross-type 검증 (cutOffYm 이후 구간은 이미 N 처리될 예정이므로 제외하고 검사)
+        validateCrossTypeOverlap(req, existing, effectiveTyp, cutOffYm);
 
         // 3) 월(01)은 종료월 = 시작월 강제
         if ("01".equals(req.getTpwLmtTypCd()) && req.getAmtList() != null) {
@@ -395,78 +358,410 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         List<SprtLmtReqVO> toInsert = build.rows;
         if (toInsert.isEmpty()) return;
 
-        // 5) 이전 버전 N 처리
-        if ("01".equals(req.getTpwLmtDvsCd())) {
-            // 금액: 기존 방식 그대로 (기간별 mngNo 단위로 N 처리)
-            if (build.prevSno != null && !build.touchedMngNos.isEmpty()) {
-                updateSprtLmtUseYnByMngNos(
-                        req.getTpwSvcId(),
-                        req.getTpwSvcTypId(),
-                        req.getTpwLmtDvsCd(),
-                        build.prevSno,
-                        new ArrayList<>(build.touchedMngNos)
-                );
-            }
-        } else if ("02".equals(req.getTpwLmtDvsCd())) {
-            // 건수: 이 서비스/유형의 기존 건수 한도(useYn=Y)는 전부 N 처리
-            sprtLmtMapper.updateSprtLmtUseYnAllForCount(
+        // edit-3in1 쪽 버전업 N 처리 (기존 로직 그대로)
+        if (build.prevSno != null && !build.touchedMngNos.isEmpty()) {
+            updateSprtLmtUseYnByMngNos(
                     req.getTpwSvcId(),
-                    req.getTpwSvcTypId()
+                    req.getTpwSvcTypId(),
+                    req.getTpwLmtDvsCd(),
+                    build.prevSno,
+                    new ArrayList<>(build.touchedMngNos)
             );
         }
 
-        // 6) 새 버전 insert
         insertSprtLmt(toInsert);
+    }
+    /**
+     * 신규등록 모드에서
+     *  - 이번에 저장하려는 금액 한도(월/분기)의 전체 구간 중
+     *    "가장 이른 시작월(minNewYm)" 을 구해서
+     *  - 동일 서비스/서비스유형 + 금액(dvs=01)의 기존 활성 한도 중
+     *    시작월이 minNewYm 이상(>=)인 것들을 전부 use_yn='N' 처리한다.
+     *
+     * 예)
+     *   기존 : 2025-01, 2025-02, 2025-03, 2025-04 (월)
+     *   신규 : 2025-02 (월)      → minNewYm = 2025-02
+     *          → 기존 2025-02,03,04 전부 N 처리
+     *
+     *   신규 : 2025-01~2025-03 (분기) → minNewYm = 2025-01
+     *          → 기존 2025-01 이후 전부 N 처리
+     *
+     * @return 이번 요청에서 계산된 minNewYm (없으면 null)
+     */
+    private YearMonth deactivateFromMinYmForNewRegistration(InstReqVO req,
+                                                            List<SprtLmtRspVO> existing) {
+
+        // 금액이 아니면 대상 아님
+        if (!"01".equals(req.getTpwLmtDvsCd())) {
+            return null;
+        }
+        if (existing == null || existing.isEmpty()) {
+            return null;
+        }
+        List<AmtReqVO> amtList = Optional.ofNullable(req.getAmtList())
+                .orElse(Collections.emptyList());
+        if (amtList.isEmpty()) {
+            return null;
+        }
+
+        // 1) 이번 요청(월/분기)에서 가장 이른 시작월(minNewYm) 찾기
+        YearMonth minNew = null;
+        for (AmtReqVO a : amtList) {
+            if (a == null) continue;
+            String stt = normalizeYm(a.getLmtSttYm());
+            YearMonth ym = toYearMonth(stt);
+            if (ym == null) continue;
+
+            if (minNew == null || ym.isBefore(minNew)) {
+                minNew = ym;
+            }
+        }
+
+        if (minNew == null) {
+            return null;
+        }
+
+        // 2) 기존 활성 금액 한도 중에서,
+        //    시작월이 minNewYm 이상(>=)인 것들을 모두 use_yn='N' 대상에 포함
+        Map<String, Set<String>> mngNosBySno = new HashMap<>();
+
+        for (SprtLmtRspVO row : existing) {
+            if (!"01".equals(row.getTpwLmtDvsCd())) {
+                continue;   // 금액 아니면 무시
+            }
+
+            YearMonth sttYm = toYearMonth(normalizeYm(row.getLmtSttYm()));
+            if (sttYm == null) continue;
+
+            // 기존 시작월이 minNewYm 이상이면 N 처리 대상
+            if (!sttYm.isBefore(minNew)) { // sttYm >= minNew
+                String sno = row.getSpfnLmtSno();
+                String mngNo = row.getSpfnLmtMngNo();
+                if (sno == null || mngNo == null) continue;
+
+                mngNosBySno
+                        .computeIfAbsent(sno, k -> new HashSet<>())
+                        .add(mngNo);
+            }
+        }
+
+        // 3) sno 별로 묶어서 N 처리 (버전 개념이 다를 수 있으니 sno 단위로 update)
+        if (!mngNosBySno.isEmpty()) {
+            for (Map.Entry<String, Set<String>> e : mngNosBySno.entrySet()) {
+                String sno = e.getKey();
+                List<String> mngNos = new ArrayList<>(e.getValue());
+                updateSprtLmtUseYnByMngNos(
+                        req.getTpwSvcId(),
+                        req.getTpwSvcTypId(),
+                        req.getTpwLmtDvsCd(),   // 항상 "01"
+                        sno,
+                        mngNos
+                );
+            }
+        }
+
+        return minNew;
     }
 
     /**
-     * 현재 시스템 연월(YYYYMM) 문자열 반환.
-     *
-     * @return 현재 연월(YYYYMM)
+     * 신규등록 모드에서 (건수 한도용)
+     *  - 이번에 저장하려는 건수 한도들의 적용 연월 중
+     *    "가장 이른 연월(minNewYm)" 을 구해서
+     *  - 동일 서비스/서비스유형 + 건수(dvs=02)의 기존 활성 한도 중
+     *    시작월이 minNewYm 이상(>=)인 것들을 전부 use_yn='N' 처리한다.
      */
+    private YearMonth deactivateCountFromMinYmForNewRegistration(
+            InstReqVO req,
+            List<SprtLmtRspVO> existing
+    ) {
+        // 건수가 아니면 대상 아님
+        if (!"02".equals(req.getTpwLmtDvsCd())) {
+            return null;
+        }
+        if (existing == null || existing.isEmpty()) {
+            return null;
+        }
+
+        List<NcntReqVO> ncntList = Optional.ofNullable(req.getNcntList())
+                .orElse(Collections.emptyList());
+        if (ncntList.isEmpty()) {
+            return null;
+        }
+
+        // 1) 이번 요청(건수)에서 가장 이른 연월(minNewYm) 찾기
+        YearMonth minNew = null;
+        for (NcntReqVO n : ncntList) {
+            if (n == null) continue;
+            String stt = normalizeYm(n.getLmtSttYm());
+            YearMonth ym = toYearMonth(stt);
+            if (ym == null) continue;
+
+            if (minNew == null || ym.isBefore(minNew)) {
+                minNew = ym;
+            }
+        }
+
+        if (minNew == null) {
+            return null;
+        }
+
+        // 2) 기존 활성 건수 한도 중에서,
+        //    시작월이 minNewYm 이상(>=)인 것들을 모두 use_yn='N' 대상에 포함
+        Map<String, Set<String>> mngNosBySno = new HashMap<>();
+
+        for (SprtLmtRspVO row : existing) {
+            // 건수(dvs=02)만 대상
+            if (!"02".equals(row.getTpwLmtDvsCd())) {
+                continue;
+            }
+
+            YearMonth sttYm = toYearMonth(normalizeYm(row.getLmtSttYm()));
+            if (sttYm == null) continue;
+
+            if (!sttYm.isBefore(minNew)) { // sttYm >= minNew
+                String sno = row.getSpfnLmtSno();
+                String mngNo = row.getSpfnLmtMngNo();
+                if (sno == null || mngNo == null) continue;
+
+                mngNosBySno
+                        .computeIfAbsent(sno, k -> new HashSet<>())
+                        .add(mngNo);
+            }
+        }
+
+        // 3) sno 별로 묶어서 N 처리
+        if (!mngNosBySno.isEmpty()) {
+            for (Map.Entry<String, Set<String>> e : mngNosBySno.entrySet()) {
+                String sno = e.getKey();
+                List<String> mngNos = new ArrayList<>(e.getValue());
+                updateSprtLmtUseYnByMngNos(
+                        req.getTpwSvcId(),
+                        req.getTpwSvcTypId(),
+                        "02",   // 건수
+                        sno,
+                        mngNos
+                );
+            }
+        }
+
+        return minNew;
+    }
+    /** YYYY-MM / YYYYMM → YearMonth (잘못된 형식이면 null) */
+    private YearMonth toYearMonth(String v) {
+        if (v == null) return null;
+        String s = v.trim();
+        if (s.isEmpty()) return null;
+
+        String norm = s.replace("-", "");
+        if (!norm.matches("\\d{6}")) {
+            return null;
+        }
+        int year = Integer.parseInt(norm.substring(0, 4));
+        int month = Integer.parseInt(norm.substring(4, 6));
+        return YearMonth.of(year, month);
+    }
+
+    /**
+     * 같은 서비스/서비스유형(tpwSvcId + tpwSvcTypId) 안에서
+     *  - 금액(dvs=01) 이고,
+     *  - 기존 데이터 중 "타입이 다른 것(월 vs 분기)"과
+     * 신규 요청의 기간이 월 단위로 겹치는지 검사.
+     *
+     * cutOffYm 이 있으면, 그 이후(>= cutOffYm)의 기존 구간은
+     * 이미 use_yn='N' 처리될 예정이므로 겹침 검사에서 제외한다.
+     *
+     * 겹치면 DomainExceptionCode.VALIDATION_ERROR 던짐.
+     */
+    private void validateCrossTypeOverlap(InstReqVO req,
+                                          List<SprtLmtRspVO> existing,
+                                          String effectiveTyp,
+                                          YearMonth cutOffYm) {
+
+        // 건수(dvs=02)는 대상 아님
+        if (!"01".equals(req.getTpwLmtDvsCd())) {
+            return;
+        }
+
+        if (existing == null || existing.isEmpty()) {
+            return;
+        }
+
+        // 1) 기존 데이터 중 "타입이 다른 금액 한도(월 vs 분기)"만 월 단위로 Set에 담기
+        Set<Integer> otherMonths = new HashSet<>();
+        for (SprtLmtRspVO row : existing) {
+            if (!"01".equals(row.getTpwLmtDvsCd())) {
+                continue; // 금액 아닌 건수는 무시
+            }
+
+            String oldTyp = Optional.ofNullable(row.getTpwLmtTypCd()).orElse("02");
+            if (effectiveTyp.equals(oldTyp)) {
+                // 같은 타입끼리는 여기서 제외
+                continue;
+            }
+
+            // 월 타입이면 stt == end, 분기 타입이면 stt~end 전체 월
+            YearMonth from = toYearMonth(row.getLmtSttYm());
+            YearMonth to   = toYearMonth(
+                    "01".equals(oldTyp) ? row.getLmtSttYm() : row.getLmtEndYm()
+            );
+            if (from == null || to == null) continue;
+
+            for (YearMonth ym = from; !ym.isAfter(to); ym = ym.plusMonths(1)) {
+                // 🔥 cutOffYm 이후(>= cutOffYm)는 이번 신규 요청에서 N 처리될 예정이므로 무시
+                if (cutOffYm != null && !ym.isBefore(cutOffYm)) {
+                    continue;
+                }
+                otherMonths.add(ym.getYear() * 12 + ym.getMonthValue());
+            }
+        }
+
+        if (otherMonths.isEmpty()) {
+            return;
+        }
+
+        // 2) 이번에 저장하려는 금액 리스트에서, 타입이 다른 기존 기간과 겹치는 월이 있는지 검사
+        List<AmtReqVO> list = Optional.ofNullable(req.getAmtList())
+                .orElse(Collections.emptyList());
+
+        for (int i = 0; i < list.size(); i++) {
+            AmtReqVO row = list.get(i);
+
+            YearMonth from = toYearMonth(row.getLmtSttYm());
+            YearMonth to   = toYearMonth(
+                    "01".equals(effectiveTyp) ? row.getLmtSttYm() : row.getLmtEndYm()
+            );
+            if (from == null || to == null) {
+                // 형식이 이상하면 기존 periodValidator에서 걸릴 것이므로 여기서는 패스
+                continue;
+            }
+
+            for (YearMonth ym = from; !ym.isAfter(to); ym = ym.plusMonths(1)) {
+                int key = ym.getYear() * 12 + ym.getMonthValue();
+                if (otherMonths.contains(key)) {
+                    String msg = String.format(
+                            "이미 다른 유형의 금액 한도(월/분기)가 설정된 기간과 겹칩니다. (행 %d, %s)",
+                            i + 1,
+                            ym
+                    );
+                    throw DomainExceptionCode.VALIDATION_ERROR.newInstance(msg);
+                }
+            }
+        }
+    }
+
     private String currentYYYYMM() {
         LocalDate now = LocalDate.now();
         return String.format("%04d%02d", now.getYear(), now.getMonthValue());
     }
-
     /**
-     * 지원금한도관리번호 시퀀스 다건 조회.
-     * <p>
-     * - sq_tbhxzd208_spfn_lmt_mng_no_01 기반<br/>
-     * - 여러 행 insert 시 관리번호를 미리 채번하는 용도
+     * 설정하기(edit-3in1)에서
+     * - 날짜/기간은 고정(readOnly)
+     * - 금액/건수/지급률만 수정 가능
      *
-     * @param count 필요 개수
-     * @return 새로 발급된 관리번호 리스트
+     * 이라서, 실제로 값이 바뀐 행만 남기고 나머지는 버린다.
+     * (→ 안 바뀐 행은 기존 row 그대로 유지, 새 버전 insert 불필요)
      */
+    private void filterChangedRowsForEdit(InstReqVO req,
+                                          List<SprtLmtRspVO> existing,
+                                          String effectiveTyp) {
+
+        final String dvs = req.getTpwLmtDvsCd(); // 01=금액, 02=건수
+        if (existing == null) existing = Collections.emptyList();
+
+        // ===== 금액(분기/월) =====
+        if ("01".equals(dvs)) {
+
+            //  월 탭인지 여부
+            final boolean isMonth = "01".equals(effectiveTyp);
+
+            // 기간(시작/종료) 기준으로 기존 row 인덱스
+            Map<PeriodKeyVO, SprtLmtRspVO> existingByPeriod = existing.stream()
+                    .filter(r -> "01".equals(r.getTpwLmtDvsCd()))
+                    .filter(r -> effectiveTyp.equals(r.getTpwLmtTypCd()))
+                    .collect(Collectors.toMap(
+                            r -> {
+                                String stt = normalizeYm(r.getLmtSttYm());
+                                String end = normalizeYm(r.getLmtEndYm());
+                                // 월 탭이면 (stt, stt) 로 통일
+                                if (isMonth) end = stt;
+                                return new PeriodKeyVO(stt, end);
+                            },
+                            r -> r,
+                            (a, b) -> a
+                    ));
+
+            List<AmtReqVO> src = Optional.ofNullable(req.getAmtList())
+                    .orElse(Collections.emptyList());
+
+            List<AmtReqVO> changed = src.stream()
+                    .filter(Objects::nonNull)
+                    .filter(a -> {
+                        String stt = normalizeYm(a.getLmtSttYm());
+                        // 요청에서는 endYm 이 거의 null → 월 탭이면 stt 로 강제
+                        String end = normalizeYm(a.getLmtEndYm());
+                        if (isMonth) end = stt;
+                        PeriodKeyVO key = new PeriodKeyVO(stt, end);
+
+                        SprtLmtRspVO prev = existingByPeriod.get(key);
+
+                        // 완전 신규 기간 → 무조건 insert 대상
+                        if (prev == null) return true;
+
+                        // 금액 변경 여부만 비교
+                        return !Objects.equals(a.getTgtAdptVal(), prev.getTgtAdptVal());
+                    })
+                    .collect(Collectors.toList());
+
+            req.setAmtList(changed);
+            return;
+        }
+
+        // ========== 건수 ==========
+        Map<String, SprtLmtRspVO> existingByYm = existing.stream()
+                .filter(r -> "02".equals(r.getTpwLmtDvsCd()))
+                .collect(Collectors.toMap(
+                        r -> normalizeYm(r.getLmtSttYm()), // YYYYMM 로 정규화
+                        r -> r,
+                        (a, b) -> a
+                ));
+
+        List<NcntReqVO> src = Optional.ofNullable(req.getNcntList())
+                .orElse(Collections.emptyList());
+
+        List<NcntReqVO> changed = src.stream()
+                .filter(Objects::nonNull)
+                .filter(n -> {
+                    String ym = normalizeYm(n.getLmtSttYm());
+                    if (ym == null) return true; // 형식 이상하면 일단 insert 대상으로
+
+                    SprtLmtRspVO prev = existingByYm.get(ym);
+                    if (prev == null) return true; // 완전 신규 연월
+
+                    // 최소/최대/지급률 중 하나라도 달라지면 변경
+                    if (!Objects.equals(n.getMinCndtVal(), prev.getMinCndtVal())) return true;
+                    if (!Objects.equals(n.getMaxCndtVal(), prev.getMaxCndtVal())) return true;
+                    if (!Objects.equals(n.getTgtAdptVal(), prev.getTgtAdptVal())) return true;
+
+                    // 전부 동일 → 변경 없음
+                    return false;
+                })
+                .collect(Collectors.toList());
+
+        req.setNcntList(changed);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<String> readNextMngNo(int count) {
         return sprtLmtMapper.readNextMngNo(count);
     }
 
-    /**
-     * 분기 기준 한도 시작/종료년월 범위 조회.
-     * <p>
-     * - 서비스/서비스유형 기준<br/>
-     * - 금액-분기 한도에서 기존 분기 구간 존재 여부 확인 용도
-     *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @return 분기별 시작/종료년월 정보 리스트
-     */
     @Override
     @Transactional(readOnly = true)
     public List<QuarterRangeVO> readQuarterRanges(String tpwSvcId, String tpwSvcTypId) {
         return sprtLmtMapper.readQuarterRanges(tpwSvcId, tpwSvcTypId);
     }
 
-    /**
-     * 지원 한도(금액/건수) 실제 insert 수행.
-     * <p>
-     * - buildInserts 에서 생성된 VO 리스트를 그대로 insert
-     *
-     * @param req 저장할 지원 한도 요청 리스트
-     */
     @Override
     @Transactional
     public void insertSprtLmt(List<SprtLmtReqVO> req) {
@@ -474,148 +769,18 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     }
 
     /**
-     * 서비스/서비스유형 기준 분기 존재 여부 및 한도유형 정보 조회.
-     * <p>
-     * - 분기 구간 존재 여부 및 서비스 단위 한도유형 일관성 판단에 사용
+     * 금액/건수 공통 insert 빌더
      *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwSvcTypId 서비스유형 ID
-     * @return 기존 분기범위/한도유형/다중유형 여부를 담은 결과 VO
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public SprtLmtExistResVO checkExist(String tpwSvcId, String tpwSvcTypId) {
-        SprtLmtExistResVO res = new SprtLmtExistResVO();
-
-        // 1) 분기 범위는 그대로 내려줌 (분기 중복 체크용)
-        List<QuarterRangeVO> qtRanges = sprtLmtMapper.readQuarterRanges(tpwSvcId, tpwSvcTypId);
-        res.setQtRanges(qtRanges);
-
-        // 2) exists는 "이 서비스/유형에 활성 한도가 하나라도 있냐" 기준으로 변경
-        boolean hasAny = hasExistingLimit(tpwSvcId, tpwSvcTypId);
-        res.setExists(hasAny);
-
-        // 3) 서비스 단위 한도 유형 정보
-        List<SprtLmtKindVO> kinds = sprtLmtMapper.readSvcLmtKinds(tpwSvcId);
-        if (kinds != null && !kinds.isEmpty()) {
-            if (kinds.size() == 1) {
-                res.setSvcLmtDvsCd(kinds.get(0).getDvsCd());
-                res.setSvcLmtTypCd(kinds.get(0).getLmtTypCd());
-                res.setMultiKinds(false);
-            } else {
-                res.setMultiKinds(true);
-            }
-        }
-
-        return res;
-    }
-
-    // ===================== 저장 시 서버측 검증 =====================
-
-    /**
-     * 저장 시 서비스 단위 한도유형(금액-분기/월/건수) 강제 일치 검증.
-     * <p>
-     * - 해당 서비스에 기존 데이터가 없으면 패스<br/>
-     * - 하나의 유형만 존재하면, 그 유형과 동일한 유형으로만 추가 허용<br/>
-     * - 서로 다른 유형이 이미 섞여 있으면 VALIDATION_ERROR 발생
+     * 규칙
+     *  - spfn_lmt_sno : 한 번 저장 시 전체 행 동일 (버전)
+     *  - spfn_lmt_mng_no :
+     *      · [edit-3in1] 동일 서비스/유형 + 동일 기간(또는 동일 관리번호) 이면 → 기존 관리번호 재사용
+     *      · [신규등록]    이번에 들어온 행은 모두 신규로 보고 → 새 관리번호 채번
      *
-     * @param tpwSvcId    서비스 ID
-     * @param tpwLmtDvsCd 한도구분 코드(01=금액, 02=건수)
-     * @param tpwLmtTypCd 한도유형 코드(01=월, 02=분기/건수)
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public void validateSvcLimitKind(String tpwSvcId, String tpwLmtDvsCd, String tpwLmtTypCd) {
-        List<SprtLmtKindVO> kinds = sprtLmtMapper.readSvcLmtKinds(tpwSvcId);
-        if (kinds == null || kinds.isEmpty()) {
-            // 아직 이 서비스에 아무 한도도 없으면 제약 없음
-            return;
-        }
-
-        if (kinds.size() > 1) {
-            // 이미 서비스 안의 서비스유형들이 서로 다른 유형으로 섞여 있는 상태
-            throw DomainExceptionCode.VALIDATION_ERROR
-                    .newInstance("해당 서비스의 기존 한도유형이 서로 다릅니다. 기존 데이터부터 통일해 주세요.");
-        }
-
-        SprtLmtKindVO k = kinds.get(0);
-        boolean sameDvs = Objects.equals(k.getDvsCd(), tpwLmtDvsCd);
-        boolean sameTyp = Objects.equals(k.getLmtTypCd(), tpwLmtTypCd);
-
-        if (!sameDvs || !sameTyp) {
-            String msgKind = toKindLabel(k.getDvsCd(), k.getLmtTypCd());
-            throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
-                    "해당 서비스는 이미 [" + msgKind + "] 유형으로 한도가 설정되어 있습니다. " +
-                            "기존 한도유형과 동일한 유형으로만 추가할 수 있습니다."
-            );
-        }
-    }
-
-    /**
-     * 한도유형 코드 → 사용자용 라벨 변환.
-     *
-     * @param dvs 한도구분 코드(01=금액, 02=건수)
-     * @param typ 한도유형 코드(01=월, 02=분기/건수)
-     * @return 예) 금액-분기, 금액-월, 건수
-     */
-    private String toKindLabel(String dvs, String typ) {
-        if ("01".equals(dvs) && "02".equals(typ)) return "금액-분기";
-        if ("01".equals(dvs) && "01".equals(typ)) return "금액-월";
-        if ("02".equals(dvs))                    return "건수";
-        return dvs + "-" + typ;
-    }
-
-    // ===================== 실제 저장 메서드 예시 =====================
-
-    /**
-     * YYYY-MM / YYYYMM → YYYYMM 포맷으로 정규화.
-     *
-     * @param v 연월 문자열
-     * @return 정규화된 YYYYMM 문자열, 실패 시 null
-     */
-    private String normalizeYm(String v) {
-        if (v == null) return null;
-        String s = v.trim();
-        if (s.isEmpty()) return null;
-
-        if (s.matches("^\\d{4}-\\d{2}$")) {      // YYYY-MM
-            return s.substring(0, 4) + s.substring(5, 7);
-        }
-        if (s.matches("^\\d{6}$")) {            // YYYYMM
-            return s;
-        }
-        return null;
-    }
-
-    /**
-     * 일련번호를 10자리 0패딩 문자열로 포맷.
-     *
-     * @param sno 일련번호
-     * @return 10자리 문자열(예: 0000000001)
-     */
-    private String formatSno(int sno) {
-        if (sno < 0) sno = 0;
-        return String.format("%010d", sno);
-    }
-
-    /**
-     * 금액/건수 공통 insert 빌더.
-     * <p>
-     * 규칙<br/>
-     * - spfn_lmt_sno : 한 번 저장 시 전체 행 동일 (버전)<br/>
-     * - spfn_lmt_mng_no :<br/>
-     * &nbsp;&nbsp;· 동일 서비스/유형 + 동일 기간(시작/종료년월, 유형)이면 → 기존 관리번호 재사용<br/>
-     * &nbsp;&nbsp;· 완전 신규 기간이면 → 새 관리번호 채번<br/>
-     * <br/>
-     * 또한, 이전 버전 N 처리를 위해<br/>
-     * - prevSno       : 직전 버전 sno<br/>
-     * - touchedMngNos : 이번 저장에서 사용된 관리번호 집합<br/>
+     * 또한, 이전 버전 N 처리를 위해
+     *  - prevSno        : 직전 버전 sno
+     *  - touchedMngNos  : 이번 저장에서 사용된 관리번호 집합
      * 을 같이 리턴한다.
-     *
-     * @param req         저장 요청 VO
-     * @param existing    기존 한도 목록
-     * @param hasExisting 기존 한도 존재 여부
-     * @return insert 대상 행 리스트와 이전 버전 정보가 담긴 BuildResult
      */
     private BuildResult buildInserts(InstReqVO req,
                                      List<SprtLmtRspVO> existing,
@@ -644,28 +809,37 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 : Optional.ofNullable(req.getTpwLmtTypCd())               // 건수: null이면 기존 값 또는 기본 02
                 .orElse(curTyp != null ? curTyp : "02");
 
-        // ===== sno 계산: 같은 서비스/유형/한도구분 기준 max(sno) + 1 =====
-        int maxSnoInt = existing.stream()
-                .filter(r -> dvs.equals(r.getTpwLmtDvsCd()))
-                .map(SprtLmtRspVO::getSpfnLmtSno)
-                .filter(Objects::nonNull)
-                .mapToInt(s -> {
-                    try {
-                        return Integer.parseInt(s);
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
-                })
-                .max()
-                .orElse(0);
+        // ===== sno 계산 =====
+        boolean editMode = "edit-3in1".equalsIgnoreCase(
+                Optional.ofNullable(req.getMode()).orElse("")
+        );
 
-        String prevSno = (maxSnoInt > 0) ? String.format("%010d", maxSnoInt) : null;
-        String nextSno = String.format("%010d", maxSnoInt + 1);
+        String prevSno;
+        String nextSno;
 
-        // 건수 한도용 기간 기본값
-        final String nowYm = currentYYYYMM();
-        final String sttYmForCount = hasExisting ? existing.get(0).getLmtSttYm() : nowYm;
-        final String endYmForCount = hasExisting ? existing.get(0).getLmtEndYm() : nowYm;
+        if (editMode) {
+            // 설정하기(수정) 모드 → 기존 sno 기준으로 버전 업
+            int maxSnoInt = existing.stream()
+                    .filter(r -> dvs.equals(r.getTpwLmtDvsCd()))
+                    .map(SprtLmtRspVO::getSpfnLmtSno)
+                    .filter(Objects::nonNull)
+                    .mapToInt(s -> {
+                        try {
+                            return Integer.parseInt(s);
+                        } catch (NumberFormatException e) {
+                            return 0;
+                        }
+                    })
+                    .max()
+                    .orElse(0);
+
+            prevSno = (maxSnoInt > 0) ? formatSno(maxSnoInt) : null;
+            nextSno = formatSno(maxSnoInt + 1);
+        } else {
+            // 🔥 신규등록 모드 → 일련번호는 항상 1부터
+            prevSno = null;              // 이전 버전 개념 없음
+            nextSno = formatSno(1);      // "0000000001"
+        }
 
         List<SprtLmtReqVO> out = new ArrayList<>(needCount);
         Set<String> touchedMngNos = new HashSet<>();
@@ -673,28 +847,44 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         // ============== 1) 금액 한도 (분기/월) ==============
         if (isAmount) {
 
-            // 1-1. existing 을 기간 → 관리번호 맵으로 구성
             Map<PeriodKeyVO, String> mngNoByPeriod = new HashMap<>();
-            if (hasExisting && "01".equals(curDvs)) {
+            Set<PeriodKeyVO> newKeys = new LinkedHashSet<>();
+
+            if (editMode && hasExisting && "01".equals(curDvs)) {
+                //  설정하기(edit)일 때만 "기간 동일하면 기존 관리번호 재사용"
                 for (SprtLmtRspVO row : existing) {
                     if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
                     if (!nextTyp.equals(row.getTpwLmtTypCd())) continue;
 
-                    PeriodKeyVO key = new PeriodKeyVO(row.getLmtSttYm(), row.getLmtEndYm());
+                    PeriodKeyVO key = new PeriodKeyVO(
+                            normalizeYm(row.getLmtSttYm()),
+                            normalizeYm(row.getLmtEndYm())
+                    );
                     mngNoByPeriod.putIfAbsent(key, row.getSpfnLmtMngNo());
                 }
-            }
 
-            // 1-2. 이번 요청에서 “완전 신규 기간”만 모으기
-            Set<PeriodKeyVO> newKeys = new LinkedHashSet<>();
-            for (AmtReqVO a : amtSrc) {
-                PeriodKeyVO key = new PeriodKeyVO(a.getLmtSttYm(), a.getLmtEndYm());
-                if (!mngNoByPeriod.containsKey(key)) {
+                // 기존에 없는 기간만 새 관리번호 대상
+                for (AmtReqVO a : amtSrc) {
+                    PeriodKeyVO key = new PeriodKeyVO(
+                            normalizeYm(a.getLmtSttYm()),
+                            normalizeYm(a.getLmtEndYm())
+                    );
+                    if (!mngNoByPeriod.containsKey(key)) {
+                        newKeys.add(key);
+                    }
+                }
+            } else {
+                //  신규등록(또는 기존이 건수만 있는 경우 등)에서는
+                //    → 모든 기간에 대해 새 관리번호를 채번
+                for (AmtReqVO a : amtSrc) {
+                    PeriodKeyVO key = new PeriodKeyVO(
+                            normalizeYm(a.getLmtSttYm()),
+                            normalizeYm(a.getLmtEndYm())
+                    );
                     newKeys.add(key);
                 }
             }
 
-            // 1-3. 신규 기간 개수만큼 readNextMngNo 로 한 번에 관리번호 채번
             if (!newKeys.isEmpty()) {
                 List<String> newMngNos = readNextMngNo(newKeys.size());
                 Iterator<String> it = newMngNos.iterator();
@@ -706,9 +896,11 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 }
             }
 
-            // 1-4. 최종 out 리스트 구성 + touchedMngNos 수집
             for (AmtReqVO a : amtSrc) {
-                PeriodKeyVO key = new PeriodKeyVO(a.getLmtSttYm(), a.getLmtEndYm());
+                PeriodKeyVO key = new PeriodKeyVO(
+                        normalizeYm(a.getLmtSttYm()),
+                        normalizeYm(a.getLmtEndYm())
+                );
                 String mngNo = mngNoByPeriod.get(key);
                 if (mngNo == null) {
                     throw new IllegalStateException("기간(" + key + ")에 대한 관리번호가 없습니다.");
@@ -721,10 +913,10 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                         req.getTpwSvcTypId(),
                         mngNo,
                         nextSno,
-                        "01",       // 금액
-                        nextTyp,    // 01=월, 02=분기
-                        a.getLmtSttYm(),
-                        a.getLmtEndYm(),
+                        "01",
+                        nextTyp,
+                        normalizeYm(a.getLmtSttYm()),
+                        normalizeYm(a.getLmtEndYm()),
                         0,
                         0,
                         a.getTgtAdptVal(),
@@ -732,47 +924,174 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 ));
             }
 
-            // ============== 2) 건수 한도 ==============
-        } else {
-            // 기준 연월: 기존 데이터가 있으면 그 값을 쓰고, 없으면 현재 월
-            String baseStt = normalizeYm(sttYmForCount);
-            if (baseStt == null) baseStt = nowYm;
+            return new BuildResult(out, prevSno, touchedMngNos);
+        }
 
-            String baseEnd = normalizeYm(endYmForCount);
-            if (baseEnd == null) baseEnd = baseStt;
+        // ============== 2) 건수 한도 ==============
+        // 규칙
+        //  - [신규등록] : 행마다 무조건 새 관리번호 (날짜 같아도 전부 별도)
+        //  - [edit-3in1] :
+        //        · 요청 VO(NcntReqVO)에 spfnLmtMngNo 가 있으면 → 그 번호 재사용
+        //        · 없으면 새 관리번호 채번
+        List<String> generated = Collections.emptyList();
 
-            // 건수는 요청 행 수만큼 관리번호를 미리 뽑는다
-            Deque<String> mngNoPool = new ArrayDeque<>(readNextMngNo(needCount));
+        if (editMode && hasExisting && "02".equals(curDvs)) {
+            int needNew = (int) ncntSrc.stream()
+                    .filter(n -> n.getSpfnLmtMngNo() == null || n.getSpfnLmtMngNo().isBlank())
+                    .count();
 
-            for (NcntReqVO n : ncntSrc) {
-                String mngNo = mngNoPool.removeFirst();
-
-                out.add(new SprtLmtReqVO(
-                        req.getTpwSvcId(),
-                        req.getTpwSvcTypId(),
-                        mngNo,
-                        nextSno,                // 이번 저장의 공통 일련번호
-                        "02",                   // 건수
-                        nextTyp,                // 02
-                        baseStt,
-                        baseEnd,
-                        n.getMinCndtVal(),
-                        n.getMaxCndtVal(),
-                        n.getTgtAdptVal(),
-                        "Y"
-                ));
+            if (needNew > 0) {
+                generated = readNextMngNo(needNew);
             }
+        } else {
+            //  신규등록이거나 기존이 금액만 있는 경우 → 모든 행 신규 관리번호
+            if (!ncntSrc.isEmpty()) {
+                generated = readNextMngNo(ncntSrc.size());
+            }
+        }
+
+        Iterator<String> it = generated.iterator();
+
+        for (NcntReqVO n : ncntSrc) {
+            String mngNo = n.getSpfnLmtMngNo();
+            if (mngNo == null || mngNo.isBlank()) {
+                if (!it.hasNext()) {
+                    throw new IllegalStateException("관리번호 개수가 부족합니다.");
+                }
+                mngNo = it.next();
+            }
+
+            touchedMngNos.add(mngNo);
+
+            String sttYm = normalizeYm(n.getLmtSttYm());
+            String endYm = normalizeYm(n.getLmtEndYm());
+            if (sttYm == null) {
+                sttYm = currentYYYYMM();   // 실제로는 periodValidator 에서 형식을 막고 있음
+            }
+            if (endYm == null) {
+                endYm = sttYm;            // 건수는 월 단위라고 가정
+            }
+
+            out.add(new SprtLmtReqVO(
+                    req.getTpwSvcId(),
+                    req.getTpwSvcTypId(),
+                    mngNo,
+                    nextSno,
+                    "02",              // dvs: 건수
+                    nextTyp,           // typ: 01/02 중 정책에 따라
+                    sttYm,
+                    endYm,
+                    n.getMinCndtVal(),
+                    n.getMaxCndtVal(),
+                    n.getTgtAdptVal(),
+                    "Y"
+            ));
         }
 
         return new BuildResult(out, prevSno, touchedMngNos);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public SprtLmtExistResVO checkExist(String tpwSvcId, String tpwSvcTypId) {
+        SprtLmtExistResVO res = new SprtLmtExistResVO();
+
+        // 1) 해당 서비스+서비스유형의 기존 분기 목록 (분기 신규 등록 시 겹침 체크용)
+        List<QuarterRangeVO> qtRanges = sprtLmtMapper.readQuarterRanges(tpwSvcId, tpwSvcTypId);
+        res.setQtRanges(qtRanges);
+
+        // 🔥 2) "이 서비스/유형에 한도 데이터가 하나라도 있는지"로 exists 판단
+        boolean anyExists = hasExistingLimit(tpwSvcId, tpwSvcTypId);
+        res.setExists(anyExists);
+
+        // 3) 서비스 단위 한도유형(금액-분기/월/건수) 정보
+        List<SprtLmtKindVO> kinds = sprtLmtMapper.readSvcLmtKinds(tpwSvcId);
+        if (kinds != null && !kinds.isEmpty()) {
+            if (kinds.size() == 1) {
+                res.setSvcLmtDvsCd(kinds.get(0).getDvsCd());
+                res.setSvcLmtTypCd(kinds.get(0).getLmtTypCd());
+                res.setMultiKinds(false);
+            } else {
+                res.setMultiKinds(true);
+            }
+        }
+
+        return res;
+    }
+
+    // ===================== 저장 시 서버측 검증 =====================
+
     /**
-     * buildInserts 결과 묶음.
-     * <p>
-     * - rows         : 실제 insert 대상 행 리스트<br/>
-     * - prevSno      : 직전 버전 sno (이전 버전 N 처리용)<br/>
-     * - touchedMngNos: 이번 저장에서 사용된 관리번호 집합
+     * 저장 시 서비스 단위 한도유형(금액-분기/월/건수) 강제 일치 검증
+     *  - 이 서비스에 기존 데이터가 없으면 패스
+     *  - 하나의 유형만 존재하면, 그 유형과 동일해야만 신규 저장 허용
+     *  - 여러 유형이 이미 섞여 있으면, 먼저 기존 데이터부터 정리해야 함
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void validateSvcLimitKind(String tpwSvcId, String tpwLmtDvsCd, String tpwLmtTypCd) {
+        List<SprtLmtKindVO> kinds = sprtLmtMapper.readSvcLmtKinds(tpwSvcId);
+        if (kinds == null || kinds.isEmpty()) {
+            // 아직 이 서비스에 아무 한도도 없으면 제약 없음
+            return;
+        }
+
+        // 이 서비스에 이미 등록된 dvs(01=금액, 02=건수) 집합
+        boolean hasAmount = kinds.stream().anyMatch(k -> "01".equals(k.getDvsCd()));
+        boolean hasCount  = kinds.stream().anyMatch(k -> "02".equals(k.getDvsCd()));
+
+        // 금액/건수는 섞지 않게 하고 싶으면 여기서 막기
+        if (hasAmount && hasCount) {
+            throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                    "하나의 서비스에는 금액/건수 유형을 동시에 설정할 수 없습니다. 기존 한도유형을 먼저 정리해 주세요."
+            );
+        }
+
+        // 이미 등록된 게 전부 금액인데, 이번에 건수를 넣으려고 하면 막기 (반대도 동일)
+        String existingDvs = kinds.get(0).getDvsCd(); // 전부 같은 dvs 라는 전제
+        if (!Objects.equals(existingDvs, tpwLmtDvsCd)) {
+            String msgKind = "01".equals(existingDvs) ? "금액" : "건수";
+            throw DomainExceptionCode.VALIDATION_ERROR.newInstance(
+                    "해당 서비스는 이미 [" + msgKind + "] 한도로 설정되어 있습니다. " +
+                            "기존 한도유형(금액/건수)과 동일한 유형으로만 추가할 수 있습니다."
+            );
+        }
+    }
+
+    private String toKindLabel(String dvs, String typ) {
+        if ("01".equals(dvs) && "02".equals(typ)) return "금액-분기";
+        if ("01".equals(dvs) && "01".equals(typ)) return "금액-월";
+        if ("02".equals(dvs))                    return "건수";
+        return dvs + "-" + typ;
+    }
+
+    // ===================== 실제 저장 메서드 예시 =====================
+
+
+
+
+    /** YYYY-MM / YYYYMM → YYYYMM */
+    private String normalizeYm(String v) {
+        if (v == null) return null;
+        String s = v.trim();
+        if (s.isEmpty()) return null;
+
+        if (s.matches("^\\d{4}-\\d{2}$")) {      // YYYY-MM
+            return s.substring(0, 4) + s.substring(5, 7);
+        }
+        if (s.matches("^\\d{6}$")) {            // YYYYMM
+            return s;
+        }
+        return null;
+    }
+
+    private String formatSno(int sno) {
+        if (sno < 0) sno = 0;
+        return String.format("%010d", sno);
+    }
+
+    /**
+     * buildInserts 결과 묶음
      */
     private static class BuildResult {
         final List<SprtLmtReqVO> rows;
