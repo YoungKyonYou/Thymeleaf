@@ -167,6 +167,24 @@
         </if>
     </select>
 
+    <select id="readTrdNcntAdptYn"
+            parameterType="string"
+            resultType="string">
+        /* sql_id : readTrdNcntAdptYn */
+        /*
+        * 1. 파일 : SprtLmtMapper_SQL.xml
+        * 2. 기능 : 서비스유형별 거래 건수 한도 적용 여부 조회
+        * 3. 작성자 : 유영균
+        * 4. 변경이력 :
+        *    2025.11.26 - 유영균 : 거래건수적용여부 서버 검증용 조회 추가
+        */
+
+        select coalesce(max(m202.trd_ncnt_ltn_adpt_yn), 'N') as trdNcntAdptYn
+        from ohxzown.tbhxzm202 m202
+        where m202.tpw_svc_typ_id = #{tpwSvcTypId}
+        and m202.use_yn         = 'Y'
+    </select>
+
     <insert id="insertSprtLmt" parameterType="list">
         /* sql_id : insertSprtLmt */
         /*

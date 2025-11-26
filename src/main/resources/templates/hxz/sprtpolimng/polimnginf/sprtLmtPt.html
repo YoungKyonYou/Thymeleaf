@@ -594,6 +594,7 @@
                     }
 
                     clearFooterError();
+
                 }
 
                 // ★ 탭 활성화: 이제 Q/M만 풀고 C는 기본 disabled 유지
@@ -610,6 +611,9 @@
                     tabs.forEach((tab, idx) => {
                         tab.addEventListener('click', () => {
                             if (tab.disabled) return;
+
+
+
                             activateTabByIndex(container, idx);
                         });
                     });
@@ -627,39 +631,39 @@
                     });
                 }
                 // ===== 편집 모드: dvsCd / typCd 로 "기본 탭만" 잡고, 나머지는 그대로 두기 =====
-function applyTabsForEditByDvsTyp(container, dvs, typ) {
-    const tabQ = container.querySelector('#tab-q'); // 분기
-    const tabM = container.querySelector('#tab-m'); // 월
-    const tabC = container.querySelector('#tab-c'); // 건수
+                function applyTabsForEditByDvsTyp(container, dvs, typ) {
+                    const tabQ = container.querySelector('#tab-q'); // 분기
+                    const tabM = container.querySelector('#tab-m'); // 월
+                    const tabC = container.querySelector('#tab-c'); // 건수
 
-    // 편집 모드에서도 세 탭 모두 "볼 수" 있어야 하므로
-    // disable / enable 조작은 하지 않고 전부 enabled 로 맞춰둔다.
-    [tabQ, tabM, tabC].forEach(t => {
-        if (t) {
-            t.removeAttribute('disabled');
-        }
-    });
+                    // 편집 모드에서도 세 탭 모두 "볼 수" 있어야 하므로
+                    // disable / enable 조작은 하지 않고 전부 enabled 로 맞춰둔다.
+                    [tabQ, tabM, tabC].forEach(t => {
+                        if (t) {
+                            t.removeAttribute('disabled');
+                        }
+                    });
 
-    // dvs/typ 기준으로 "어느 탭을 기본으로 활성화할지"만 결정
-    if (dvs === '02') {
-        // 건수 한도 → 건수 탭을 기본 활성
-        activateTabByIndex(container, 2); // tab-c
-        __state.dvs = '02';
-        __state.typ = '02';
-    } else if (typ === '01') {
-        // 금액-월 → 월 탭 기본
-        activateTabByIndex(container, 1); // tab-m
-        __state.dvs = '01';
-        __state.typ = '01';
-    } else {
-        // 그 외(금액-분기) → 분기 탭 기본
-        activateTabByIndex(container, 0); // tab-q
-        __state.dvs = '01';
-        __state.typ = '02';
-    }
+                    // dvs/typ 기준으로 "어느 탭을 기본으로 활성화할지"만 결정
+                    if (dvs === '02') {
+                        // 건수 한도 → 건수 탭을 기본 활성
+                        activateTabByIndex(container, 2); // tab-c
+                        __state.dvs = '02';
+                        __state.typ = '02';
+                    } else if (typ === '01') {
+                        // 금액-월 → 월 탭 기본
+                        activateTabByIndex(container, 1); // tab-m
+                        __state.dvs = '01';
+                        __state.typ = '01';
+                    } else {
+                        // 그 외(금액-분기) → 분기 탭 기본
+                        activateTabByIndex(container, 0); // tab-q
+                        __state.dvs = '01';
+                        __state.typ = '02';
+                    }
 
-    clearFooterError();
-}
+                    clearFooterError();
+                }
                 /* ===== 모달 readOnly 토글 ===== */
                 function setModalReadonly(container, readonly) {
                     const modal = getModal();
@@ -1130,26 +1134,33 @@ function applyTabsForEditByDvsTyp(container, dvs, typ) {
 
                 /* ===== 신규/편집 공통: 적합 탭 활성 ===== */
 
-            // 신규: 월/분기/건수 모두 선택 가능
-function applyTabsForNewByAdpt(container, adptYn) {
-    const tabQ = container.querySelector('#tab-q');
-    const tabM = container.querySelector('#tab-m');
-    const tabC = container.querySelector('#tab-c');
+                function applyTabsForNewByAdpt(container, adptYn) {
+                    //  거래건수제한적용여부 상태 저장
+                    __state.adptYn = (adptYn || '').toUpperCase();
 
-    // 신규등록은 세 탭 모두 활성
-    [tabQ, tabM, tabC].forEach(t => {
-        if (t) t.removeAttribute('disabled');
-    });
+                    const tabQ = container.querySelector('#tab-q');
+                    const tabM = container.querySelector('#tab-m');
+                    const tabC = container.querySelector('#tab-c');
 
-    // adptYn(건수 적용 여부)은 더 이상 탭 잠그는 데 쓰지 않음
-    // 필요하면 추후 경고 메시지 등으로만 활용
+                    // 신규등록은 세 탭 모두 활성
+                    [tabQ, tabM, tabC].forEach(t => {
+                        if (t) t.removeAttribute('disabled');
+                    });
 
-    // 기본 탭은 분기(금액-분기)
-    activateTabByIndex(container, 0);
-    __state.dvs = '01';   // 금액
-    __state.typ = '02';   // 분기
-    clearFooterError();
-}
+                    if ((__state.adptYn || '').toUpperCase() === 'Y') {
+                        // 거래건수제한적용여부 = Y → 기본 탭을 "건수"로
+                        activateTabByIndex(container, 2);   // tab-c
+                        __state.dvs = '02';                 // 건수
+                        __state.typ = '02';                 // (건수 탭)
+                    } else {
+                        // 기존 서비스(금액 한도 가능) → 기본 탭은 분기
+                        activateTabByIndex(container, 0);   // tab-q
+                        __state.dvs = '01';                 // 금액
+                        __state.typ = '02';                 // 분기
+                    }
+
+                    clearFooterError();
+                }
 
                 // 설정하기: dvsCd / lmtTypCd 기준으로 탭 enable/disable
                 function applyTabsForEditByDvs(container, dvs, typ) {
@@ -1353,7 +1364,7 @@ function applyTabsForNewByAdpt(container, adptYn) {
                     if (exists) {
                         const ok = window.confirm(
                             '선택한 서비스/서비스유형에 대해 기존 한도 설정이 존재합니다.\n' +
-                            '기존 한도는 종료 처리(useYn=N)하고, 새 한도를 이어서 등록하시겠습니까?'
+                            '새 한도를 이어서 등록하시겠습니까?'
                         );
                         if (!ok) {
                             // 취소하면 그냥 선택 모달에 머무름
@@ -1871,6 +1882,19 @@ function applyTabsForNewByAdpt(container, adptYn) {
                                     container.querySelector('#tab-m.is-active') ? 'm' :
                                         container.querySelector('#tab-c.is-active') ? 'c' : 'q';
 
+
+                            if (__state.mode === 'new-3in1'
+                                && (__state.adptYn || '').toUpperCase() === 'Y'
+                                && activeTab !== 'c') {
+
+                                showFooterError(
+                                    '해당 서비스/서비스유형은 "거래건수제한적용여부"가 Y로 설정되어 있습니다.\n' +
+                                    '건수 한도 탭에서만 설정할 수 있습니다. 건수 한도 대신 금액 한도를 사용하려면,\n' +
+                                    '서비스유형 관리 화면에서 거래건수제한적용여부를 N으로 변경한 후 다시 시도해주세요.'
+                                );
+                                return;
+                            }
+
                             const selected = (__newFlowSelected && __newFlowSelected.child) || {};
                             const tpwSvcId = selected.tpwSvcId
                                 || modal.dataset.tpwSvcId
@@ -1904,7 +1928,7 @@ function applyTabsForNewByAdpt(container, adptYn) {
                                 tpwSvcTypId,
                                 tpwLmtDvsCd: (activeTab === 'c') ? '02' : '01',
                                 tpwLmtTypCd: (activeTab === 'm') ? '01' : '02',
-                                mode,  // ✨ 추가
+                                mode,  //  추가
                                 amtList: [],
                                 ncntList: []
                             };
