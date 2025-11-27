@@ -1705,21 +1705,7 @@
                             })
                             .filter(Boolean);
 
-                        if (prevNorm.length > 0) {
-                            for (const curr of ranges) {
-                                for (const p of prevNorm) {
-                                    // 구간 겹침 여부: (시작 ≤ 상대 종료) && (상대 시작 ≤ 종료)
-                                    if (curr.sNum <= p.eNum && p.sNum <= curr.eNum) {
-                                        showFooterError(
-                                            '분기: 기존에 이미 등록된 분기와 기간이 겹칩니다.\n' +
-                                            '기존 한도(이미 저장된 분기)와 겹치지 않도록 기간을 다시 설정해주세요.'
-                                        );
-                                        if (curr.startInput) curr.startInput.focus();
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
+
                     }
 
                     return true;

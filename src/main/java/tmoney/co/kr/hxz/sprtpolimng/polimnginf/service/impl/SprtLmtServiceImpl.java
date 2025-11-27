@@ -346,20 +346,26 @@ public class SprtLmtServiceImpl implements SprtLmtService {
             req.getAmtList().forEach(a -> a.setLmtEndYm(a.getLmtSttYm()));
         }
 
-        // insert 대상 레코드 빌드
         BuildResult build = buildInserts(req, existing, hasExisting);
         List<SprtLmtReqVO> toInsert = build.rows;
         if (toInsert.isEmpty()) return;
 
-        // 이전 SNO 이력 N 처리
-        if (build.prevSno != null && !build.touchedMngNos.isEmpty()) {
-            updateSprtLmtUseYnByMngNos(
-                    req.getTpwSvcId(),
-                    req.getTpwSvcTypId(),
-                    req.getTpwLmtDvsCd(),
-                    build.prevSno,
-                    new ArrayList<>(build.touchedMngNos)
-            );
+        //  관리번호별 이전 SNO를 기준으로 N 처리
+        if (build.prevSnoByMngNo != null && !build.prevSnoByMngNo.isEmpty()) {
+            for (Map.Entry<String, String> e : build.prevSnoByMngNo.entrySet()) {
+                String mngNo = e.getKey();
+                String prevSno = e.getValue();
+                if (prevSno == null || prevSno.isBlank()) {
+                    continue;
+                }
+                updateSprtLmtUseYnByMngNos(
+                        req.getTpwSvcId(),
+                        req.getTpwSvcTypId(),
+                        req.getTpwLmtDvsCd(),
+                        prevSno,
+                        Collections.singletonList(mngNo)
+                );
+            }
         }
 
         // 신규 이력 insert
@@ -676,12 +682,14 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
     /**
      * 금액/건수 한도 입력값을 기반으로 실제 insert 대상 레코드와
-     * 이전 SNO/ touchedMngNos를 빌드한다.
+     * 관리번호별 이전 SNO(prevSnoByMngNo)를 빌드한다.
      *
-     * @param req         통합 저장 요청
-     * @param existing    기존 한도 이력
-     * @param hasExisting 기존 이력 존재 여부
-     * @return BuildResult (rows: insert 대상, prevSno: 이전 SNO, touchedMngNos: 사용 대상 관리번호)
+     * 신규 모드:
+     *   - 기존 이력이 있어도 모든 행 SNO = 1
+     *
+     * 수정 모드(edit-3in1):
+     *   - 기존 이력이 있는 행(기간/관리번호)은 이전 SNO + 1 로 새 버전 생성
+     *   - 완전 신규 행(이전에 없던 기간/관리번호)은 SNO = 1
      */
     private BuildResult buildInserts(InstReqVO req,
                                      List<SprtLmtRspVO> existing,
@@ -697,7 +705,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         final int needCount = isAmount ? amtSrc.size() : ncntSrc.size();
         if (needCount == 0) {
-            return new BuildResult(Collections.emptyList(), null, Collections.emptySet());
+            return new BuildResult(Collections.emptyList(), Collections.emptyMap());
         }
 
         final String curDvs = hasExisting ? existing.get(0).getTpwLmtDvsCd() : null;
@@ -712,43 +720,18 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 Optional.ofNullable(req.getMode()).orElse("")
         );
 
-        String prevSno;
-        String nextSno;
-
-        if (editMode) {
-            // 수정 모드: 기존 dvs 기준 max SNO + 1로 신규 SNO 생성
-            int maxSnoInt = existing.stream()
-                    .filter(r -> dvs.equals(r.getTpwLmtDvsCd()))
-                    .map(SprtLmtRspVO::getSpfnLmtSno)
-                    .filter(Objects::nonNull)
-                    .mapToInt(s -> {
-                        try {
-                            return Integer.parseInt(s);
-                        } catch (NumberFormatException e) {
-                            return 0;
-                        }
-                    })
-                    .max()
-                    .orElse(0);
-
-            prevSno = (maxSnoInt > 0) ? formatSno(maxSnoInt) : null;
-            nextSno = formatSno(maxSnoInt + 1);
-        } else {
-            // 신규 모드: 항상 0000000001부터 시작
-            prevSno = null;
-            nextSno = formatSno(1);
-        }
-
         List<SprtLmtReqVO> out = new ArrayList<>(needCount);
-        Set<String> touchedMngNos = new HashSet<>();
+        Map<String, String> prevSnoByMngNo = new HashMap<>();
 
+        /* ===================== 금액 한도 (월/분기) ===================== */
         if (isAmount) {
 
             Map<PeriodKeyVO, String> mngNoByPeriod = new HashMap<>();
+            Map<PeriodKeyVO, String> prevSnoByPeriod = new HashMap<>();
             Set<PeriodKeyVO> newKeys = new LinkedHashSet<>();
 
             if (editMode && hasExisting && "01".equals(curDvs)) {
-                // 수정 모드: 기존 동일 기간은 기존 관리번호 재사용
+                // 수정 모드: 기존 동일 기간은 관리번호 & 이전 SNO 기억
                 for (SprtLmtRspVO row : existing) {
                     if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
                     if (!nextTyp.equals(row.getTpwLmtTypCd())) continue;
@@ -757,10 +740,13 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                             normalizeYm(row.getLmtSttYm()),
                             normalizeYm(row.getLmtEndYm())
                     );
-                    mngNoByPeriod.putIfAbsent(key, row.getSpfnLmtMngNo());
+                    if (!mngNoByPeriod.containsKey(key)) {
+                        mngNoByPeriod.put(key, row.getSpfnLmtMngNo());
+                        prevSnoByPeriod.put(key, row.getSpfnLmtSno());
+                    }
                 }
 
-                // 신규 기간에 대해서만 새로운 관리번호 필요
+                // 새 기간은 관리번호 신규 발급 대상
                 for (AmtReqVO a : amtSrc) {
                     PeriodKeyVO key = new PeriodKeyVO(
                             normalizeYm(a.getLmtSttYm()),
@@ -771,7 +757,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                     }
                 }
             } else {
-                // 신규 모드: 모든 기간이 신규
+                // 신규 모드: 모든 기간이 신규(관리번호만 발급받으면 됨, SNO는 전부 1)
                 for (AmtReqVO a : amtSrc) {
                     PeriodKeyVO key = new PeriodKeyVO(
                             normalizeYm(a.getLmtSttYm()),
@@ -781,7 +767,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 }
             }
 
-            // 필요한 기간 수만큼 관리번호 시퀀스 조회
+            // 신규 기간에 대해 관리번호 발급
             if (!newKeys.isEmpty()) {
                 List<String> newMngNos = readNextMngNo(newKeys.size());
                 Iterator<String> it = newMngNos.iterator();
@@ -790,10 +776,11 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                         throw new IllegalStateException("관리번호 개수가 부족합니다.");
                     }
                     mngNoByPeriod.put(key, it.next());
+                    // 신규 기간은 이전 SNO 없음
                 }
             }
 
-            // 금액 한도 insert 레코드 빌드
+            // insert 레코드 생성 + 관리번호별 이전 SNO 수집
             for (AmtReqVO a : amtSrc) {
                 PeriodKeyVO key = new PeriodKeyVO(
                         normalizeYm(a.getLmtSttYm()),
@@ -804,13 +791,35 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                     throw new IllegalStateException("기간(" + key + ")에 대한 관리번호가 없습니다.");
                 }
 
-                touchedMngNos.add(mngNo);
+                String rowSno;
+
+                if (editMode) {
+                    // 수정 모드: 해당 기간에 이전 이력이 있으면 그 SNO + 1, 없으면 1
+                    String prevSnoForPeriod = prevSnoByPeriod.get(key);
+                    if (prevSnoForPeriod != null && !prevSnoForPeriod.isBlank()) {
+                        int prevInt;
+                        try {
+                            prevInt = Integer.parseInt(prevSnoForPeriod);
+                        } catch (NumberFormatException e) {
+                            prevInt = 0;
+                        }
+                        rowSno = formatSno(prevInt + 1);
+                        // N 처리용으로 관리번호별 이전 SNO 저장
+                        prevSnoByMngNo.put(mngNo, prevSnoForPeriod);
+                    } else {
+                        // 완전 신규 기간 → 첫 버전
+                        rowSno = formatSno(1);
+                    }
+                } else {
+                    // 신규 모드: 항상 1
+                    rowSno = formatSno(1);
+                }
 
                 out.add(new SprtLmtReqVO(
                         req.getTpwSvcId(),
                         req.getTpwSvcTypId(),
                         mngNo,
-                        nextSno,
+                        rowSno,
                         "01",
                         nextTyp,
                         normalizeYm(a.getLmtSttYm()),
@@ -822,15 +831,26 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 ));
             }
 
-            return new BuildResult(out, prevSno, touchedMngNos);
+            return new BuildResult(out, prevSnoByMngNo);
         }
 
-        // ===== 건수 한도 빌드 =====
+        /* ===================== 건수 한도 ===================== */
+
+        // 관리번호별 현재 SNO (existing은 USE_YN=Y만 넘어온다고 가정)
+        Map<String, String> currentSnoByMngNo = new HashMap<>();
+        if (hasExisting && "02".equals(curDvs)) {
+            for (SprtLmtRspVO row : existing) {
+                if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
+                String mngNo = row.getSpfnLmtMngNo();
+                if (mngNo == null) continue;
+                currentSnoByMngNo.putIfAbsent(mngNo, row.getSpfnLmtSno());
+            }
+        }
 
         List<String> generated = Collections.emptyList();
 
         if (editMode && hasExisting && "02".equals(curDvs)) {
-            // 수정 모드: 관리번호 없는 Row 수만큼만 추가 발급
+            // 수정 모드: 관리번호가 없는 행(신규)에 대해서만 시퀀스 발급
             int needNew = (int) ncntSrc.stream()
                     .filter(n -> n.getSpfnLmtMngNo() == null || n.getSpfnLmtMngNo().isBlank())
                     .count();
@@ -839,7 +859,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 generated = readNextMngNo(needNew);
             }
         } else {
-            // 신규 모드: 전체 Row 수만큼 관리번호 발급
+            // 신규 모드: 전체 행에 대해 관리번호 발급
             if (!ncntSrc.isEmpty()) {
                 generated = readNextMngNo(ncntSrc.size());
             }
@@ -856,7 +876,27 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                 mngNo = it.next();
             }
 
-            touchedMngNos.add(mngNo);
+            String rowSno;
+
+            if (editMode) {
+                // 수정 모드: 기존 관리번호면 이전 SNO + 1, 신규 관리번호면 1
+                String prevSno = currentSnoByMngNo.get(mngNo);
+                if (prevSno != null && !prevSno.isBlank()) {
+                    int prevInt;
+                    try {
+                        prevInt = Integer.parseInt(prevSno);
+                    } catch (NumberFormatException e) {
+                        prevInt = 0;
+                    }
+                    rowSno = formatSno(prevInt + 1);
+                    prevSnoByMngNo.put(mngNo, prevSno);
+                } else {
+                    rowSno = formatSno(1);
+                }
+            } else {
+                // 신규 모드: 모든 행 1
+                rowSno = formatSno(1);
+            }
 
             String sttYm = normalizeYm(n.getLmtSttYm());
             String endYm = normalizeYm(n.getLmtEndYm());
@@ -871,7 +911,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                     req.getTpwSvcId(),
                     req.getTpwSvcTypId(),
                     mngNo,
-                    nextSno,
+                    rowSno,
                     "02",
                     nextTyp,
                     sttYm,
@@ -883,7 +923,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
             ));
         }
 
-        return new BuildResult(out, prevSno, touchedMngNos);
+        return new BuildResult(out, prevSnoByMngNo);
     }
 
     /* ===================== 한도 유형/존재 여부 체크 ===================== */
@@ -997,13 +1037,15 @@ public class SprtLmtServiceImpl implements SprtLmtService {
      */
     private static class BuildResult {
         final List<SprtLmtReqVO> rows;
-        final String prevSno;
-        final Set<String> touchedMngNos;
+        /**
+         * 관리번호별 이전 SNO (수정 모드일 때만 사용)
+         * key: spfnLmtMngNo, value: 이전 spfnLmtSno
+         */
+        final Map<String, String> prevSnoByMngNo;
 
-        BuildResult(List<SprtLmtReqVO> rows, String prevSno, Set<String> touchedMngNos) {
+        BuildResult(List<SprtLmtReqVO> rows, Map<String, String> prevSnoByMngNo) {
             this.rows = rows;
-            this.prevSno = prevSno;
-            this.touchedMngNos = touchedMngNos;
+            this.prevSnoByMngNo = prevSnoByMngNo != null ? prevSnoByMngNo : Collections.emptyMap();
         }
     }
 }
