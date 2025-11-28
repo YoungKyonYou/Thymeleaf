@@ -1,6 +1,5 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
@@ -9,6 +8,7 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.MemrStlmPtService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO;
 
+import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -69,5 +69,23 @@ public class MemrStlmPtServiceImpl implements MemrStlmPtService {
     @Override
     public long readMemrStlmPtListCnt(MemrStlmPtReqVO req, String orgCd) {
         return memrStlmPtMapper.readMemrStlmPtListCnt(req, orgCd);
+    }
+
+    @Override
+    @Transactional
+    public void saveMemrStlmPt(MemrStlmPtRspVO form) {
+        memrStlmPtMapper.saveMemrStlmPt(form);
+    }
+
+    @Override
+    @Transactional
+    public void updateMemrStlmPt(MemrStlmPtRspVO form) {
+        memrStlmPtMapper.updateMemrStlmPt(form);
+    }
+
+    @Override
+    @Transactional
+    public void deleteMemrStlmPt(MemrStlmPtRspVO form) {
+        memrStlmPtMapper.deleteMemrStlmPt(form);
     }
 }

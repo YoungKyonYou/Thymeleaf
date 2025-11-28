@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 @Data
 public class SprtSvcTypRspVO {
 
+    private String orgCd;
+    
     // -------------------------------
     // PK (NOT NULL)
     // -------------------------------
@@ -177,6 +179,11 @@ public class SprtSvcTypRspVO {
     @NotBlank(message = "사용여부는 필수이며 Y 또는 N만 가능합니다.")
     @Pattern(regexp = "^[YN]$", message = "사용여부는 Y 또는 N만 가능합니다.")
     private String useYn = "Y";              // VARCHAR(1) NOT NULL
+
+
+    /** 화면경로 */
+    @Size(max = 500, message = "화면경로는 최대 500자까지 입력 가능합니다.")
+    private String tpwSvcScrnPathNm;
 
 
     // -------------------------------

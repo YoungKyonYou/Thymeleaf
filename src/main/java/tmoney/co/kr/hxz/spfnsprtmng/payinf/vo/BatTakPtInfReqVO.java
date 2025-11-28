@@ -3,12 +3,13 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 배치작업 포인트 정보 요청 VO

@@ -1,35 +1,28 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import tmoney.co.kr.export.ExportColumn;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.common.util.DateUtil;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.SprtSvcPtInfService;
-import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.export.SprtSvcPtInfExportService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfRspVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.IOException;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 
 
@@ -40,8 +33,10 @@ public class SprtSvcPtInfController {
 
     private final SprtSvcPtInfService sprtSvcPtInfService;
     private final DateUtil dateUtil;
-    private final SprtSvcPtInfExportService exportService;
 
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /** -----------------------------------------
      * 1. 지원서비스내역조회
@@ -55,16 +50,48 @@ public class SprtSvcPtInfController {
             String orgCd,
             Model model
     ) {
+
+
+        // 1. 🎯 orgCd Null/Empty 체크 및 기본값 "0000000" 설정
+        //    요청 파라미터 orgCd가 null/empty일 경우, 값을 "0000000"로 덮어씁니다.
+        if (orgCd == null || orgCd.trim().isEmpty()) {
+            orgCd = "0000000"; // ⚠️ 기본값 "0000000" 적용
+        }
+
+        // 2. req 객체에 최종 orgCd 값 설정 (검색 조건 일관성 유지)
+        req.setOrgCd(orgCd);
+
+
+
         // 기본 검색기간 세팅 (최근 30일)
         // 서비스 기간
-        req.updateDefaultDate(dateUtil.thirtyDaysAgo(), dateUtil.today());
+//        req.updateDefaultDate(dateUtil.thirtyDaysAgo(), dateUtil.today());
+
+        if (req.getSttDt() == null || req.getSttDt().isEmpty()) {
+            req.setSttDt(dateUtil.thirtyDaysAgo());
+        }
+        if (req.getEndDt() == null || req.getEndDt().isEmpty()) {
+            req.setEndDt(dateUtil.today());
+        }
+
 
         // 페이징 리스트 조회
         PageDataVO<SprtSvcDtlRspVO> contents = sprtSvcPtInfService.readSprtSvcPtInfList(req,  orgCd);
 
+        try {
+            // contents 전체 JSON 변환 및 이쁘게 출력
+            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(contents);
+            System.out.println("===== SprtSvcPtInf contents =====");
+            System.out.println(json);
+        } catch (Exception e) {
+            System.out.println("JSON 변환 실패: " + e.getMessage());
+        }
+
+
         // Model에 조회 결과 및 요청 조건 담기
         model.addAttribute("pageData", contents);
         model.addAttribute("req", req);
+        model.addAttribute("orgCd", orgCd); // 요청 파라미터로 받은 orgCd를 Model에 추가
 
 
         return "/hxz/spfnsprtmng/payinf/sprtSvcPtInf";
@@ -104,7 +131,7 @@ public class SprtSvcPtInfController {
     ) {
 
         // ✅ 타입 수정됨 (DtlRspVO로 받기)
-        SprtSvcDtlRspVO contents = sprtSvcPtInfService.findSprtSvcPtInf(tpwSvcId, orgCd);
+        SprtSvcDtlRspVO contents = sprtSvcPtInfService.readSprtSvcPtInf(tpwSvcId, orgCd);
 
         model.addAttribute("detail", contents);
 
@@ -146,7 +173,7 @@ public class SprtSvcPtInfController {
     public List<SprtSvcTypRspVO> getSvcTypList(
             @RequestParam("tpwSvcId") String tpwSvcId
     ) {
-        return sprtSvcPtInfService.findSprtSvcTypList(tpwSvcId);
+        return sprtSvcPtInfService.readSprtSvcTypList(tpwSvcId);
     }
 
 
@@ -160,8 +187,10 @@ public class SprtSvcPtInfController {
             @RequestParam("tpwSvcId") String tpwSvcId,
             Model model
     ) {
-        SprtSvcTypRspVO contents = sprtSvcPtInfService.findSprtSvcTyp(tpwSvcTypId, tpwSvcTypSno, tpwSvcId);
+        SprtSvcTypRspVO contents = sprtSvcPtInfService.readSprtSvcTyp(tpwSvcTypId, tpwSvcTypSno, tpwSvcId);
         model.addAttribute("typDetail", contents);
+
+
         return "/hxz/spfnsprtmng/payinf/sprtSvcTypForm";
     }
 
@@ -225,81 +254,7 @@ public class SprtSvcPtInfController {
         typDetail.setUseYn("Y"); // 기본값 세팅 가능
 
 
-        System.out.println("==================================================");
-
-
         return "/hxz/spfnsprtmng/payinf/sprtSvcTypForm";
     }
-
-
-
-    @GetMapping(path = "/exportSprtSvcPtInf")
-    public void exportSprtSvcPtInf(
-            @ModelAttribute @Valid SprtSvcPtInfReqVO req,
-            String orgCd,
-            HttpServletResponse response
-    ) throws IOException {
-
-        // 기본 검색기간 세팅
-        req.updateDefaultDate(dateUtil.thirtyDaysAgo(), dateUtil.today());
-
-        // SprtSvcPtInfExportService export = new SprtSvcPtInfExportService();
-
-        String sheetName = exportService.name();
-        String fileName = exportService.name() + "_" + LocalDate.now() + ".xlsx";
-
-        // VO → Map 변환
-        Map<String, String> params = req.toMap();
-        params.put("orgCd", orgCd);
-
-        // 엑셀 객체 생성
-        Workbook wb = new XSSFWorkbook();
-        Sheet sheet = wb.createSheet(sheetName);
-
-        AtomicInteger rowIdx = new AtomicInteger(0);
-
-        // ===== 1. 헤더 작성 =====
-        Row headerRow = sheet.createRow(rowIdx.getAndIncrement());
-
-        List<ExportColumn<SprtSvcDtlRspVO>> columns = exportService.columns(); // 컬럼명 리스트라고 가정
-        int cellIdx = 0;
-
-        for (ExportColumn<SprtSvcDtlRspVO> col : columns)
-        {
-            Cell cell = headerRow.createCell(cellIdx++);
-            cell.setCellValue(col.getHeader());
-        }
-
-        // ===== 2. 데이터 스트림으로 Row 채우기 =====
-        try (Stream<SprtSvcDtlRspVO> stream = exportService.stream(params))
-        {
-            stream.forEach(vo -> {
-
-                Row row = sheet.createRow(rowIdx.getAndIncrement());
-                int c = 0;
-
-                // 기관 코드
-                row.createCell(c++).setCellValue(vo.getTpwOrgNm());
-                // 서비스 내용
-                row.createCell(c++).setCellValue(vo.getTpwSvcCtt());
-                // 서비스 시작일자
-                row.createCell(c++).setCellValue(vo.getTpwSvcSttDt());
-                // 서비스 종료일자
-                row.createCell(c++).setCellValue(vo.getTpwSvcEndDt());
-                // 서비스명
-                row.createCell(c++).setCellValue(vo.getTpwSvcNm());
-
-            });
-        }
-
-        // ===== 3. 다운로드 헤더 설정 =====
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-
-        // ===== 4. 파일 출력 =====
-        wb.write(response.getOutputStream());
-        wb.close();
-    }
-
 
 }

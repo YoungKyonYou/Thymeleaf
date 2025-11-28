@@ -15,14 +15,16 @@
         bat.bat_tak_id      as batTakId,
         bat.bat_prcg_sta_cd as batPrcgStaCd,
         bat.bat_tak_stt_dtm as batTakSttDtm,
-        bat.bat_tak_end_dtm as batTakEndDtm
+        bat.bat_tak_end_dtm as batTakEndDtm,
+        bat.bat_tak_nm as batTakNm
         from (
         select
         to_date(d200.bat_tak_dt, 'YYYYMMDD') as bat_tak_dt,
         d200.bat_tak_id,
         d200.bat_prcg_sta_cd,
         d200.bat_tak_stt_dtm as bat_tak_stt_dtm,
-        d200.bat_tak_end_dtm as bat_tak_end_dtm
+        d200.bat_tak_end_dtm as bat_tak_end_dtm,
+        d200.bat_tak_nm as bat_tak_nm
         from tbhxzd200 d200
         <where>
             1=1
@@ -40,7 +42,7 @@
         </where>
         ) bat
         order by ${req.sort} ${req.dir}
-        limit #{req.size} offset #{req.page}
+        limit #{req.size} offset #{req.page} * #{req.size}
 
     </select>
 

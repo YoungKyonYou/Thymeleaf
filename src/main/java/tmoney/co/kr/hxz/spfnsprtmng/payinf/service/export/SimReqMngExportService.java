@@ -25,9 +25,27 @@ public class SimReqMngExportService implements ExportProvider<SimReqMngRspVO> {
     }
 
     @Override
-    public List<ExportColumn<SimReqMngRspVO>> columns() {
-        return List.of();
+    public List<ExportColumn<SimReqMngRspVO>> columns()
+    {
+        return List.of(
+
+            new ExportColumn<>("교통복지서비스ID",      v -> v.getTpwSvcId()),
+            new ExportColumn<>("교통복지서비스유형ID",  v -> v.getTpwSvcTypId()),
+            new ExportColumn<>("교통복지서비스유형일련번호", v -> v.getTpwSvcTypSno() == null ? "" : v.getTpwSvcTypSno().toString()),
+            new ExportColumn<>("신청일자",               v -> v.getAplDt()),
+            new ExportColumn<>("회원ID",                 v -> v.getMbrsId()),
+            new ExportColumn<>("카드일련번호",           v -> v.getAplCardSno() == null ? "" : v.getAplCardSno().toString()),
+            new ExportColumn<>("카드번호",               v -> v.getCardNo()),
+            new ExportColumn<>("카드시작일자",           v -> v.getCardSttDt()),
+            new ExportColumn<>("카드종료일자",           v -> v.getCardEndDt()),
+            new ExportColumn<>("서비스명",               v -> v.getTpwSvcNm()),
+            new ExportColumn<>("서비스유형명",           v -> v.getTpwSvcTypNm()),
+            new ExportColumn<>("처리완료여부",           v -> v.getPrcgFnYn()),
+            new ExportColumn<>("메시지",                 v -> v.getMessage())
+
+        );
     }
+
 
     @Override
     public Stream<SimReqMngRspVO> stream(Map<String, String> params) {

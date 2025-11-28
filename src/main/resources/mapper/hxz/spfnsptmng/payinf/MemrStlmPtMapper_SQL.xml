@@ -88,7 +88,7 @@
 
         ) memrSt
         ORDER BY memrSt.${req.sort} ${req.dir}
-        LIMIT #{req.size} OFFSET #{req.offset}
+        LIMIT #{req.size} offset #{req.page} * #{req.size}
     </select>
 
 
@@ -150,4 +150,130 @@
             </choose>
         </where>
     </select>
+
+
+
+<!--    상세보기-->
+<!--    <select id="">-->
+<!--        SELECT-->
+<!--        d216.tpw_svc_id              AS serviceId-->
+<!--        , d216.tpw_svc_typ_id          AS serviceTypeId-->
+<!--        , d216.tpw_svc_typ_sno         AS serviceTypeSerialNo-->
+<!--        , d216.mbrs_id                 AS memberId-->
+<!--        , d216.req_dtm                 AS requestDateTime-->
+<!--        , d216.prcg_dt                 AS processingDate-->
+<!--        , d216.tpw_memr_prcg_sta_cd    AS processingStatus-->
+<!--        , d216.apl_amt                 AS applicationAmount-->
+<!--        , d216.lmt_amt                 AS limitAmount-->
+<!--        , d216.req_duty_ctt            AS requestDutyContent-->
+<!--        , d216.trd_dt                  AS transactionDate-->
+<!--        , d216.pay_prcg_yn             AS paymentProcessingYn-->
+<!--        , '0'                          AS checkYn-->
+<!--        , COALESCE(d213.acnt_no, m102.acnt_no) AS transferAccount-->
+<!--        , COALESCE(m202.tpw_svc_typ_nm, '')    AS serviceTypeName-->
+<!--        , m201.tpw_svc_nm              AS serviceName-->
+<!--        , m101.mbrs_nm                 AS memberName-->
+<!--        , m101.mbrs_sta_cd             AS memberStatus-->
+<!--        , m008.addo_nm                 AS administrativeDistrictName-->
+<!--        FROM ohxzown.tbhxzd216 d216 /* 수수료정산내역 */-->
+<!--        JOIN ohxzown.tbhxzd215 d215 /* 마감확정내역 */-->
+<!--        ON d215.tpw_svc_id = d216.tpw_svc_id-->
+<!--        AND d215.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
+<!--        AND d215.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
+<!--        JOIN ohxzown.tbhxzm101 m101 /* 회원정보 */-->
+<!--        ON m101.mbrs_id = d216.mbrs_id-->
+<!--        JOIN ohxzown.tbhxzm102 m102 /* 회원계좌정보 */-->
+<!--        ON m102.mbrs_id = d216.mbrs_id-->
+<!--        AND m102.tpw_svc_id = d216.tpw_svc_id-->
+<!--        AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
+<!--        AND m102.tpw_mbrs_svc_sta_cd = '04'-->
+<!--        LEFT JOIN ohxzown.tbhxzm008 m008 /* 행정동코드관리 */-->
+<!--        ON m008.addo_cd = m102.addo_cd-->
+<!--        JOIN ohxzown.tbhxzm201 m201 /* 서비스관리 */-->
+<!--        ON m201.tpw_svc_id = d216.tpw_svc_id-->
+<!--        JOIN ohxzown.tbhxzm202 m202 /* 서비스유형 */-->
+<!--        ON m202.tpw_svc_id = d216.tpw_svc_id-->
+<!--        AND m202.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
+<!--        AND m202.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
+<!--        LEFT JOIN ohxzown.tbhxzd213 d213 /* 지급내역 */-->
+<!--        ON d213.tpw_svc_id = d216.tpw_svc_id-->
+<!--        AND d213.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
+<!--        AND d213.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
+<!--        AND d213.mbrs_id = d216.mbrs_id-->
+<!--        AND d213.stlm_dt = d215.stlm_dt /* d216과 d213을 잇는 매개체로 d215의 stlm_dt 사용 */-->
+<!--        AND d213.aprt_typ_cd = '1' /* 수수료정산 */-->
+<!--        WHERE d216.trd_dt BETWEEN d215.tpw_trd_stt_dt AND d215.tpw_trd_end_dt-->
+<!--        AND m201.tpw_svc_nm LIKE :serviceName-->
+<!--        AND m008.addo_nm LIKE :administrativeDistrictName-->
+<!--        AND d216.mbrs_id LIKE :memberId-->
+<!--        AND m101.mbrs_nm LIKE :memberName;-->
+<!--    </select>-->
+
+
+
+    <insert id="insertMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
+        insert into tbhxzd216 (
+            tpw_svc_typ_id        <!-- [PK] 서비스유형ID -->
+            , tpw_svc_typ_sno       <!-- [PK] 서비스유형일련번호 -->
+            , req_dtm               <!-- [PK] 요청일시 -->
+            , tpw_svc_id            <!-- [PK] 서비스ID -->
+            , mbrs_id               <!-- [PK] 회원ID -->
+            , apl_amt
+            , lmt_amt
+            , req_duty_ctt
+            , trd_dt
+            , prcg_dt
+            , pay_amt
+            , tpw_memr_prcg_sta_cd
+            , pay_prcg_yn
+            , rgsr_id
+            , rgt_dtm
+            , updr_id
+            , upd_dtm
+        ) values (
+            #{tpwSvcTypId}
+            , cast(#{tpwSvcTypSno} as numeric)
+            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS') <!-- PK 생성 (현재시간) -->
+            , #{tpwSvcId}
+            , #{mbrsId}
+            , cast(nullif(#{aplAmt}, '') as numeric)
+            , cast(nullif(#{lmtAmt}, '') as numeric)
+            , #{reqDutyCtt}
+            , #{trdDt}
+            , #{prcgDt}
+            , cast(nullif(#{payAmt}, '') as numeric)
+            , '01'                 <!-- 초기상태: 요청 -->
+            , #{payPrcgYn}
+            , 'SYSTEM'             <!-- 등록자ID (필요시 #{regUserId} 사용) -->
+            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+            , 'SYSTEM'
+            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+
+    <update id="updateMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
+        update tbhxzd216
+            set tpw_memr_prcg_sta_cd = #{manualPrcgSta}
+            , apl_amt              = cast(nullif(#{aplAmt}, '') as numeric)
+            , pay_amt              = cast(nullif(#{payAmt}, '') as numeric)
+            , pay_prcg_yn          = #{payPrcgYn}
+            , prcg_dt              = #{prcgDt}
+            , upd_dtm              = to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+            , updr_id              = 'SYSTEM'
+            where tpw_svc_id       = #{tpwSvcId}
+            and tpw_svc_typ_id   = #{tpwSvcTypId}
+            and tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric)
+            and mbrs_id          = #{mbrsId}
+            and req_dtm          = #{reqDtm}
+    </update>
+
+    <delete id="deleteMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
+        delete from tbhxzd216
+        where tpw_svc_id       = #{tpwSvcId}
+        and tpw_svc_typ_id   = #{tpwSvcTypId}
+        and tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric)
+        and mbrs_id          = #{mbrsId}
+        and req_dtm          = #{reqDtm}
+    </delete>
 </mapper>

@@ -3,68 +3,94 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.SprtSvcPtInfMapper">
 
+    <resultMap id="SprtSvcDtlResultMap" type="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO">
+        <id property="tpwSvcId" column="tpwSvcId"/>
+
+        <result property="orgCd" column="orgCd"/>
+        <result property="tpwOrgNm" column="tpwOrgNm"/>
+        <result property="tpwSvcCtt" column="tpwSvcCtt"/>
+        <result property="tpwSvcSttDt" column="tpwSvcSttDt"/>
+        <result property="tpwSvcEndDt" column="tpwSvcEndDt"/>
+        <result property="tpwSvcNm" column="tpwSvcNm"/>
+        <collection property="svcTypList" ofType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+            <id property="tpwSvcTypId" column="tpwSvcTypId"/>
+            <id property="tpwSvcTypSno" column="tpwSvcTypSno"/>
+            
+            <result property="tpwSvcTypNm" column="tpwSvcTypNm"/>
+            <result property="tpwMbrsTypCd" column="tpwMbrsTypCd"/>
+        </collection>
+    </resultMap>
+
     <select id="readSprtSvcPtInfList"
             parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcPtInfReqVO"
-            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO"
-    >
-        select
-        sprt.org_cd as orgCd,
-        sprt.tpw_org_nm as tpwOrgNm,
-        sprt.tpw_svc_ctt as tpwSvcCtt,
-        sprt.tpw_svc_stt_dt as tpwSvcSttDt,
-        sprt.tpw_svc_end_dt as tpwSvcEndDt,
-        sprt.tpw_svc_nm as tpwSvcNm,
-        sprt.tpw_svc_typ_nm as tpwSvcTypNm,
-        sprt.tpw_svc_id as tpwSvcId
-        from (
-        select
-        m201.org_cd,
-        m009.tpw_org_nm,
-        m201.tpw_svc_ctt,
-        m201.tpw_svc_stt_dt,
-        m201.tpw_svc_end_dt,
-        m201.tpw_svc_nm,
-        m202.tpw_svc_typ_nm,
-        m201.tpw_svc_id
-        from ohxzown.tbhxzm201 m201
-        join ohxzown.tbhxzm009 m009
-        on m201.org_cd = m009.org_cd
-        join ohxzown.tbhxzm202 m202
-        on m201.tpw_svc_id = m202.tpw_svc_id
-        left join ohxzown.tbhxzm103 m103
-        on m202.tpw_mbrs_typ_cd = m103.tpw_mbrs_typ_cd
-        where 1 = 1
-        and m201.use_yn = 'Y'
-        <if test="reqVO.orgCd != null and reqVO.orgCd != ''">
-            and m009.org_cd like concat('%', #{reqVO.orgCd}, '%')
-        </if>
-        <if test="reqVO.tpwSvcNm != null and reqVO.tpwSvcNm != ''">
-            and m201.tpw_svc_nm like concat('%', #{reqVO.svcNm}, '%')
-        </if>
+            resultMap="SprtSvcDtlResultMap">
+            select
+                sprt.org_cd as orgCd,
+                sprt.tpw_org_nm as tpwOrgNm,
+                sprt.tpw_svc_ctt as tpwSvcCtt,
+                sprt.tpw_svc_stt_dt as tpwSvcSttDt,
+                sprt.tpw_svc_end_dt as tpwSvcEndDt,
+                sprt.tpw_svc_nm as tpwSvcNm,
+                sprt.tpw_svc_id as tpwSvcId,
+                sprt.tpw_svc_typ_id as tpwSvcTypId,
+                sprt.tpw_svc_typ_sno as tpwSvcTypSno,
+                sprt.tpw_svc_typ_nm as tpwSvcTypNm,
+                sprt.tpw_mbrs_typ_cd as tpwMbrsTypCd
+            from (
+                select
+                    m201.org_cd,
+                    m009.tpw_org_nm,
+                    m201.tpw_svc_ctt,
+                    m201.tpw_svc_stt_dt,
+                    m201.tpw_svc_end_dt,
+                    m201.tpw_svc_nm,
+                    m201.tpw_svc_id,
+                    coalesce(m202.tpw_svc_typ_id,'0') as tpw_svc_typ_id,
+                    coalesce(m202.tpw_svc_typ_sno,'0') as tpw_svc_typ_sno,
+                    m202.tpw_svc_typ_nm,
+                    m202.tpw_mbrs_typ_cd
+                from ohxzown.tbhxzm201 m201
+                    join ohxzown.tbhxzm009 m009
+                    on m201.org_cd = m009.org_cd
+                    left join ohxzown.tbhxzm202 m202
+                    on m201.tpw_svc_id = m202.tpw_svc_id
+                    left join ohxzown.tbhxzm103 m103
+                on m202.tpw_mbrs_typ_cd = m103.tpw_mbrs_typ_cd
+            where m201.use_yn = 'Y'
 
-        <if test="reqVO.svcSttDt != null and reqVO.svcSttDt != '' and reqVO.svcEndDt != null and reqVO.svcEndDt != ''">
-            and (
-            m201.tpw_svc_stt_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
-            or m201.tpw_svc_end_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
-            )
-        </if>
+            <!-- 지자체 관리자인 경우 -->
+            <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
 
-        <if test="reqVO.tpwMbrsTypCdNm != null and reqVO.tpwMbrsTypCdNm != ''">
-            and m103.tpw_mbrs_typ_cd_nm like concat('%', #{reqVO.tpwMbrsTypCdNm}, '%')
-        </if>
+            <!-- 서비스명 -->
+            <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
+                and m201.tpw_svc_nm like concat('%', #{req.tpwSvcNm}, '%')
+            </if>
 
-        <if test="reqVO.tpwSvcId != null and reqVO.tpwSvcId != ''">
-            and m201.tpw_svc_id = #{reqVO.tpwSvcId}  <choose>
-            <when test="reqVO.tpwSvcTypId != null and reqVO.tpwSvcTypId != ''">
-                and m202.tpw_svc_typ_id = #{reqVO.tpwSvcTypId}  </when>
-            <otherwise>
-                and m201.tpw_svc_id = m202.tpw_svc_id
-            </otherwise>
-        </choose>
-        </if>
-        ) sprt
-        order by sprt.${reqVO.sort} ${reqVO.dir}
-        limit #{reqVO.size} offset #{reqVO.page}
+            <!-- 기간 검색 -->
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and (m201.tpw_svc_stt_dt between #{req.sttDt} and #{req.endDt}
+                or m201.tpw_svc_end_dt between #{req.sttDt} and #{req.endDt})
+            </if>
+
+            <!-- 회원유형명 -->
+            <if test="req.tpwMbrsTypCdNm != null and req.tpwMbrsTypCdNm != ''">
+                and m103.tpw_mbrs_typ_cd_nm like concat('%', #{req.tpwMbrsTypCdNm}, '%')
+            </if>
+
+            <!-- 특정 서비스/서비스유형 -->
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                and m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                </choose>
+            </if>
+            ) sprt
+            order by sprt.${req.sort} ${req.dir}
+            limit #{req.size} offset #{req.page} * #{req.size}
     </select>
 
     <select id="readSprtSvcPtInfListCnt"
@@ -72,67 +98,78 @@
             resultType="Long"
     >
         select
-        count(1)
+                count(1)
         from ohxzown.tbhxzm201 m201
-        join ohxzown.tbhxzm009 m009
-        on m201.org_cd = m009.org_cd
-        join ohxzown.tbhxzm202 m202
-        on m201.tpw_svc_id = m202.tpw_svc_id
-        left join ohxzown.tbhxzm103 zm103
-        on m202.tpw_mbrs_typ_cd = zm103.tpw_mbrs_typ_cd
+            join ohxzown.tbhxzm009 m009
+            on m201.org_cd = m009.org_cd
+            left join ohxzown.tbhxzm202 m202
+            on m201.tpw_svc_id = m202.tpw_svc_id
+            left join ohxzown.tbhxzm103 zm103
+            on m202.tpw_mbrs_typ_cd = zm103.tpw_mbrs_typ_cd
         where 1 = 1
-        and m201.use_yn = 'Y'
-        <if test="reqVO.orgNm != null and reqVO.orgNm != ''">
-            and m009.tpw_org_nm like concat('%', #{reqVO.orgNm}, '%')
-        </if>
-        <if test="reqVO.tpwSvcNm != null and reqVO.tpwSvcNm != ''">
-            and m201.tpw_svc_nm like concat('%', #{reqVO.svcNm}, '%')
-        </if>
+            and m201.use_yn = 'Y'
 
-        <if test="reqVO.svcSttDt != null and reqVO.svcSttDt != '' and reqVO.svcEndDt != null and reqVO.svcEndDt != ''">
-            and (
-            m201.tpw_svc_stt_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
-            or m201.tpw_svc_end_dt between replace(#{reqVO.sttDt}, '-', '') and replace(#{reqVO.endDt}, '-', '')
-            )
-        </if>
+            <!-- 지자체 관리자인경우 -->
+            <if test="orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
 
-        <if test="reqVO.tpwMbrsTypCdNm != null and reqVO.tpwMbrsTypCdNm != ''">
-            and zm103.tpw_mbrs_typ_cd_nm like concat('%', #{reqVO.tpwMbrsTypCdNm}, '%')
-        </if>
+            <!-- 기관코드 -->
+            <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
 
-        <if test="reqVO.tpwSvcId != null and reqVO.tpwSvcId != ''">
-            and m201.tpw_svc_id = #{reqVO.tpwSvcId}  <choose>
-            <when test="reqVO.tpwSvcTypId != null and reqVO.tpwSvcTypId != ''">
-                and m202.tpw_svc_typ_id = #{reqVO.tpwSvcTypId}  </when>
-            <otherwise>
-                and m201.tpw_svc_id = m202.tpw_svc_id
-            </otherwise>
-        </choose>
-        </if>
+
+            <if test="req.orgNm != null and req.orgNm != ''">
+                and m009.tpw_org_nm like concat('%', #{req.orgNm}, '%')
+            </if>
+            <if test="req.tpwSvcNm != null and req.tpwSvcNm != ''">
+                and m201.tpw_svc_nm like concat('%', #{req.svcNm}, '%')
+            </if>
+
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and m201.tpw_svc_stt_dt between #{req.sttDt} and #{req.endDt}
+                and m201.tpw_svc_end_dt between #{req.sttDt} and #{req.endDt}
+            </if>
+
+            <if test="req.tpwMbrsTypCdNm != null and req.tpwMbrsTypCdNm != ''">
+                and zm103.tpw_mbrs_typ_cd_nm like concat('%', #{req.tpwMbrsTypCdNm}, '%')
+            </if>
+
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                and m201.tpw_svc_id = #{req.tpwSvcId}  <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+            </if>
     </select>
 
 
-    <select id="findSprtSvcPtInf"
+    <select id="readSprtSvcPtInf"
             parameterType="map"
             resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcDtlRspVO">
         select
-        m201.org_cd as orgCd,
-        m009.tpw_org_nm as tpwOrgNm,
-        m201.tpw_svc_id as tpwSvcId,
-        m201.tpw_svc_ctt as tpwSvcCtt,
-        m201.tpw_svc_stt_dt as tpwSvcSttDt,
-        m201.tpw_svc_end_dt as tpwSvcEndDt,
-        m201.tpw_svc_nm as tpwSvcNm,
-        m201.krn_chec_yn as krnChecYn,
-        m201.use_yn as useYn,
-        m201.acng_trdp_no as acngTrdpNo,
-        m201.bnk_trn_ctt as bnkTrnCtt
+            m201.org_cd as orgCd,
+            m009.tpw_org_nm as tpwOrgNm,
+            m201.tpw_svc_id as tpwSvcId,
+            m201.tpw_svc_ctt as tpwSvcCtt,
+            m201.tpw_svc_stt_dt as tpwSvcSttDt,
+            m201.tpw_svc_end_dt as tpwSvcEndDt,
+            m201.tpw_svc_nm as tpwSvcNm,
+            m201.krn_chec_yn as krnChecYn,
+            m201.use_yn as useYn,
+            m201.acng_trdp_no as acngTrdpNo,
+            m201.bnk_trn_ctt as bnkTrnCtt,
+            m201.tpw_svc_scrn_path_nm as tpwSvcScrnPathNm
         from ohxzown.tbhxzm201 m201
-        join ohxzown.tbhxzm009 m009
-        on m009.org_cd = m201.org_cd
-        and m009.use_yn = 'Y'
-        where m201.org_cd = #{orgCd}
-        and m201.tpw_svc_id = #{tpwSvcId}
+            join ohxzown.tbhxzm009 m009
+            on m009.org_cd = m201.org_cd
+            and m009.use_yn = 'Y'
+                where m201.org_cd = #{orgCd}
+                     and m201.tpw_svc_id = #{tpwSvcId}
     </select>
 
 
@@ -150,6 +187,7 @@
         use_yn,
         acng_trdp_no,
         bnk_trn_ctt,
+        tpw_svc_scrn_path_nm,
         rgsr_id,
         rgt_dtm,
         updr_id,
@@ -192,16 +230,20 @@
         /* 10. bnk_trn_ctt */
         #{bnkTrnCtt},
 
-        /* 11. rgsr_id (상수 처리) */
+
+        /* 11. tpw_svc_scrn_path_nm */
+        #{tpwSvcScrnPathNm},
+
+        /* 12. rgsr_id (상수 처리) */
         'system',
 
-        /* 12. rgt_dtm (함수 처리) */
+        /* 13. rgt_dtm (함수 처리) */
         to_char(now(), 'YYYYMMDDHH24MISS'),
 
-        /* 13. updr_id (상수 처리) */
+        /* 14. updr_id (상수 처리) */
         'system',
 
-        /* 14. upd_dtm (함수 처리) */
+        /* 15. upd_dtm (함수 처리) */
         to_char(now(), 'YYYYMMDDHH24MISS')
     </insert>
 
@@ -225,7 +267,7 @@
     </update>
 
 
-    <select id="findSprtSvcTypList" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+    <select id="readSprtSvcTypList" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
         select
             (select tpw_org_nm
             from tbhxzm009
@@ -262,10 +304,11 @@
         from tbhxzm202 m202
             join tbhxzm201 m201
             on m201.tpw_svc_id = m202.tpw_svc_id
-            and m201.use_yn = 'Y'
+
 
         where m202.tpw_svc_id = #{tpwSvcId}
             and m202.use_yn = 'Y'
+            and m201.use_yn = 'Y'
                 order by m202.tpw_svc_typ_sno
     </select>
 
@@ -274,14 +317,16 @@
         from tbhxzm202 m202
         join tbhxzm201 m201
         on m201.tpw_svc_id = m202.tpw_svc_id
-        and m201.use_yn = 'Y'
+
         where m202.tpw_svc_id = #{tpwSvcId}
         and m202.use_yn = 'Y'
+        and m201.use_yn = 'Y'
     </select>
 
 
-    <select id="findSprtSvcTyp" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+    <select id="readSprtSvcTyp" parameterType="map" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
         select
+        m201.org_cd as orgCd,
         (select tpw_org_nm
         from tbhxzm009
         where org_cd = m201.org_cd
@@ -308,6 +353,8 @@
         m202.tpw_svc_typ_sno as tpwSvcTypSno,
         m202.tpw_svc_typ_nm as tpwSvcTypNm,
         m202.tpw_svc_typ_ctt as tpwSvcTypCtt,
+        m202.tpw_svc_typ_stt_dt as tpwSvcTypSttDt,
+        m202.tpw_svc_typ_end_dt as tpwSvcTypEndDt,
         m202.tpw_stlm_ctg_cd as tpwStlmCtgCd,
         m202.stlm_ctg_adpt_val as stlmCtgAdptVal,
         m202.trns_trd_req_yn as trnsTrdReqYn,
@@ -317,10 +364,12 @@
         from tbhxzm202 m202
         join tbhxzm201 m201
         on m201.tpw_svc_id = m202.tpw_svc_id
-        and m201.use_yn = 'Y'
+
         where m202.tpw_svc_id = #{tpwSvcId}
         and m202.tpw_svc_typ_id = #{tpwSvcTypId}
         and m202.tpw_svc_typ_sno = #{tpwSvcTypSno}
+        and m201.use_yn = 'Y'
+        and m202.use_yn = 'Y'
     </select>
 
 
@@ -438,6 +487,7 @@
             tpw_mbrs_typ_cd,
             tpw_mntn_cd,
             tpw_trd_org_cd,
+            tpw_stlm_ctg_cd,
             use_yn,
             tpw_stlm_cyc_dvs_cd,
             sprt_dplc_yn,
@@ -466,6 +516,7 @@
             #{tpwMbrsTypCd},
             #{tpwMntnCd},
             #{tpwTrdOrgCd},
+            #{tpwStlmCtgCd},
             #{useYn},
             #{tpwStlmCycDvsCd},
             #{sprtDplcYn},
@@ -484,14 +535,14 @@
 
     <!--    tpw_svc_typ_sno id생성-->
     <select id="generateNewSvcTypId" resultType="String" parameterType="String">
-        select 'T' || lpad(coalesce(max(substr(tpw_svc_typ_id,2,5)),0)+1,5,'0')
+        select 'T' || lpad((coalesce(max(substr(tpw_svc_typ_id,2,5)),'0')::int + 1)::text, 5, '0')
         from ohxzown.tbhxzm202
         where tpw_svc_id = #{tpwSvcId}
     </select>
 
 
     <!-- 기존 데이터를 조회할 select 추가 -->
-    <select id="findSprtSvcTypById" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
+    <select id="readSprtSvcTypById" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO">
         select *
         from ohxzown.tbhxzm202
         where tpw_svc_id = #{tpwSvcId}

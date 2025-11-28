@@ -39,13 +39,13 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
         long total = sprtSvcPtInfMapper.readSprtSvcPtInfListCnt(reqVO, orgCd);
         List<SprtSvcDtlRspVO> content = sprtSvcPtInfMapper.readSprtSvcPtInfList(reqVO, orgCd);
 
-        List<SprtSvcDtlRspVO> distinctContent = content.stream()
-                .distinct()
-                .collect(Collectors.toList());
+//        List<SprtSvcDtlRspVO> distinctContent = content.stream()
+//                .distinct()
+//                .collect(Collectors.toList());
 
         
         return new PageDataVO<>(
-                distinctContent,
+                content,
                 reqVO.getPage(),
                 reqVO.getSize(),
                 total
@@ -54,10 +54,10 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
 
     @Override
     @Transactional(readOnly = true)
-    public SprtSvcDtlRspVO findSprtSvcPtInf(String tpwSvcId, String orgCd) {
+    public SprtSvcDtlRspVO readSprtSvcPtInf(String tpwSvcId, String orgCd) {
 
         // Mapper에서 SprtSvcPtInfRspVO로 조회
-        SprtSvcDtlRspVO baseInfo = sprtSvcPtInfMapper.findSprtSvcPtInf(tpwSvcId, orgCd);
+        SprtSvcDtlRspVO baseInfo = sprtSvcPtInfMapper.readSprtSvcPtInf(tpwSvcId, orgCd);
 
         if (baseInfo == null) {
             return null;
@@ -69,7 +69,7 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
 
         // TODO: PageDataVo로 해줘야 할듯?
         // 하위 서비스유형 리스트 추가 조회
-        main.setSvcTypList(sprtSvcPtInfMapper.findSprtSvcTypList(tpwSvcId));
+        main.setSvcTypList(sprtSvcPtInfMapper.readSprtSvcTypList(tpwSvcId));
 
         // 변환된 DtlRspVO를 반환
         return main;
@@ -114,8 +114,8 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
      * ---------------------------------------- */
     @Override
     @Transactional(readOnly = true)
-    public List<SprtSvcTypRspVO> findSprtSvcTypList(String tpwSvcId) {
-        return sprtSvcPtInfMapper.findSprtSvcTypList(tpwSvcId);
+    public List<SprtSvcTypRspVO> readSprtSvcTypList(String tpwSvcId) {
+        return sprtSvcPtInfMapper.readSprtSvcTypList(tpwSvcId);
     }
 
     /** -----------------------------------------
@@ -123,8 +123,8 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
      * ---------------------------------------- */
     @Override
     @Transactional(readOnly = true)
-    public SprtSvcTypRspVO findSprtSvcTyp(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String tpwSvcId) {
-        return sprtSvcPtInfMapper.findSprtSvcTyp(tpwSvcTypId, tpwSvcTypSno, tpwSvcId);
+    public SprtSvcTypRspVO readSprtSvcTyp(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String tpwSvcId) {
+        return sprtSvcPtInfMapper.readSprtSvcTyp(tpwSvcTypId, tpwSvcTypSno, tpwSvcId);
     }
 
     /** -----------------------------------------
@@ -156,7 +156,7 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
         sprtSvcPtInfMapper.updateUseYnN(form);
 
         // 2. 기존 데이터 조회 (히스토리 생성용)
-        SprtSvcTypRspVO existing = sprtSvcPtInfMapper.findSprtSvcTypById(form);
+        SprtSvcTypRspVO existing = sprtSvcPtInfMapper.readSprtSvcTypById(form);
 
         if (existing == null) {
             throw new RuntimeException("해당 지원서비스유형이 존재하지 않습니다.");

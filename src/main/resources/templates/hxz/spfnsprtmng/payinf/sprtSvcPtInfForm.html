@@ -44,6 +44,13 @@
                                     <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed}"></th:block>
                                 </div>
                             </div>
+                            <!-- 권한경로 -->
+                            <div class="box-wrap">
+                                <div class="box">
+                                    <p class="field-title">type(화면경로)</p>
+                                    <input class="dp-input text-field" type="text" name="tpwSvcScrnPathNm" th:value="*{tpwSvcScrnPathNm}">
+                                </div>
+                            </div>
 
                             <div class="box-wrap">
                                 <div class="box">
@@ -103,7 +110,10 @@
                             th:text="${tpwOrgNm != null ? '수정' : '등록'}">
                         버튼
                     </button>
-                    <button class="btn btn-dark-line" type="button">목록</button>
+                    <button class="btn btn-dark-line" type="button"
+                            onclick="window.location.href='/spfnsprtmng/payinf/sprtSvcPtInf.do';">
+                        목록
+                    </button>
                 </div>
             </div>
 
@@ -118,13 +128,15 @@
                            th:if="*{tpwSvcId != null}">
                             신규등록
                         </a>
-                        <a type="button" class="btn btn-primary btn-icon-left" href="/spfnsprtmng/payinf/exportSprtSvcInfDetail">
-                            엑셀 다운로드 <i class="icon icon-save"></i>
-                        </a>
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="지원서비스상세관리"
+                        >
+                            엑셀 다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
                     </div>
                 </div>
-            </div>
-
                 <div class="table-wrap mt20">
                     <table class="table">
                         <caption class="blind">서비스 유형 목록 테이블</caption>
@@ -171,12 +183,13 @@
                         </tbody>
                     </table>
                 </div>
-
                 <!-- 페이징 -->
                 <div class="mt20" id="grid-pager">
                     <th:block th:replace="~{component/pagination :: pager(pageData=${SvcTypList})}"></th:block>
                 </div>
             </div>
+
+
         </section>
 
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
@@ -192,6 +205,45 @@
 
                 return `${ y }-${ m }-${ d }`;
             }
+            const onlyDigits = s => (s || '').replace(/\D+/g, '');
+            const saveBtn = document.querySelector('.btn-save');
+            const loading = document.getElementById('mini-sp-loading');
+            const clickableRows = document.querySelectorAll('.clickable-row');
+
+            clickableRows.forEach(row => {
+                row.addEventListener('click', function () {
+                    const tpwSvcTypId = this.dataset.tpwSvcTypId;
+                    const tpwSvcTypSno = this.dataset.tpwSvcTypSno;
+                    const tpwSvcId = this.dataset.tpwSvcId;
+
+                    const url = `/spfnsprtmng/payinf/SprtSvcTypDetail.do?tpwSvcTypId=${tpwSvcTypId}&tpwSvcTypSno=${tpwSvcTypSno}&tpwSvcId=${tpwSvcId}`;
+                    window.location.href = url;
+                });
+            });
+
+            const exportHandler = (e) => {
+                const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                const searchParams = new URLSearchParams(window.location.search);
+                const form = document.createElement('form');
+                for (const [key, value] of searchParams.entries()) {
+                    const input = document.createElement('input');
+                    input.type = 'text'; // 필요에 따라 type 변경 가능
+                    input.name = key;
+                    input.id = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                const payload = {};
+
+                Common.bindExcelExport(form, exportBtn, null, null, 'tpwSvcTypId', payload);
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 1000);
+            };
+            document.body.addEventListener('click', exportHandler);
+
+
 
             /* 날짜 초기화 */
             document.addEventListener('DOMContentLoaded', function () {
@@ -221,24 +273,10 @@
                     }
                 }, 100);
 
-
-                document.querySelectorAll('.clickable-row').forEach(row => {
-                    row.addEventListener('click', function () {
-                        const tpwSvcTypId = this.dataset.tpwSvcTypId;
-                        const tpwSvcTypSno = this.dataset.tpwSvcTypSno;
-                        const tpwSvcId = this.dataset.tpwSvcId;
-
-                        const url = `/spfnsprtmng/payinf/SprtSvcTypDetail.do?tpwSvcTypId=${tpwSvcTypId}&tpwSvcTypSno=${tpwSvcTypSno}&tpwSvcId=${tpwSvcId}`;
-                        window.location.href = url;
-                    });
-                });
             });
-        </script>
+        
 
-        <script>
-            const onlyDigits = s => (s || '').replace(/\D+/g, '');
-
-            document.querySelector('.btn-save').addEventListener('click', async function (e) {
+            saveBtn.addEventListener('click', async function (e) {
                 e.preventDefault();
                 const form = document.querySelector('form');
                 const data = Common.collectFromForm(form);

@@ -50,6 +50,8 @@ public class SprtSvcDtlRspVO  {
     /** 수정 일시 */
     private String updDtm;
 
+    /** 화면경로 */
+    private String tpwSvcScrnPathNm;
 
     // 하위유형목록 (tbhxzm202)
     private List<SprtSvcTypRspVO> svcTypList = new ArrayList<>();

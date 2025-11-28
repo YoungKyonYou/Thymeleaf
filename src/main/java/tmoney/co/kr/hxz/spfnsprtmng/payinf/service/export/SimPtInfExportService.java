@@ -25,9 +25,30 @@ public class SimPtInfExportService implements ExportProvider<SimPtInfRspVO> {
     }
 
     @Override
-    public List<ExportColumn<SimPtInfRspVO>> columns() {
-        return List.of();
+    public List<ExportColumn<SimPtInfRspVO>> columns()
+    {
+        return List.of(
+            new ExportColumn<>("거래내역실행순번", SimPtInfRspVO::getTrprActSqno),
+            new ExportColumn<>("회원ID", SimPtInfRspVO::getMbrsId),
+            new ExportColumn<>("회원명", SimPtInfRspVO::getMbrsNm),
+            new ExportColumn<>("카드번호", SimPtInfRspVO::getCardNo),
+            new ExportColumn<>("교통카드구분", SimPtInfRspVO::getTrcrDvsCd),
+            new ExportColumn<>("교통카드사용자", SimPtInfRspVO::getTrcrUserDvsCd),
+            new ExportColumn<>("승차일시", SimPtInfRspVO::getRideDtm),
+            new ExportColumn<>("승차금액", SimPtInfRspVO::getRideAmt),
+            new ExportColumn<>("교통수단", SimPtInfRspVO::getMntnCd),
+            new ExportColumn<>("노선명", SimPtInfRspVO::getRotNm),
+            new ExportColumn<>("승차역명", SimPtInfRspVO::getRideStnNm),
+            new ExportColumn<>("하차일시", SimPtInfRspVO::getAlghDtm),
+            new ExportColumn<>("하차금액", SimPtInfRspVO::getAlghAmt),
+            new ExportColumn<>("하차역명", SimPtInfRspVO::getAlghStnNm),
+            new ExportColumn<>("이용금액", SimPtInfRspVO::getTrrdAmt),
+            new ExportColumn<>("환승그룹일련번호", SimPtInfRspVO::getTrtrGrpSno),
+            new ExportColumn<>("환승횟수", SimPtInfRspVO::getFctt),
+            new ExportColumn<>("요금할인제외사유", SimPtInfRspVO::getStexRsnCd)
+        );
     }
+
 
     @Override
     public Stream<SimPtInfRspVO> stream(Map<String, String> params) {

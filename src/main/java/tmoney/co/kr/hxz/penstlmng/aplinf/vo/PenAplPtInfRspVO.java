@@ -54,6 +54,9 @@ public class PenAplPtInfRspVO {
     /** 지원대상유형 */
     private String tpwMbrsTypCd;
 
+    /** 지원대상유형 명*/
+    private String tpwMbrsTypCdNm;
+
     /** 첨부파일관리번호 */
     private Long atflMngNo;
 

@@ -15,16 +15,17 @@
             simpt.mbrs_id as mbrsId,               -- 회원ID
             simpt.mbrs_nm as mbrsNm,               -- 회원명
         <if test="req.orgCd != null and req.orgCd != '' and req.orgCd == '0000000'">
-            , simpt.tpw_svc_nm as tpwSvcNm     -- 서비스명
-            , simpt.tpw_svc_typ_nm as tpwSvcTypNm -- 서비스유형명
-            , simpt.tpw_svc_typ_sno as tpwSvcTypSno -- 서비스유형일련번호
+            simpt.tpw_svc_nm as tpwSvcNm,     -- 서비스명
+            simpt.tpw_svc_typ_nm as tpwSvcTypNm, -- 서비스유형명
+            simpt.tpw_svc_typ_sno as tpwSvcTypSno, -- 서비스유형일련번호
         </if>
             simpt.card_no as cardNo,               -- 카드번호
             simpt.trcr_dvs_cd as trcrDvsCd,        -- 교통카드 구분
             simpt.trcr_user_dvs_cd as trcrUserDvsCd, -- 교통카드사용처
             simpt.ride_dtm as rideDtm,             -- 승차일시
             simpt.ride_amt as rideAmt,             -- 승차금액
-            simpt.mntn_cd as mntnCd,               -- 교통수단
+            -- TODO: 없는 컬럼이라고 나옴
+            -- simpt.mntn_cd as mntnCd,               -- 교통수단
             simpt.rot_nm as rotNm,                 -- 노선명
             simpt.ride_stn_nm as rideStnNm,        -- 승차역명
             simpt.algh_dtm as alghDtm,             -- 하차일시
@@ -44,7 +45,8 @@
                 d218.trcr_user_dvs_cd,
                 to_char(to_date(d218.ride_dtm, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') as ride_dtm,  -- 승차일시 변환
                 d218.ride_amt,
-                d218.mntn_cd,
+                -- TODO: 없는 컬럼이라고 나옴
+                -- d218.mntn_cd,
                 d218.rot_nm,
                 d218.ride_stn_nm,
                 to_char(to_date(d218.algh_dtm, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') as algh_dtm,  -- 하차일시 변환
@@ -122,7 +124,7 @@
 
         ) simpt
         order by simpt.${req.sort} ${req.dir}
-        limit #{req.size} offset #{req.page}
+        limit #{req.size} offset #{req.page} * #{req.size}
     </select>
 
     <!-- ========================================= -->

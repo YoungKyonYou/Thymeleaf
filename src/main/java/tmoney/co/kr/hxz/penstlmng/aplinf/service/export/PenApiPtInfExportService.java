@@ -28,7 +28,6 @@ public class PenApiPtInfExportService implements ExportProvider<PenAplPtInfRspVO
     public List<ExportColumn<PenAplPtInfRspVO>> columns()
     {
         return List.of(
-            new ExportColumn<PenAplPtInfRspVO>("서비스유형명", t -> t.getTpwSvcTypNm() != null ? t.getTpwSvcTypNm() : ""),
             new ExportColumn<PenAplPtInfRspVO>("정산일자", t -> t.getStlmDt() != null ? t.getStlmDt().toString() : ""),
             new ExportColumn<PenAplPtInfRspVO>("회원ID", t -> t.getMbrsId() != null ? t.getMbrsId() : ""),
             new ExportColumn<PenAplPtInfRspVO>("신청일자", t -> t.getAplDt() != null ? t.getAplDt().toString() : ""),
@@ -39,11 +38,20 @@ public class PenApiPtInfExportService implements ExportProvider<PenAplPtInfRspVO
             new ExportColumn<PenAplPtInfRspVO>("예금주명", t -> t.getOoaNm() != null ? t.getOoaNm() : ""),
             new ExportColumn<PenAplPtInfRspVO>("승인자ID", t -> t.getAproId() != null ? t.getAproId() : ""),
             new ExportColumn<PenAplPtInfRspVO>("승인일시", t -> t.getAprvDtm() != null ? t.getAprvDtm().toString() : ""),
-            new ExportColumn<PenAplPtInfRspVO>("승인상태", t -> t.getAprvStaCd() != null ? t.getAprvStaCd() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("승인상태코드", t -> t.getAprvStaCd() != null ? t.getAprvStaCd() : ""),
             
-            // new ExportColumn<PenAplPtInfRspVO>("지원 대상 유형", t -> t.getSupportType() != null ? t.getSupportType() : ""),
-            // new ExportColumn<PenAplPtInfRspVO>("첨부파일관리번호(링크 미리보기)", t -> t.getAttachmentNo() != null ? t.getAttachmentNo() : ""),
-            new ExportColumn<PenAplPtInfRspVO>("신청진행상태", t -> t.getTpwAplPrgsStaCd() != null ? t.getTpwAplPrgsStaCd() : "")
+            new ExportColumn<PenAplPtInfRspVO>("지원 대상 유형", t -> t.getTpwMbrsTypCd() != null ? t.getTpwMbrsTypCd() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("첨부파일관리번호", t -> t.getAtflMngNo() != null ? t.getAtflMngNo().toString() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("신청진행상태", t -> t.getTpwAplPrgsStaCd() != null ? t.getTpwAplPrgsStaCd() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("서비스유형명", t -> t.getTpwSvcTypNm() != null ? t.getTpwSvcTypNm() : ""),
+
+
+            new ExportColumn<PenAplPtInfRspVO>("서비스유형번호", t -> t.getTpwSvcTypSno() != null ? t.getTpwSvcTypSno().toString() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("신청년월", t -> t.getAplYm() != null ? t.getAplYm() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("월별 신청건수", t -> t.getAplCnt() != null ? t.getAplCnt().toString() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("신청일자", t -> t.getAplDay() != null ? t.getAplDay() : ""),
+            new ExportColumn<PenAplPtInfRspVO>("일별 신청건수", t -> t.getAplCntDay() != null ? t.getAplCntDay().toString() : "")
+
         );
     }
 

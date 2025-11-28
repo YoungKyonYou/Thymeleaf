@@ -16,4 +16,14 @@ public interface MemrStlmPtService {
 
     @Transactional(readOnly = true)
     long readMemrStlmPtListCnt(MemrStlmPtReqVO req, String orgCd);
+    
+    
+    // 등록
+    void saveMemrStlmPt(@Valid MemrStlmPtRspVO form);
+    
+    // 수정
+    void updateMemrStlmPt(@Valid MemrStlmPtRspVO form);
+    
+    // 삭제(승인코드 요청인 것만 삭제 가능)
+    void deleteMemrStlmPt(@Valid MemrStlmPtRspVO form);
 }

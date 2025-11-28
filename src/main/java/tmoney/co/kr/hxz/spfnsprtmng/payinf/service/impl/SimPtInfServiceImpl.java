@@ -11,6 +11,8 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimPtInfRspVO;
 
 import java.util.List;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class SimPtInfServiceImpl implements SimPtInfService {

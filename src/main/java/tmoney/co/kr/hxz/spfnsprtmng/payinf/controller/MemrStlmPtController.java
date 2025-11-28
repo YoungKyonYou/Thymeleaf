@@ -1,18 +1,16 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import tmoney.co.kr.hxz.common.page.vo.PageDataVO;
 import tmoney.co.kr.hxz.common.util.DateUtil;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.MemrStlmPtService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO;
-
-import javax.validation.Valid;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,52 +18,117 @@ import javax.validation.Valid;
 public class MemrStlmPtController {
 
     private final MemrStlmPtService memrStlmPtService;
-    private final DateUtil dateUtil; // DateUtil 클래스도 필요
+    private final DateUtil dateUtil;
 
-    // 땜빵
-    public class MngrDTO
-    {
-        private String orgCd;
+    // ==============================================================
+    // 1. 수기정산내역 리스트 조회
+    // ==============================================================
 
-        public String getOrgCd()
-        {
-            return orgCd;
-        }
-
-        public void setOrgCd(String orgCd)
-        {
-            this.orgCd = orgCd;
-        }
-    }
-
-    /**
-     * 수기정산내역 조회 API
-     * tbhxzd216 d216 - tbhxzd_수기정산내역 테이블
-     * [process]
-     * 1. tbhxzd_수기정산내역 테이블 레코드 리스트 추출
-     *
-     * @return return String
-     */
-    // @PreAuthorize("hasPermission(orgCd, '수기정산내역조회', 'READ')") // 지원금지급현황 조회
-//    @PreAuthorize("hasPermission(\"수기정산내역조회\", 'READ')")
-    @GetMapping(value = "/memrStlmPt.do")
-    public String readTrCUsePtPaging(
+    /** -----------------------------------------
+     * 1-1. 수기정산내역 리스트 조회 (검색용 ReqVO)
+     * ---------------------------------------- */
+    @GetMapping("/memrStlmPt.do")
+    public String readMemrStlmPt(
             @ModelAttribute @Valid MemrStlmPtReqVO req,
-//            @MgrVO MngrVO mngrVO,
             String orgCd,
             Model model
     ) {
+        // 요청 파라미터 orgCd가 null/empty일 경우 기본값 적용
+        if (orgCd == null || orgCd.trim().isEmpty()) {
+            orgCd = "0000000";
+        }
 
+        // req 객체에 최종 orgCd 값 설정 (검색 조건 일관성 유지)
+        req.setOrgCd(orgCd);
+
+        // 기본 검색기간 세팅 (최근 30일)
         req.updateDefaultDate(dateUtil.thirtyDaysAgo(), dateUtil.today());
 
-        PageDataVO<MemrStlmPtRspVO> contents = memrStlmPtService.readMemrStlmPtPaging(req, orgCd);// mngrVO.getOrgCd()
+        // 페이징 리스트 조회
+        PageDataVO<MemrStlmPtRspVO> contents = memrStlmPtService.readMemrStlmPtPaging(req, orgCd);
 
+        // Model에 조회 결과 및 요청 조건 담기
         model.addAttribute("pageData", contents);
         model.addAttribute("req", req);
-        model.addAttribute("orgCd", "000000");
-        MngrDTO mngr = new MngrDTO();
-        model.addAttribute("mngr", mngr);
+        model.addAttribute("orgCd", orgCd);
 
-        return "hxz/spfnsprtmng/payinf/memrStlmPt";
+        // 디버깅 출력
+        System.out.println("====== [DEBUG] readMemrStlmPt ======");
+        if (contents != null) {
+            System.out.println("Total Count: " + contents.getTotal());
+        }
+        System.out.println("Search Condition: " + req);
+        System.out.println("=====================================");
+
+        return "/hxz/spfnsprtmng/payinf/memrStlmPt";
+    }
+
+
+    // ==============================================================
+    // 2. 수기정산 - 등록/수정/삭제 API 그룹
+    // ==============================================================
+
+    /** -----------------------------------------
+     * 2-1. 수기정산내역 등록 API
+     * ---------------------------------------- */
+    @PostMapping(path = "/memrStlmPt/add.do")
+    @ResponseBody
+    public ResponseEntity<Void> saveMemrStlmPt(
+            @RequestBody @Valid MemrStlmPtRspVO form // RspVO 사용
+    ) {
+        // 기관코드 없을 시 기본 처리
+        if (form.getOrgCd() == null || form.getOrgCd().isEmpty()) {
+            form.setOrgCd("000000");
+        }
+
+        System.out.println("====== [DEBUG] saveMemrStlmPt ======");
+        System.out.println("Data: " + form);
+        System.out.println("====================================");
+
+        memrStlmPtService.saveMemrStlmPt(form);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /** -----------------------------------------
+     * 2-2. 수기정산내역 수정 API
+     * ---------------------------------------- */
+    @PutMapping(path = "/memrStlmPt/update")
+    @ResponseBody
+    public ResponseEntity<Void> updateMemrStlmPt(
+            @RequestBody @Valid MemrStlmPtRspVO form // RspVO 사용
+    ) {
+        if (form.getOrgCd() == null || form.getOrgCd().isEmpty()) {
+            form.setOrgCd("000000");
+        }
+
+        System.out.println("====== [DEBUG] updateMemrStlmPt ======");
+        System.out.println("Data: " + form);
+        System.out.println("======================================");
+
+        memrStlmPtService.updateMemrStlmPt(form);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /** -----------------------------------------
+     * 2-3. 수기정산내역 삭제 API
+     * ---------------------------------------- */
+    @PostMapping(path = "/memrStlmPt/delete")
+    @ResponseBody
+    public ResponseEntity<Void> deleteMemrStlmPt(
+            @RequestBody @Valid MemrStlmPtRspVO form // RspVO 사용
+    ) {
+        if (form.getOrgCd() == null || form.getOrgCd().isEmpty()) {
+            form.setOrgCd("000000");
+        }
+
+        System.out.println("====== [DEBUG] deleteMemrStlmPt ======");
+        System.out.println("Target: " + form);
+        System.out.println("======================================");
+
+        memrStlmPtService.deleteMemrStlmPt(form);
+
+        return ResponseEntity.ok().build();
     }
 }

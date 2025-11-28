@@ -1,13 +1,13 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
 import org.springframework.data.repository.query.Param;
 import tmoney.co.kr.config.HxzDb;
+import org.apache.ibatis.annotations.Mapper;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.math.BigDecimal;
 
 @HxzDb
 @Mapper
@@ -31,15 +31,17 @@ public interface StlmTakPtInfMapper {
      * 상세조회 (PERD/SIM 테이블)
      * ------------------------------
      */
-    StlmTakPtInfRspVO findPerdTakPtInf(@Param("tpwSvcTypId") String tpwSvcTypId,
+    StlmTakPtInfRspVO readPerdTakPtInf(@Param("tpwSvcTypId") String tpwSvcTypId,
                                        @Param("tpwSvcTypSno") BigDecimal tpwSvcTypSno,
                                        @Param("exeDiv") String exeDiv,
-                                       @Param("tpwSvcId") String tpwSvcId);
+                                       @Param("tpwSvcId") String tpwSvcId,
+                                       @Param("stlmDt") String stlmDt);
 
-    StlmTakPtInfRspVO findSimTakPtInf(@Param("tpwSvcTypId") String tpwSvcTypId,
+    StlmTakPtInfRspVO readSimTakPtInf(@Param("tpwSvcTypId") String tpwSvcTypId,
                                       @Param("tpwSvcTypSno") BigDecimal tpwSvcTypSno,
                                       @Param("exeDiv") String exeDiv,
-                                      @Param("tpwSvcId") String tpwSvcId);
+                                      @Param("tpwSvcId") String tpwSvcId,
+                                       @Param("aplDt") String aplDt);
 
     /** ------------------------------
      * 등록 (PERD/SIM)

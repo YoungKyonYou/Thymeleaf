@@ -9,8 +9,9 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.StlmTakPtInfService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.StlmTakPtInfRspVO;
 
-import java.math.BigDecimal;
 import java.util.List;
+
+import java.math.BigDecimal;
 
 /**
  * ==========================================================
@@ -118,18 +119,19 @@ public class StlmTakPtInfServiceImpl implements StlmTakPtInfService {
      * @param tpwSvcTypId  서비스ID
      * @param tpwSvcTypSno 서비스번호
      * @param exeDiv       실행구분(PERD/SIM)
+     * @param stlmDt
      * @return StlmTakPtInfRspVO 조회된 단건 데이터
      * -----------------------------------------------------------------
      */
-    @Override
-    @Transactional(readOnly = true)
-    public StlmTakPtInfRspVO findTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId) {
-        if ("SIM".equalsIgnoreCase(exeDiv)) {
-            return stlmTakPtInfMapper.findSimTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId);
-        } else {
-            return stlmTakPtInfMapper.findPerdTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId);
-        }
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    public StlmTakPtInfRspVO findTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId, String stlmDt) {
+//        if ("SIM".equalsIgnoreCase(exeDiv)) {
+//            return stlmTakPtInfMapper.findSimTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId);
+//        } else {
+//            return stlmTakPtInfMapper.findPerdTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId, stlmDt);
+//        }
+//    }
 
 
 
@@ -178,5 +180,15 @@ public class StlmTakPtInfServiceImpl implements StlmTakPtInfService {
         } else {
             stlmTakPtInfMapper.updatePerdStlmTakPtByService(form);
         }
+    }
+
+    @Override
+    public StlmTakPtInfRspVO readSimTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId, String aplDt) {
+        return stlmTakPtInfMapper.readSimTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId, aplDt);
+    }
+
+    @Override
+    public StlmTakPtInfRspVO readPerdTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId, String stlmDt) {
+        return stlmTakPtInfMapper.readPerdTakPtInf(tpwSvcTypId, tpwSvcTypSno, exeDiv, tpwSvcId, stlmDt);
     }
 }
