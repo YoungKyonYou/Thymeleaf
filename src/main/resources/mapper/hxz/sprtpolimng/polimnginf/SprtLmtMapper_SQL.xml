@@ -266,9 +266,14 @@
         update ohxzown.tbhxzd208
         set use_yn = 'N'
         where tpw_svc_id     = #{tpwSvcId}
-        and tpw_svc_typ_id = #{tpwSvcTypId}
-        and tpw_lmt_dvs_cd = '02'    <!-- 건수 -->
-        and use_yn         = 'Y'
+        and tpw_svc_typ_id   = #{tpwSvcTypId}
+        and tpw_lmt_dvs_cd   = #{tpwLmtDvsCd}
+        and use_yn           = 'Y'
+        <!--'입력시작년월' 기준으로 N 대상 선정 -->
+        and (
+        #{lmtSttYm} &lt;= lmt_stt_ym
+        or #{lmtSttYm} between lmt_stt_ym and lmt_end_ym
+        )
     </update>
 
     <update id="updateSprtLmtUseYnByMngNo">

@@ -67,7 +67,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         if (rows == null || rows.isEmpty()) {
             SprtLmtModalVO m = initModal();
-            return new SprtLmtModalDtlVO(m.getQt(), m.getMon(), m.getArr(), "01", "01");
+            return new SprtLmtModalDtlVO(m.getQt(), m.getMon(), m.getArr(), "01", "02");
         }
 
         List<SprtLmtRspVO> qtRows = rows.stream()
@@ -373,7 +373,11 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     }
 
     /**
-     * 신규 등록(신규 SNO) 시, 신규 시작월 이후의 기존 이력을 모두 비활성화(N 처리)한다.
+     * 신규 등록(신규 SNO) 시, 기존 이력의 USE_YN을 N 처리한다.
+     *
+     * N 처리 기준:
+     *   - "신규로 들어온 구간(월들)"과 기간이 한 달이라도 겹치는 기존 이력은
+     *     금액/건수, 월/분기 구분 없이 모두 USE_YN = 'N' 처리
      *
      * @return 신규 시작 월(YearMonth) – 교차 중복 검증 시 cut-off 기준으로 사용
      */
@@ -386,59 +390,110 @@ public class SprtLmtServiceImpl implements SprtLmtService {
         }
 
         YearMonth minNew = null;
+        List<PeriodRange> newRanges = new ArrayList<>();
 
+        // 1) 신규 구간(from, to) 수집 + 가장 이른 시작년월(minNew) 계산
         if ("01".equals(req.getTpwLmtDvsCd())) {
+            // 금액 한도
             List<AmtReqVO> amtList = Optional.ofNullable(req.getAmtList())
                     .orElse(Collections.emptyList());
 
+            // 금액 유형(월/분기)
+            String typCd = Optional.ofNullable(req.getTpwLmtTypCd()).orElse("02");
+
             for (AmtReqVO a : amtList) {
                 if (a == null) continue;
-                String stt = normalizeYm(a.getLmtSttYm());
-                YearMonth ym = toYearMonth(stt);
-                if (ym == null) continue;
-                if (minNew == null || ym.isBefore(minNew)) {
-                    minNew = ym;
+
+                String sttStr = normalizeYm(a.getLmtSttYm());
+                YearMonth from = toYearMonth(sttStr);
+                if (from == null) continue;
+
+                if (minNew == null || from.isBefore(minNew)) {
+                    minNew = from;
                 }
+
+                YearMonth to;
+                if ("01".equals(typCd)) {
+                    // 월 유형: 시작=종료
+                    to = from;
+                } else {
+                    String endStr = normalizeYm(a.getLmtEndYm());
+                    YearMonth maybeEnd = toYearMonth(endStr);
+                    to = (maybeEnd != null ? maybeEnd : from);
+                }
+
+                newRanges.add(new PeriodRange(from, to));
             }
+
         } else if ("02".equals(req.getTpwLmtDvsCd())) {
+            // 건수 한도
             List<NcntReqVO> ncntList = Optional.ofNullable(req.getNcntList())
                     .orElse(Collections.emptyList());
 
             for (NcntReqVO n : ncntList) {
                 if (n == null) continue;
-                String stt = normalizeYm(n.getLmtSttYm());
-                YearMonth ym = toYearMonth(stt);
-                if (ym == null) continue;
-                if (minNew == null || ym.isBefore(minNew)) {
-                    minNew = ym;
+
+                String sttStr = normalizeYm(n.getLmtSttYm());
+                YearMonth from = toYearMonth(sttStr);
+                if (from == null) continue;
+
+                if (minNew == null || from.isBefore(minNew)) {
+                    minNew = from;
                 }
+
+                String endStr = normalizeYm(n.getLmtEndYm());
+                YearMonth maybeEnd = toYearMonth(endStr);
+                YearMonth to = (maybeEnd != null ? maybeEnd : from);
+
+                newRanges.add(new PeriodRange(from, to));
             }
         }
 
-        if (minNew == null) {
+        if (minNew == null || newRanges.isEmpty()) {
             return null;
         }
 
-        // dvsCd + sno 기준으로 관리번호 묶어서 비활성화
+        // 2) dvsCd + sno 기준으로 관리번호 묶어서 비활성화 대상 수집
         Map<String, Map<String, Set<String>>> mngNosByDvsAndSno = new HashMap<>();
 
         for (SprtLmtRspVO row : existing) {
-            YearMonth sttYm = toYearMonth(normalizeYm(row.getLmtSttYm()));
-            if (sttYm == null) continue;
+            YearMonth oldFrom = toYearMonth(normalizeYm(row.getLmtSttYm()));
+            if (oldFrom == null) continue;
 
-            if (!sttYm.isBefore(minNew)) {
-                String dvsCd = row.getTpwLmtDvsCd();
-                String sno = row.getSpfnLmtSno();
-                String mngNo = row.getSpfnLmtMngNo();
-                if (dvsCd == null || sno == null || mngNo == null) continue;
+            String dvsCd = row.getTpwLmtDvsCd();
+            String sno = row.getSpfnLmtSno();
+            String mngNo = row.getSpfnLmtMngNo();
+            if (dvsCd == null || sno == null || mngNo == null) continue;
 
-                mngNosByDvsAndSno
-                        .computeIfAbsent(dvsCd, k -> new HashMap<>())
-                        .computeIfAbsent(sno, k -> new HashSet<>())
-                        .add(mngNo);
+            // 기존 row의 종료년월 계산 (금액-월 유형이면 시작=종료)
+            String rowTypCd = Optional.ofNullable(row.getTpwLmtTypCd()).orElse("02");
+            YearMonth oldTo;
+            if ("01".equals(dvsCd) && "01".equals(rowTypCd)) {
+                oldTo = oldFrom;
+            } else {
+                YearMonth maybeEnd = toYearMonth(normalizeYm(row.getLmtEndYm()));
+                oldTo = (maybeEnd != null ? maybeEnd : oldFrom);
             }
+
+            // 신규 구간 중 하나라도 겹치면 N 처리 대상
+            boolean needDeactivate = false;
+            for (PeriodRange nr : newRanges) {
+                if (overlaps(nr.from, nr.to, oldFrom, oldTo)) {
+                    needDeactivate = true;
+                    break;
+                }
+            }
+            if (!needDeactivate) {
+                continue;
+            }
+
+            mngNosByDvsAndSno
+                    .computeIfAbsent(dvsCd, k -> new HashMap<>())
+                    .computeIfAbsent(sno, k -> new HashSet<>())
+                    .add(mngNo);
         }
 
+        // 3) 실제 N 처리
         if (!mngNosByDvsAndSno.isEmpty()) {
             for (Map.Entry<String, Map<String, Set<String>>> e : mngNosByDvsAndSno.entrySet()) {
                 String dvsCd = e.getKey();
@@ -459,7 +514,30 @@ public class SprtLmtServiceImpl implements SprtLmtService {
             }
         }
 
+        // cut-off 용 minNew는 예전 그대로 반환
         return minNew;
+    }
+
+
+    private boolean overlaps(YearMonth newFrom, YearMonth newTo,
+                             YearMonth oldFrom, YearMonth oldTo) {
+        if (newFrom == null || newTo == null || oldFrom == null || oldTo == null) {
+            return false;
+        }
+        // newTo < oldFrom 또는 oldTo < newFrom 이 아니면 = 한 달이라도 겹침
+        return !newTo.isBefore(oldFrom) && !oldTo.isBefore(newFrom);
+    }
+
+
+    /** 신규/기존 기간 표현용 내부 클래스 */
+    private static class PeriodRange {
+        final YearMonth from;
+        final YearMonth to;
+
+        PeriodRange(YearMonth from, YearMonth to) {
+            this.from = from;
+            this.to = to;
+        }
     }
 
     /**
@@ -925,6 +1003,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         return new BuildResult(out, prevSnoByMngNo);
     }
+
 
     /* ===================== 한도 유형/존재 여부 체크 ===================== */
 
