@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.common.file.mapper.FileMapper">
+
+    <select id="readAtflPath"
+            resultType="tmoney.co.kr.hxz.common.file.vo.AttachmentVO">
+        select m115.org_cd       AS orgCd
+             , m115.atfl_mng_no  AS atflMngNo
+             , m115.atfl_nm      AS atflNm
+             , m115.orgl_atfl_nm AS orglAtflNm
+             , m115.atfl_path_nm AS atflPathNm
+          from ohxzown.tbhxzm115 m115
+        <if test="orgCd != null and orgCd != '0000000'">
+          join ohxzown.tbhxzm106 m106
+            on m115.org_cd = m106.org_cd
+        </if>
+         where 1=1
+           and m115.org_cd      = #{orgCd}
+           and m115.atfl_mng_no = #{atflMngNo}
+    </select>
+</mapper>

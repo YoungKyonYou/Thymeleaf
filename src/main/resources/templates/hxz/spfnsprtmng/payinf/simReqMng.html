@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <style>
+            .hide { display: none; }
+            .table-vertical th { width: 10em; }
+            [name ^= cardNo] { display: inline-block; }
+            .disabled { background-color: #f5f5f5; cursor: not-allowed; }
+        </style>
+
+        <section class="section" id="grid">
+            <div class="section-header">
+                <form id="search-form" action="/spfnsprtmng/payinf/simReqMng.do" method="GET" th:object="${req}">
+                    <input th:field="*{sort}" type="hidden">
+                    <input th:field="*{dir}" type="hidden">
+                    <div class="title-wrap">
+                        <h3 class="section-title">시뮬레이션요청관리</h3>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">신청기간</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="sttDt" th:value="*{sttDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">&nbsp;</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="endDt" th:value="*{endDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 선택</p>
+                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcPair1','tpwSvcId','tpwSvcTypId', true)}"></th:block>
+                        </div>
+                    </div>
+
+                    <div class="btn-wrap">
+                        <button type="button" class="btn btn-secondary btn-icon-left" data-export="xlsx" data-provider="시뮬레이션요청관리">
+                            다운로드 <i class="icon icon-save"></i>
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-icon-left">
+                            검색 <i class="icon icon-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="section-content">
+                <div class="flex justify-space-between">
+                    <div class="flex justify-space-between" id="grid-header" th:object="${pageData}">
+                        <b th:text="'검색 결과 : ' + *{total} + '건'"></b>
+                    </div>
+
+                    <div class="btn-wrap">
+                        <div class="btn-wrap">
+                            <!-- 숨겨진 파일 인풋 (버튼으로 트리거) -->
+                            <input type="file"
+                                id="import-file"
+                                accept=".xlsx"
+                                style="display:none;" />
+                            <button type="button" id="btn-import" class="btn btn-dark-line">업로드</button>
+                            <button id="new-line" type="button" class="btn btn-blue">신규등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table id="table-list" class="table">
+                        <caption class="blind">시뮬레이션 요청 내역 조회</caption>
+                        <colgroup>
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="150px">
+                        </colgroup>
+                        <thead id="grid-head">
+                        <tr>
+                            <th scope="col">순번</th>
+                            <th scope="col"><a data-sort="tpwSvcNm">서비스</a></th>
+                            <th scope="col"><a data-sort="tpwSvcTypNm">서비스유형</a></th>
+                            <th scope="col"><a data-sort="aplDt">신청일자</a></th>
+                            <th scope="col"><a data-sort="cardSttDt">카드시작일자</a></th>
+                            <th scope="col"><a data-sort="cardEndDt">카드종료일자</a></th>
+                            <th scope="col"><a data-sort="prcgFnYn">처리완료여부</a></th>
+                            <th scope="col">관리</th>
+                        </tr>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <th:block th:each="u, stat : ${pageData.content}" th:if="${pageData.total > 0}" th:object="${u}">
+                            <tr>
+                                <input type="hidden" name="orgCd" th:value="${u.orgCd}">
+                                <input type="hidden" name="tpwSvcId" th:value="${u.tpwSvcId}" />
+                                <input type="hidden" name="tpwSvcTypId" th:value="${u.tpwSvcTypId}" />
+                                <input type="hidden" name="tpwSvcTypSno" th:value="${u.tpwSvcTypSno}" />
+                                <input type="hidden" name="aplDt" th:value="${u.aplDt}" />
+                                <input type="hidden" name="mbrsId" th:value="${u.mbrsId}" />
+                                <input type="hidden" name="mbrsNm" th:value="${u.mbrsNm}" />
+
+                                <input type="hidden" name="cardNo" th:value="${u.cardNo}" />
+                                <input type="hidden" name="cardSttDt" th:value="${u.cardSttDt}" />
+                                <input type="hidden" name="cardEndDt" th:value="${u.cardEndDt}" />
+
+                                <input type="hidden" name="tpwTrdSttDt" th:value="${u.tpwTrdSttDt}" />
+                                <input type="hidden" name="tpwTrdEndDt" th:value="${u.tpwTrdEndDt}" />
+
+                                <input type="hidden" name="tpwSvcNm" th:value="${u.tpwSvcNm}" />
+                                <input type="hidden" name="tpwSvcTypNm" th:value="${u.tpwSvcTypNm}" />
+                                <input type="hidden" name="prcgFnYn" th:value="${u.prcgFnYn}" />
+
+                                <td th:text="${pageData.page * pageData.size + stat.index + 1}"></td>
+                                <td th:text="${u.tpwSvcNm}"></td>
+                                <td th:text="${u.tpwSvcTypNm}"></td>
+                                <td th:text="${u.aplDt}"></td>
+                                <td th:text="${u.cardSttDt}"></td>
+                                <td th:text="${u.cardEndDt}"></td>
+
+                                <td th:text="${u.prcgFnYn == 'Y' ? '완료' : '미처리'}"
+                                    th:style="${u.prcgFnYn == 'Y' ? 'color:blue; font-weight:bold;' : ''}"></td>
+
+                                <td>
+                                    <button type="button" class="btn btn-red delete-row" th:if="${u.prcgFnYn != 'Y'}">삭제</button>
+                                    <span th:if="${u.prcgFnYn == 'Y'}" style="color:#ccc;">-</span>
+                                </td>
+                            </tr>
+                        </th:block>
+                        <tr th:if="${pageData.total == 0}">
+                            <td colspan="8" class="empty">조회 결과가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                </div>
+
+                <div id="selected-section" class="mt40 hide">
+                    <form id="selected-form" method="post" th:object="${detail}">
+
+                        <input type="hidden" id="mode" value="INSERT">
+
+                        <input type="hidden" name="origTpwSvcId" />
+                        <input type="hidden" name="origTpwSvcTypId" />
+                        <input type="hidden" name="origTpwSvcTypSno" />
+                        <input type="hidden" name="origAplDt" />
+                        <input type="hidden" name="origMbrsId" />
+                        <input type="hidden" name="origCardNo" />
+
+                        <input type="hidden" name="tpwTrdSttDt" />
+                        <input type="hidden" name="tpwTrdEndDt" />
+
+                        <div class="table-wrap">
+                            <table class="table table-vertical">
+                                <colgroup>
+                                    <col style="width: 150px;">
+                                    <col>
+                                </colgroup>
+                                <tbody>
+                                <tr>
+                                    <th scope="row">신청일자</th>
+                                    <td>
+                                        <div class="text-field datepicker">
+                                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="aplDt">
+                                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">회원ID</th>
+                                    <td><input type="text" name="mbrsId" placeholder="회원ID를 입력하세요." class="text-field" /></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">회원명</th>
+                                    <td><input type="text" name="mbrsNm" readonly class="text-field" placeholder="자동조회" /></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">서비스명</th>
+                                    <td>
+                                        <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcOnlyRoot','tpwSvcId','tpwSvcTypId', true)}"></th:block>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">카드번호</th>
+                                    <td>
+                                        <input type="text" name="cardNo1" class="text-field" style="width:60px;" maxlength="4" /> -
+                                        <input type="text" name="cardNo2" class="text-field" style="width:60px;" maxlength="4" /> -
+                                        <input type="text" name="cardNo3" class="text-field" style="width:60px;" maxlength="4" /> -
+                                        <input type="text" name="cardNo4" class="text-field" style="width:60px;" maxlength="4" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">유효기간</th>
+                                    <td>
+                                        <div class="flex gap-10 align-center">
+                                            <div class="text-field datepicker" style="width: 140px;">
+                                                <input type="text" class="dp-input" name="cardSttDt" placeholder="시작일">
+                                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                                            </div>
+                                            <span>~</span>
+                                            <div class="text-field datepicker" style="width: 140px;">
+                                                <input type="text" class="dp-input" name="cardEndDt" placeholder="종료일">
+                                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">처리상태</th>
+                                    <td>
+                                        <div class="dropdown" data-name="prcgFnYn">
+                                            <button type="button" class="dropdown_button" disabled>
+                                                <span class="dropdown_value" data-placeholder="미처리">미처리</span>
+                                            </button>
+                                            <input type="hidden" name="prcgFnYn" value="N" />
+                                        </div>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex justify-end mt40">
+                            <button type="button" id="btn-reset" class="btn btn-dark-line">초기화</button>
+                            <button type="button" id="btn-save" class="btn btn-blue">등록</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <script data-page="simReqMng" th:inline="javascript" type="text/javascript">
+            (function () {
+                const grid = document.getElementById('grid');
+                const table = document.getElementById('table-list');
+                const head = document.getElementById('grid-head');
+                const searchForm = document.querySelector('#search-form');
+                const baseUrl = searchForm.getAttribute('action');
+                const selectSize = searchForm.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const loading = document.getElementById('mini-sp-loading');
+                const btnImport = document.getElementById('btn-import');
+                const fileImport = document.getElementById('import-file');
+                
+
+                // 하단 폼 관련 요소
+                const selSection = document.getElementById('selected-section');
+                const selForm = document.getElementById('selected-form');
+                const saveBtn = document.getElementById('btn-save');
+                const resetBtn = document.getElementById('btn-reset');
+                const newLineBtn = document.getElementById('new-line');
+                const modeInput = document.getElementById('mode');
+
+                // 페이징/정렬 초기화
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir?.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id',
+                });
+
+                // -------------------------------------------------
+                // [Helper] 폼 모드 설정 (INSERT vs UPDATE)
+                // -------------------------------------------------
+                function setFormMode(mode) {
+                    modeInput.value = mode;
+
+                    if (mode === 'INSERT') {
+                        saveBtn.textContent = '등록';
+                        // 등록 시에는 원본 데이터가 필요 없으므로 비움
+                        selForm.querySelectorAll('input[name^="orig"]').forEach(el => el.value = '');
+                        // 폼 활성화 (신규니까 무조건 입력 가능)
+                        setFormState(false);
+                    } else {
+                        saveBtn.textContent = '수정';
+                    }
+                }
+
+                // -------------------------------------------------
+                // [Helper] 폼 상태 제어 (ReadOnly / Editable)
+                // -------------------------------------------------
+                function setFormState(isReadOnly) {
+                    if (isReadOnly) {
+                        // 읽기 전용 (마감됨)
+                        saveBtn.style.display = 'none';
+                        resetBtn.style.display = 'none';
+                        // 입력 필드, 달력 버튼 비활성화
+                        selForm.querySelectorAll('input:not([type="hidden"]), button.dp-btn').forEach(el => el.disabled = true);
+                        selForm.querySelectorAll('.dropdown_button').forEach(el => el.disabled = true);
+                    } else {
+                        // 편집 가능
+                        saveBtn.style.display = 'inline-block';
+                        resetBtn.style.display = 'inline-block';
+                        // 활성화
+                        selForm.querySelectorAll('input:not([type="hidden"]), button.dp-btn').forEach(el => el.disabled = false);
+                        selForm.querySelectorAll('.dropdown_button').forEach(el => el.disabled = false);
+                    }
+                }
+
+                // -------------------------------------------------
+                // [Event] 신규등록 버튼 클릭
+                // -------------------------------------------------
+                newLineBtn.addEventListener('click', function() {
+                    selForm.reset(); // 폼 내용 초기화
+
+                    // 모드: 등록
+                    setFormMode('INSERT');
+
+                    // 카드번호 필드 명시적 초기화
+                    for(let i=1; i<=4; i++) {
+                        const el = selForm.querySelector(`[name="cardNo${i}"]`);
+                        if(el) el.value = '';
+                    }
+
+                    // 처리상태 초기화
+                    const dropdown = selForm.querySelector('.dropdown[data-name="prcgFnYn"]');
+                    if(dropdown) {
+                        dropdown.querySelector('.dropdown_value').textContent = '미처리';
+                        dropdown.querySelector('input').value = 'N';
+                    }
+
+                    selSection.classList.remove('hide');
+                    selSection.scrollIntoView({ behavior: 'smooth' });
+                });
+
+                // -------------------------------------------------
+                // [Event] 행 클릭 (수정 모드 진입)
+                // -------------------------------------------------
+                table.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-row')) return; // 삭제 버튼 클릭은 무시
+
+                    const tr = e.target.closest('tr');
+                    if (!tr) return;
+
+                    // 모드: 수정
+                    setFormMode('UPDATE');
+
+                    // (1) 데이터 바인딩 (Hidden값 -> Form 입력창)
+                    tr.querySelectorAll('input[name]').forEach(input => {
+                        const key = input.getAttribute('name');
+                        const val = input.value;
+
+                        // 일반 필드
+                        const target = selForm.querySelector(`[name="${key}"]`);
+                        if (target) target.value = val;
+
+                        // 드롭다운 처리
+                        const dropdown = selForm.querySelector(`.dropdown[data-name="${key}"]`);
+                        if (dropdown) {
+                            const hiddenInput = dropdown.querySelector(`input[name="${key}"]`);
+                            if(hiddenInput) hiddenInput.value = val;
+
+                            const option = dropdown.querySelector(`.dropdown_option[data-value="${val}"]`);
+                            const displaySpan = dropdown.querySelector('.dropdown_value');
+                            if(displaySpan) {
+                                displaySpan.textContent = option ? option.textContent : val;
+                            }
+                        }
+
+                        // 카드번호 분리
+                        if (key === 'cardNo' && val) {
+                            const arr = val.split('-');
+                            for (let i = 0; i < 4; i++) {
+                                const subInput = selForm.querySelector(`[name="cardNo${i + 1}"]`);
+                                if (subInput) subInput.value = arr[i] || '';
+                            }
+                        }
+                    });
+
+                    // (2) [중요] 원본(Original) 데이터 세팅 (PK 수정 대비)
+                    selForm.querySelector('[name="origTpwSvcId"]').value      = tr.querySelector('[name="tpwSvcId"]').value;
+                    selForm.querySelector('[name="origTpwSvcTypId"]').value   = tr.querySelector('[name="tpwSvcTypId"]').value;
+                    selForm.querySelector('[name="origTpwSvcTypSno"]').value  = tr.querySelector('[name="tpwSvcTypSno"]').value;
+                    selForm.querySelector('[name="origAplDt"]').value         = tr.querySelector('[name="aplDt"]').value;
+                    selForm.querySelector('[name="origMbrsId"]').value        = tr.querySelector('[name="mbrsId"]').value;
+                    selForm.querySelector('[name="origCardNo"]').value        = tr.querySelector('[name="cardNo"]').value;
+
+                    // (3) [마감 체크] 처리완료(Y) 건은 수정 불가
+                    const prcgFnYn = tr.querySelector('input[name="prcgFnYn"]').value;
+                    setFormState(prcgFnYn === 'Y');
+
+                    selSection.classList.remove('hide');
+                });
+
+                // -------------------------------------------------
+                // [Event] 저장/수정 버튼 클릭 (Form Submit)
+                // -------------------------------------------------
+                saveBtn.addEventListener('click', function() {
+                    selForm.dispatchEvent(new Event('submit'));
+                });
+
+                selForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const mode = modeInput.value;
+                    let url = '';
+                    let method = 'POST'; // 기본값 POST
+                    let confirmMsg = '';
+
+                    // 모드에 따른 URL 및 Method 분기
+                    if (mode === 'INSERT') {
+                        // 등록은 POST 유지
+                        url = '/spfnsprtmng/payinf/simReqMng/add.do';
+                        method = 'POST';
+                        confirmMsg = '새로운 요청을 등록하시겠습니까?';
+                    } else {
+                        // [수정] 백엔드(@PutMapping "/simReqMng/update")에 맞춤
+                        url = '/spfnsprtmng/payinf/simReqMng/update.do';
+                        method = 'PUT'; // 여기서 PUT으로 변경해야 함
+                        confirmMsg = '내용을 수정하시겠습니까?';
+                    }
+
+                    const data = Common.collectFromForm(e.target);
+
+                    // 카드번호 합치기
+                    data.cardNo = `${data.cardNo1}-${data.cardNo2}-${data.cardNo3}-${data.cardNo4}`;
+
+                    // 서비스 Sno 자동 채우기
+                    if(data.tpwSvcId && data.tpwSvcTypId) {
+                         const tpwsvc = await Common.sendSafe('/common/tpwsvc/tpwSvcInf', {method: 'GET'});
+                         if(tpwsvc && tpwsvc.data && tpwsvc.data.typesBySvcId) {
+                             const types = tpwsvc.data.typesBySvcId[data.tpwSvcId];
+                             if(types) {
+                                 for (const row of types) {
+                                     if(row.tpwSvcTypId == data.tpwSvcTypId) {
+                                         data.tpwSvcTypSno = row.tpwSvcTypSno;
+                                         break;
+                                     }
+                                 }
+                             }
+                         }
+                    }
+
+                    if(!confirm(confirmMsg)) return;
+
+                    // [중요] method 변수를 사용하여 요청 전송 (POST or PUT)
+                    const res = await Common.sendSafe(url, {
+                        method: method,
+                        data,
+                    });
+
+                    if (res.ok) {
+                        alert('저장되었습니다.');
+                        selSection.classList.add('hide');
+                        searchForm.dispatchEvent(new Event('submit')); // 목록 새로고침
+                    }
+                });
+
+                // -------------------------------------------------
+                // [Event] 삭제 버튼 클릭
+                // -------------------------------------------------
+                table.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('.delete-row');
+                    if (!btn) return;
+
+                    // HTML 변조 방지를 위해 한번 더 체크
+                    const tr = btn.closest('tr');
+                    const prcgFnYn = tr.querySelector('input[name="prcgFnYn"]').value;
+                    if (prcgFnYn === 'Y') {
+                        alert('이미 처리완료된 건은 삭제할 수 없습니다.');
+                        return;
+                    }
+
+                    if(!confirm('정말 삭제하시겠습니까?')) return;
+
+                    // 삭제에 필요한 PK 데이터 수집
+                    const data = {
+                        tpwSvcId: tr.querySelector('input[name="tpwSvcId"]').value,
+                        tpwSvcTypId: tr.querySelector('input[name="tpwSvcTypId"]').value,
+                        tpwSvcTypSno: tr.querySelector('input[name="tpwSvcTypSno"]').value,
+                        aplDt: tr.querySelector('input[name="aplDt"]').value,
+                        mbrsId: tr.querySelector('input[name="mbrsId"]').value,
+                        cardNo: tr.querySelector('input[name="cardNo"]').value
+                    };
+
+                    const res = await Common.sendSafe('/spfnsprtmng/payinf/simReqMng/delete', {
+                        method: 'POST',
+                        data,
+                    });
+
+                    if(res.ok) {
+                        alert('삭제되었습니다.');
+                        selSection.classList.add('hide');
+                        searchForm.dispatchEvent(new Event('submit'));
+                    }
+                });
+
+                // -------------------------------------------------
+                // [Event] 검색 폼 서밋 & 헤더 정렬 & 엑셀
+                // -------------------------------------------------
+                searchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    selSection.classList.add('hide'); // 검색 시 상세폼 닫기
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('a[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort?.value || 'mbrs_id';
+                    let dir = inputDir?.value || 'asc';
+                    dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+                    inputSort.value = next;
+                    inputDir.value = dir;
+                    searchForm.dispatchEvent(new Event('submit'));
+                });
+
+                grid.addEventListener('click', (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    if(exportBtn) {
+                        Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', {});
+                        setTimeout(() => { loading.style.display = 'none'; }, 1000);
+                    }
+                });
+
+                if (btnImport && fileImport) {
+                    btnImport.addEventListener('click', function () {
+                        fileImport.click();
+                    });
+                }
+
+
+                document.addEventListener('DOMContentLoaded', function(){
+
+                    Common.bindExcelImport(
+                        fileImport,
+                        '시뮬레이션요청관리',
+                        async function (rows) {
+                            const res = await Common.sendSafe('/spfnsprtmng/payinf/simReqMng/import', {
+                                method: 'POST',
+                                data: rows,
+                                clientErrorMsg: '요청이 올바르지 않습니다.',
+                                otherErrorMsg: '일시적인 오류가 발생했습니다.'
+                            });
+
+                            console.log(res);
+                        },
+                        function (errors) {
+                            // 에러발생
+                        },
+                        {
+                            // 필요하면 extraParams 넣기
+                            // orgCd: /*[[${orgCd}]]*/ '0001'
+                        }
+                    );
+    
+                });
+
+
+            })();
+        </script>
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+    </th:block>
+</th:block>
+</html>

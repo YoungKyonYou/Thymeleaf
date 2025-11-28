@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <section class="section">
+            <div class="section-header">
+                <div class="title-wrap">
+                    <h3 class="section-title">시뮬레이션 정산 작업 내역 [[${pageData.tpwSvcTypId != null ? '수정' : '등록'}]]</h3>
+                </div>
+            </div>
+
+            <div class="section-content">
+                <form id="simForm" th:object="${pageData}">
+                    <input type="hidden" name="exeDiv" value="SIM">
+
+                    <input type="hidden" name="origTpwSvcId" th:value="*{tpwSvcId}">
+                    <input type="hidden" name="origTpwSvcTypId" th:value="*{tpwSvcTypId}">
+                    <input type="hidden" name="origTpwSvcTypSno" th:value="*{tpwSvcTypSno}">
+                    <input type="hidden" name="origAplDt" th:value="*{aplDt}">
+
+                    <input type="hidden" name="tpwSvcId" th:value="*{tpwSvcId}">
+                    <input type="hidden" name="tpwSvcTypId" th:value="*{tpwSvcTypId}">
+                    <input type="hidden" name="tpwSvcTypSno" th:value="*{tpwSvcTypSno}">
+
+                    <div class="table-wrap">
+                        <table class="table table-vertical">
+                            <colgroup>
+                                <col style="width: 160px;">
+                                <col>
+                            </colgroup>
+                            <tbody>
+
+                            <tr>
+                                <th scope="row">서비스 선택 <span class="required" th:if="*{tpwSvcTypId == null}">*</span></th>
+                                <td>
+                                    <th:block th:replace="~{common/fragment/dropdowns ::cascadingDropdown('svcOnlyRootSim', 'tpwSvcId', 'tpwSvcTypId', true)}">
+                                    </th:block>
+                                </td>
+                            </tr>
+
+                            <tr class="control-target">
+                                <th scope="row">적용일자 <span class="required">*</span></th>
+                                <td>
+                                    <div class="date-field" style="width: 160px;">
+                                        <input type="text" id="aplDt" name="aplDt"
+                                               class="text-field date-text" th:value="*{aplDt}">
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr class="control-target">
+                                <th scope="row">거래기간</th>
+                                <td>
+                                    <div class="flex align-center col-">
+                                        <div class="date-field" style="width: 160px;">
+                                            <input type="text" id="tpwTrdSttDt" name="tpwTrdSttDt"
+                                                   class="text-field date-text" th:value="*{tpwTrdSttDt}">
+                                        </div>
+                                        <span class="ml5 mr5">~</span>
+                                        <div class="date-field" style="width: 160px;">
+                                            <input type="text" id="tpwTrdEndDt" name="tpwTrdEndDt"
+                                                   class="text-field date-text" th:value="*{tpwTrdEndDt}">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row">처리완료여부</th>
+                                <td>
+                                    <div class="dropdown" data-name="prcgFnYn" style="width: 160px;">
+                                        <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false">
+                                            <span class="dropdown_value"
+                                                  th:text="*{prcgFnYn == 'Y' ? 'Y' : (prcgFnYn == 'N' ? 'N' : '선택')}">선택</span>
+                                        </button>
+                                        <ul class="dropdown_list" role="listbox">
+                                            <li role="option" class="dropdown_option" data-value="Y"
+                                                th:classappend="*{prcgFnYn == 'Y'} ? 'selected'">Y</li>
+                                            <li role="option" class="dropdown_option" data-value="N"
+                                                th:classappend="*{prcgFnYn == 'N'} ? 'selected'">N</li>
+                                        </ul>
+                                        <input type="hidden" name="prcgFnYn" th:value="*{prcgFnYn}">
+                                    </div>
+                                </td>
+                            </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                <div class="flex justify-end col- mt40">
+                    <button type="button" class="btn btn-dark-line"
+                            onclick="location.href='/spfnsprtmng/payinf/stlmTakPtInf.do'">목록</button>
+                    <button type="button" class="btn btn-blue btn-save">저장</button>
+                </div>
+            </div>
+        </section>
+
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            // Thymeleaf 변수 바인딩
+            const pageData = /*[[${pageData}]]*/ {};
+            const isEditMode = pageData.tpwSvcTypId != null;
+            const savedSvcId = /*[[${pageData.tpwSvcId}]]*/ '';
+            const savedSvcTypId = /*[[${pageData.tpwSvcTypId}]]*/ '';
+
+            console.log('SIM Form pageData:', pageData);
+
+            // 알림창 유틸
+            if (typeof modalShow === 'undefined') {
+                window.modalShow = function(options) {
+                    const msg = options.message || '처리되었습니다.';
+                    alert(msg);
+                    if (options.buttons && options.buttons[0] && options.buttons[0].callback) {
+                        options.buttons[0].callback();
+                    }
+                };
+            }
+
+            const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
+
+            document.addEventListener('DOMContentLoaded', function () {
+
+                // 1. 날짜 필드 포맷팅
+                document.querySelectorAll('.date-text').forEach(el => {
+                    let val = el.getAttribute('value');
+                    if(!val) val = el.value;
+
+                    if(val && val.length === 8) {
+                        val = val.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                        el.value = val;
+                    }
+                    el.type = 'date';
+                });
+
+                // 2. 상태(Y/N) 드롭다운 동기화
+                setTimeout(function() {
+                    document.querySelectorAll('.dropdown').forEach(function(dd) {
+                        // 서비스 드롭다운은 별도 로직 처리하므로 패스
+                        if (dd.dataset.name === 'tpwSvcId' || dd.dataset.name === 'tpwSvcTypId') return;
+
+                        const input = dd.querySelector('input[type="hidden"]');
+                        const display = dd.querySelector('.dropdown_value');
+
+                        if (input && input.value) {
+                            const targetLi = dd.querySelector(`.dropdown_option[data-value="${input.value}"]`);
+                            if (targetLi) {
+                                dd.querySelectorAll('.dropdown_option').forEach(li => li.classList.remove('selected'));
+                                targetLi.classList.add('selected');
+                                if (display) display.textContent = targetLi.textContent;
+                            }
+                        }
+                    });
+                }, 200);
+
+                // 3. [수정 모드] 서비스 드롭다운 자동 선택 (값 세팅)
+                if (isEditMode && savedSvcId) {
+                    setTimeout(function() {
+                        // 1차: 서비스 선택
+                        const svcDropdown = document.querySelector('.dropdown[data-name="tpwSvcId"]');
+                        if(svcDropdown) {
+                            const input = svcDropdown.querySelector('input[type="hidden"]');
+                            input.value = savedSvcId;
+
+                            const targetLi = svcDropdown.querySelector(`.dropdown_option[data-value="${savedSvcId}"]`);
+                            if(targetLi) {
+                                svcDropdown.querySelector('.dropdown_value').textContent = targetLi.textContent;
+                                targetLi.click(); // 하위 드롭다운 로딩 트리거
+                            }
+                        }
+
+                        // 2차: 서비스 유형 선택
+                        setTimeout(function() {
+                            const typeDropdown = document.querySelector('.dropdown[data-name="tpwSvcTypId"]');
+                            if(typeDropdown) {
+                                const input = typeDropdown.querySelector('input[type="hidden"]');
+                                input.value = savedSvcTypId;
+
+                                const targetLi = typeDropdown.querySelector(`.dropdown_option[data-value="${savedSvcTypId}"]`);
+                                if(targetLi) {
+                                    typeDropdown.querySelector('.dropdown_value').textContent = targetLi.textContent;
+                                    targetLi.classList.add('selected');
+                                }
+                            }
+                        }, 500);
+
+                    }, 200);
+                }
+            });
+
+            // [이벤트] 저장 버튼 클릭
+            document.querySelector('.btn-save').addEventListener('click', async function(e) {
+                e.preventDefault();
+                const form = document.getElementById('simForm');
+                const data = Common.collectFromForm(form);
+
+                // 1. 필수값 체크
+                if (!data.tpwSvcId || !data.tpwSvcTypId) {
+                    modalShow({ title: '알림', message: '서비스를 선택해주세요.', buttons: ['close'] });
+                    return;
+                }
+                if (!data.aplDt) {
+                    modalShow({ title: '알림', message: '적용일자를 입력해주세요.', buttons: ['close'] });
+                    return;
+                }
+
+                // 2. 날짜 하이픈 제거
+                const dateCols = ['aplDt', 'tpwTrdSttDt', 'tpwTrdEndDt'];
+                dateCols.forEach(k => { if (data[k]) data[k] = onlyDigits(data[k]); });
+
+                // 3. [중요] SNO(일련번호) 조회 (신규/수정 모두 실행)
+                // 서비스를 변경했을 수도 있으므로, 선택된 서비스유형에 맞는 SNO를 다시 가져와야 함
+                try {
+                    const tpwsvc = await Common.sendSafe('/common/tpwsvc/tpwSvcInf', { method: 'GET' });
+                    let responseData = tpwsvc.data;
+                    if (typeof responseData === 'string') responseData = JSON.parse(responseData);
+
+                    const tpwsvcids = responseData.typesBySvcId;
+                    let found = false;
+                    if (tpwsvcids[data.tpwSvcId]) {
+                        for (const row of tpwsvcids[data.tpwSvcId]) {
+                            if (row.tpwSvcTypId == data.tpwSvcTypId) {
+                                data.tpwSvcTypSno = row.tpwSvcTypSno; // SNO 세팅
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        modalShow({ title: '오류', message: '선택된 서비스 유형의 일련번호를 찾을 수 없습니다.', buttons: ['close'] });
+                        return;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    modalShow({ title: '오류', message: '서비스 정보 조회 중 오류가 발생했습니다.', buttons: ['close'] });
+                    return;
+                }
+
+                // 4. API 호출
+                const url = isEditMode ? '/spfnsprtmng/payinf/sim/update' : '/spfnsprtmng/payinf/sim/add';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                const res = await Common.sendSafe(url, { method, data });
+
+                if (res.ok) {
+                    modalShow({
+                        title: '알림',
+                        message: '저장되었습니다.',
+                        buttons: [{
+                            label: '확인',
+                            callback: () => location.href = "/spfnsprtmng/payinf/stlmTakPtInf.do"
+                        }]
+                    });
+                } else {
+                    modalShow({ title: '경고', message: '저장 중 오류가 발생했습니다.', buttons: ['close'] });
+                }
+            });
+            /*]]>*/
+        </script>
+
+    </th:block>
+</th:block>
+</html>
