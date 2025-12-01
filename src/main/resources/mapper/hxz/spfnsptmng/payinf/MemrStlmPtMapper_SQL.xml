@@ -3,269 +3,198 @@
 <mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.MemrStlmPtMapper">
 
     <select id="readMemrStlmPtList" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
-        SELECT
-            memrSt.mbrs_id as mbrsId -- 회원 ID
-            , memrSt.mbrs_nm as mbrsNm -- 회원명
-            , memrSt.tpw_mbrs_svc_sta_cd as tpwMbrsSvcStaCd -- 회원 서비스 상태
-            <if test="orgCd != null and orgCd != '' and orgCd == '000000'">
-                , memrSt.tpw_svc_nm as tpwSvcNm -- 서비스명
-                , memrSt.tpw_svc_typ_nm as tpwSvcTypNm -- 서비스유형명
-                , memrSt.tpw_svc_typ_sno as tpwSvcTypSno -- 서비스일련번호
-            </if>
-            , memrSt.addo_nm as addoNm -- 행정동명
-            , memrSt.req_dt as reqDt -- 요청일자 (YYYYMMDD)
-            , memrSt.prcg_dt as prcgDt -- 처리일자 (YYYYMMDD)
-            , memrSt.tpw_memr_prcg_sta_cd as tpwMemrPrcgStaCd -- 처리상태
-            , memrSt.apl_amt as aplAmt -- 요청금액
-        FROM (
-            SELECT
-                d216.mbrs_id, -- 회원 ID
-                m101.mbrs_nm, -- 회원명
-                m102.tpw_mbrs_svc_sta_cd, -- 회원 서비스 상태
-                m008.addo_nm, -- 행정동명
-                to_char(to_date(d216.req_dtm, 'YYYYMMDDHHMISS'), 'YYYY-MM-DD') as req_dt, -- 요청일자 (YYYYMMDD)
-                to_char(to_date(d216.prcg_dt, 'YYYYMMDD'), 'YYYY-MM-DD') as prcg_dt, -- 처리일자 (YYYYMMDD)
-                d216.tpw_memr_prcg_sta_cd, -- 처리상태
-                d216.apl_amt, -- 요청금액
-                m201.tpw_svc_nm, -- 서비스명
-                m202.tpw_svc_typ_nm, -- 서비스유형명
-                m202.tpw_svc_typ_sno -- 서비스일련번호
-            FROM tbhxzd216 d216 -- 수기정산내역 테이블
-            JOIN tbhxzm102 m102 ON m102.mbrs_id = d216.mbrs_id
-                                AND m102.tpw_svc_id = d216.tpw_svc_id
-                                AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id -- 회원 서비스 정보
-            JOIN tbhxzm008 m008 ON m008.addo_cd = m102.addo_cd -- 행정동 코드 관리
-            JOIN tbhxzm101 m101 ON m101.mbrs_id = d216.mbrs_id -- 회원정보
-            JOIN tbhxzm201 m201 ON m201.tpw_svc_id = d216.tpw_svc_id -- 서비스 관리
-            JOIN tbhxzm202 m202 ON m201.tpw_svc_id = m202.tpw_svc_id
+        select
+        memrst.mbrs_id as mbrsId
+        , memrst.mbrs_nm as mbrsNm
+        , memrst.tpw_mbrs_svc_sta_cd as tpwMbrsSvcStaCd
+        , memrst.tpw_svc_id as tpwSvcId
+        , memrst.tpw_svc_typ_id as tpwSvcTypId
+        , memrst.tpw_svc_typ_sno as tpwSvcTypSno
+        , memrst.tpw_svc_nm as tpwSvcNm
+        , memrst.tpw_svc_typ_nm as tpwSvcTypNm
+        , memrst.addo_nm as addoNm
 
-            WHERE 1=1
+        , memrst.req_dtm as reqDtm                , memrst.req_dtm_raw as reqDtmRaw         , memrst.prcg_dt as prcgDt
+        , memrst.tpw_memr_prcg_sta_cd as tpwMemrPrcgStaCd
+        , memrst.manual_prcg_sta as manualPrcgSta
+        , memrst.pay_prcg_yn as payPrcgYn
+        , memrst.apl_amt as aplAmt
+        , memrst.pay_amt as payAmt
 
-            <if test="orgCd != '000000'">
-                AND m201.org_cd = #{orgCd}
-            </if>
+        , memrst.acnt_no as acctNo
+        from (
+        select
+        d216.mbrs_id,
+        m101.mbrs_nm,
+        m102.tpw_mbrs_svc_sta_cd,
+        m008.addo_nm,
 
-            <if test="orgCd != null and orgCd != '' and orgCd != '000000'">
-                AND m201.org_cd LIKE CONCAT('%', LOWER(#{orgCd}), '%')
-            </if>
+        -- 날짜 변환 (화면 표시용)
+        to_char(to_date(d216.req_dtm, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') as req_dtm,
+        -- 날짜 원본 (삭제/수정 Key용)
+        d216.req_dtm as req_dtm_raw,
 
-            <if test="req.addoNm != null and req.addoNm != ''">
-                AND m008.addo_nm LIKE CONCAT('%', LOWER(#{req.addoNm}), '%')
-            </if>
+        to_char(to_date(d216.prcg_dt, 'YYYYMMDD'), 'YYYY-MM-DD') as prcg_dt,
+        d216.tpw_memr_prcg_sta_cd,
+        d216.tpw_memr_prcg_sta_cd as manual_prcg_sta,
+        d216.pay_prcg_yn,
+        d216.apl_amt,
+        d216.pay_amt,
+        m201.tpw_svc_nm,
+        m202.tpw_svc_typ_nm,
+        m202.tpw_svc_typ_sno,
+        m201.tpw_svc_id,
+        m202.tpw_svc_typ_id,
+        m102.acnt_no  -- 내부 쿼리 컬럼명 (acnt_no)
+        from tbhxzd216 d216
+        left join tbhxzm102 m102 on m102.mbrs_id = d216.mbrs_id
+        and m102.tpw_svc_id = d216.tpw_svc_id
+        and m102.tpw_svc_typ_id = d216.tpw_svc_typ_id
+        left join tbhxzm008 m008 on m008.addo_cd = m102.addo_cd
+        left join tbhxzm101 m101 on m101.mbrs_id = d216.mbrs_id
+        left join tbhxzm201 m201 on m201.tpw_svc_id = d216.tpw_svc_id
+        left join tbhxzm202 m202 on m201.tpw_svc_id = m202.tpw_svc_id
 
-            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
-                AND m201.tpw_svc_id = #{req.tpwSvcId}
-                <choose>
-                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
-                        AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
-                    </when>
-                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
-                        AND m201.tpw_svc_id = m202.tpw_svc_id
-                    </when>
-                </choose>
-            </if>
+        where 1=1
 
-            <if test="req.tpwMemrPrcgStaCd != null and req.tpwMemrPrcgStaCd != ''">
-                AND d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
-            </if>
-
-            <where>
-                <choose>
-                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsId'">
-                        AND m101.mbrs_id LIKE CONCAT('%', LOWER(#{req.mbrsId}), '%')
-                    </when>
-                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsNm'">
-                        AND m101.mbrs_nm LIKE CONCAT('%', LOWER(#{req.mbrsNm}))
-                    </when>
-                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.reqDtm">
-                        AND d216.req_dtm BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
-                    </when>
-                    <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.prcgDt">
-                        AND d216.prcg_dt BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
-                    </when>
-                </choose>
-            </where>
-
-        ) memrSt
-        ORDER BY memrSt.${req.sort} ${req.dir}
-        LIMIT #{req.size} offset #{req.page} * #{req.size}
-    </select>
-
-
-    <select id="readMemrStlmPtListCnt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO" resultType="long">
-        SELECT COUNT(1)
-        FROM tbhxzd216 d216 -- 수기정산내역 테이블
-        JOIN tbhxzm102 m102 ON m102.mbrs_id = d216.mbrs_id
-                            AND m102.tpw_svc_id = d216.tpw_svc_id
-                            AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id -- 회원 서비스 정보
-        JOIN tbhxzm008 m008 ON m008.addo_cd = m102.addo_cd -- 행정동 코드 관리
-        JOIN tbhxzm101 m101 ON m101.mbrs_id = d216.mbrs_id -- 회원정보
-        JOIN tbhxzm201 m201 ON m201.tpw_svc_id = d216.tpw_svc_id -- 서비스 관리
-        JOIN tbhxzm202 m202 ON m201.tpw_svc_id = m202.tpw_svc_id
-
-        WHERE 1=1
-
-        <if test="orgCd != '000000'">
-            AND m201.org_cd = #{orgCd}
-        </if>
-
-        <if test="orgCd != null and orgCd != '' and orgCd != '000000'">
-            AND m201.org_cd LIKE CONCAT('%', LOWER(#{orgCd}), '%')
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', lower(#{orgCd}), '%')
         </if>
 
         <if test="req.addoNm != null and req.addoNm != ''">
-            AND m008.addo_nm LIKE CONCAT('%', LOWER(#{req.addoNm}), '%')
+            and m008.addo_nm like concat('%', lower(#{req.addoNm}), '%')
         </if>
 
         <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
-            AND m201.tpw_svc_id = #{req.tpwSvcId}
+            and m201.tpw_svc_id = #{req.tpwSvcId}
             <choose>
                 <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
-                    AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
-                </when>
-                <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
-                    AND m201.tpw_svc_id = m202.tpw_svc_id
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
                 </when>
             </choose>
         </if>
 
         <if test="req.tpwMemrPrcgStaCd != null and req.tpwMemrPrcgStaCd != ''">
-            AND d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
+            and d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
         </if>
 
-        <where>
-            <choose>
-                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsId'">
-                    AND m101.mbrs_id LIKE CONCAT('%', LOWER(#{req.mbrsId}), '%')
-                </when>
-                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == 'mbrsNm'">
-                    AND m101.mbrs_nm LIKE CONCAT('%', LOWER(#{req.mbrsNm}))
-                </when>
-                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.reqDtm">
-                    AND d216.req_dtm BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
-                </when>
-                <when test="req.searchType != null and req.searchType != '' and req.keyword != null and req.keyword != '' and req.searchType == req.prcgDt">
-                    AND d216.prcg_dt BETWEEN REPLACE(#{req.sttDt}, '-', '') AND REPLACE(#{req.endDt}, '-', '')
-                </when>
-            </choose>
-        </where>
+        <choose>
+            <when test="req.searchType != null and req.searchType == 'mbrsId' and req.keyword != null and req.keyword != ''">
+                and m101.mbrs_id like concat('%', lower(#{req.mbrsId}), '%')
+            </when>
+            <when test="req.searchType != null and req.searchType == 'mbrsNm' and req.keyword != null and req.keyword != ''">
+                and m101.mbrs_nm like concat('%', lower(#{req.mbrsNm}), '%')
+            </when>
+            <when test="req.searchType != null and req.searchType == 'reqDtm'">
+                and d216.req_dtm between concat(replace(#{req.sttDt}, '-', ''), '000000')
+                and concat(replace(#{req.endDt}, '-', ''), '235959')
+            </when>
+            <when test="req.searchType != null and req.searchType == 'prcgDt'">
+                and d216.prcg_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </when>
+        </choose>
+
+        ) memrst
+        order by memrst.${req.sort} ${req.dir}
+        limit #{req.size} offset #{req.page} * #{req.size}
     </select>
 
+    <select id="readMemrStlmPtListCnt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO" resultType="long">
+        select count(1)
+        from tbhxzd216 d216
+        left join tbhxzm102 m102 on m102.mbrs_id = d216.mbrs_id and m102.tpw_svc_id = d216.tpw_svc_id and m102.tpw_svc_typ_id = d216.tpw_svc_typ_id
+        left join tbhxzm008 m008 on m008.addo_cd = m102.addo_cd
+        left join tbhxzm101 m101 on m101.mbrs_id = d216.mbrs_id
+        left join tbhxzm201 m201 on m201.tpw_svc_id = d216.tpw_svc_id
+        left join tbhxzm202 m202 on m201.tpw_svc_id = m202.tpw_svc_id
+        where 1=1
 
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', lower(#{orgCd}), '%')
+        </if>
+        <if test="req.addoNm != null and req.addoNm != ''">
+            and m008.addo_nm like concat('%', lower(#{req.addoNm}), '%')
+        </if>
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}
+            <if test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+            </if>
+        </if>
+        <if test="req.tpwMemrPrcgStaCd != null and req.tpwMemrPrcgStaCd != ''">
+            and d216.tpw_memr_prcg_sta_cd = #{req.tpwMemrPrcgStaCd}
+        </if>
+        <choose>
+            <when test="req.searchType == 'mbrsId' and req.keyword != null and req.keyword != ''">
+                and m101.mbrs_id like concat('%', lower(#{req.mbrsId}), '%')
+            </when>
+            <when test="req.searchType == 'mbrsNm' and req.keyword != null and req.keyword != ''">
+                and m101.mbrs_nm like concat('%', lower(#{req.mbrsNm}), '%')
+            </when>
+            <when test="req.searchType == 'reqDtm'">
+                and d216.req_dtm between concat(replace(#{req.sttDt}, '-', ''), '000000') and concat(replace(#{req.endDt}, '-', ''), '235959')
+            </when>
+            <when test="req.searchType == 'prcgDt'">
+                and d216.prcg_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </when>
+        </choose>
+    </select>
 
-<!--    상세보기-->
-<!--    <select id="">-->
-<!--        SELECT-->
-<!--        d216.tpw_svc_id              AS serviceId-->
-<!--        , d216.tpw_svc_typ_id          AS serviceTypeId-->
-<!--        , d216.tpw_svc_typ_sno         AS serviceTypeSerialNo-->
-<!--        , d216.mbrs_id                 AS memberId-->
-<!--        , d216.req_dtm                 AS requestDateTime-->
-<!--        , d216.prcg_dt                 AS processingDate-->
-<!--        , d216.tpw_memr_prcg_sta_cd    AS processingStatus-->
-<!--        , d216.apl_amt                 AS applicationAmount-->
-<!--        , d216.lmt_amt                 AS limitAmount-->
-<!--        , d216.req_duty_ctt            AS requestDutyContent-->
-<!--        , d216.trd_dt                  AS transactionDate-->
-<!--        , d216.pay_prcg_yn             AS paymentProcessingYn-->
-<!--        , '0'                          AS checkYn-->
-<!--        , COALESCE(d213.acnt_no, m102.acnt_no) AS transferAccount-->
-<!--        , COALESCE(m202.tpw_svc_typ_nm, '')    AS serviceTypeName-->
-<!--        , m201.tpw_svc_nm              AS serviceName-->
-<!--        , m101.mbrs_nm                 AS memberName-->
-<!--        , m101.mbrs_sta_cd             AS memberStatus-->
-<!--        , m008.addo_nm                 AS administrativeDistrictName-->
-<!--        FROM ohxzown.tbhxzd216 d216 /* 수수료정산내역 */-->
-<!--        JOIN ohxzown.tbhxzd215 d215 /* 마감확정내역 */-->
-<!--        ON d215.tpw_svc_id = d216.tpw_svc_id-->
-<!--        AND d215.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
-<!--        AND d215.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
-<!--        JOIN ohxzown.tbhxzm101 m101 /* 회원정보 */-->
-<!--        ON m101.mbrs_id = d216.mbrs_id-->
-<!--        JOIN ohxzown.tbhxzm102 m102 /* 회원계좌정보 */-->
-<!--        ON m102.mbrs_id = d216.mbrs_id-->
-<!--        AND m102.tpw_svc_id = d216.tpw_svc_id-->
-<!--        AND m102.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
-<!--        AND m102.tpw_mbrs_svc_sta_cd = '04'-->
-<!--        LEFT JOIN ohxzown.tbhxzm008 m008 /* 행정동코드관리 */-->
-<!--        ON m008.addo_cd = m102.addo_cd-->
-<!--        JOIN ohxzown.tbhxzm201 m201 /* 서비스관리 */-->
-<!--        ON m201.tpw_svc_id = d216.tpw_svc_id-->
-<!--        JOIN ohxzown.tbhxzm202 m202 /* 서비스유형 */-->
-<!--        ON m202.tpw_svc_id = d216.tpw_svc_id-->
-<!--        AND m202.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
-<!--        AND m202.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
-<!--        LEFT JOIN ohxzown.tbhxzd213 d213 /* 지급내역 */-->
-<!--        ON d213.tpw_svc_id = d216.tpw_svc_id-->
-<!--        AND d213.tpw_svc_typ_id = d216.tpw_svc_typ_id-->
-<!--        AND d213.tpw_svc_typ_sno = d216.tpw_svc_typ_sno-->
-<!--        AND d213.mbrs_id = d216.mbrs_id-->
-<!--        AND d213.stlm_dt = d215.stlm_dt /* d216과 d213을 잇는 매개체로 d215의 stlm_dt 사용 */-->
-<!--        AND d213.aprt_typ_cd = '1' /* 수수료정산 */-->
-<!--        WHERE d216.trd_dt BETWEEN d215.tpw_trd_stt_dt AND d215.tpw_trd_end_dt-->
-<!--        AND m201.tpw_svc_nm LIKE :serviceName-->
-<!--        AND m008.addo_nm LIKE :administrativeDistrictName-->
-<!--        AND d216.mbrs_id LIKE :memberId-->
-<!--        AND m101.mbrs_nm LIKE :memberName;-->
-<!--    </select>-->
-
-
-
-    <insert id="insertMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
+    <insert id="saveMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
         insert into tbhxzd216 (
-            tpw_svc_typ_id        <!-- [PK] 서비스유형ID -->
-            , tpw_svc_typ_sno       <!-- [PK] 서비스유형일련번호 -->
-            , req_dtm               <!-- [PK] 요청일시 -->
-            , tpw_svc_id            <!-- [PK] 서비스ID -->
-            , mbrs_id               <!-- [PK] 회원ID -->
-            , apl_amt
-            , lmt_amt
-            , req_duty_ctt
-            , trd_dt
-            , prcg_dt
-            , pay_amt
-            , tpw_memr_prcg_sta_cd
-            , pay_prcg_yn
-            , rgsr_id
-            , rgt_dtm
-            , updr_id
-            , upd_dtm
+        tpw_svc_typ_id
+        , tpw_svc_typ_sno
+        , req_dtm
+        , tpw_svc_id
+        , mbrs_id
+        , apl_amt
+        , lmt_amt
+        , req_duty_ctt
+        , trd_dt
+        , prcg_dt
+        , pay_amt
+        , tpw_memr_prcg_sta_cd
+        , pay_prcg_yn
+        , rgsr_id
+        , rgt_dtm
+        , updr_id
+        , upd_dtm
         ) values (
-            #{tpwSvcTypId}
-            , cast(#{tpwSvcTypSno} as numeric)
-            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS') <!-- PK 생성 (현재시간) -->
-            , #{tpwSvcId}
-            , #{mbrsId}
-            , cast(nullif(#{aplAmt}, '') as numeric)
-            , cast(nullif(#{lmtAmt}, '') as numeric)
-            , #{reqDutyCtt}
-            , #{trdDt}
-            , #{prcgDt}
-            , cast(nullif(#{payAmt}, '') as numeric)
-            , '01'                 <!-- 초기상태: 요청 -->
-            , #{payPrcgYn}
-            , 'SYSTEM'             <!-- 등록자ID (필요시 #{regUserId} 사용) -->
-            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
-            , 'SYSTEM'
-            , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+        #{tpwSvcTypId}
+        , cast(#{tpwSvcTypSno} as numeric)
+        , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+        , #{tpwSvcId}
+        , #{mbrsId}
+        , cast(nullif(#{aplAmt}, '') as numeric)
+        , cast(nullif(#{lmtAmt}, '') as numeric)
+        , #{reqDutyCtt}
+        , #{trdDt}
+        , replace(#{prcgDt}, '-', '')
+        , cast(nullif(#{payAmt}, '') as numeric)
+        , #{manualPrcgSta}
+        , #{payPrcgYn}
+        , 'SYSTEM'
+        , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+        , 'SYSTEM'
+        , to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
         )
     </insert>
 
-
     <update id="updateMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
         update tbhxzd216
-            set tpw_memr_prcg_sta_cd = #{manualPrcgSta}
-            , apl_amt              = cast(nullif(#{aplAmt}, '') as numeric)
-            , pay_amt              = cast(nullif(#{payAmt}, '') as numeric)
-            , pay_prcg_yn          = #{payPrcgYn}
-            , prcg_dt              = #{prcgDt}
-            , upd_dtm              = to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
-            , updr_id              = 'SYSTEM'
-            where tpw_svc_id       = #{tpwSvcId}
-            and tpw_svc_typ_id   = #{tpwSvcTypId}
-            and tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric)
-            and mbrs_id          = #{mbrsId}
-            and req_dtm          = #{reqDtm}
+        set tpw_memr_prcg_sta_cd = #{manualPrcgSta}
+        , apl_amt              = cast(nullif(#{aplAmt}, '') as numeric)
+        , pay_amt              = cast(nullif(#{payAmt}, '') as numeric)
+        , pay_prcg_yn          = #{payPrcgYn}
+        , prcg_dt              = #{prcgDt}
+        , upd_dtm              = to_char(statement_timestamp(), 'YYYYMMDDHH24MISS')
+        , updr_id              = 'SYSTEM'
+        where tpw_svc_id       = #{tpwSvcId}
+        and tpw_svc_typ_id   = #{tpwSvcTypId}
+        and tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric)
+        and mbrs_id          = #{mbrsId}
+        and req_dtm          = coalesce(nullif(#{reqDtmRaw}, ''), #{reqDtm})
+        and pay_prcg_yn      = 'N'
     </update>
 
     <delete id="deleteMemrStlmPt" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO">
@@ -274,6 +203,7 @@
         and tpw_svc_typ_id   = #{tpwSvcTypId}
         and tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric)
         and mbrs_id          = #{mbrsId}
-        and req_dtm          = #{reqDtm}
+        and req_dtm          = coalesce(nullif(#{reqDtmRaw}, ''), #{reqDtm})
     </delete>
+
 </mapper>

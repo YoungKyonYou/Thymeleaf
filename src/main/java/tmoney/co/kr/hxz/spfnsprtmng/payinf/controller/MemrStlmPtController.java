@@ -12,6 +12,8 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.MemrStlmPtService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtRspVO;
 
+import java.util.List;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/spfnsprtmng/payinf")
@@ -93,7 +95,7 @@ public class MemrStlmPtController {
     /** -----------------------------------------
      * 2-2. 수기정산내역 수정 API
      * ---------------------------------------- */
-    @PutMapping(path = "/memrStlmPt/update")
+    @PutMapping(path = "/memrStlmPt/edit.do")
     @ResponseBody
     public ResponseEntity<Void> updateMemrStlmPt(
             @RequestBody @Valid MemrStlmPtRspVO form // RspVO 사용
@@ -112,23 +114,75 @@ public class MemrStlmPtController {
     }
 
     /** -----------------------------------------
-     * 2-3. 수기정산내역 삭제 API
+     * 2-3. 수기정산내역 삭제 API (일괄 삭제)
+     * [수정] @RequestBody List<...> 로 변경하여 JSON 배열을 받도록 함
      * ---------------------------------------- */
-    @PostMapping(path = "/memrStlmPt/delete")
+    @PostMapping(path = "/memrStlmPt/delete.do")
     @ResponseBody
-    public ResponseEntity<Void> deleteMemrStlmPt(
-            @RequestBody @Valid MemrStlmPtRspVO form // RspVO 사용
+    public ResponseEntity<String> deleteMemrStlmPt(
+            @RequestBody List<MemrStlmPtRspVO> list
     ) {
-        if (form.getOrgCd() == null || form.getOrgCd().isEmpty()) {
-            form.setOrgCd("000000");
+        System.out.println("====== [DEBUG] deleteMemrStlmPt List ======");
+        System.out.println("Size: " + (list != null ? list.size() : 0));
+
+        if (list == null || list.isEmpty()) {
+            return ResponseEntity.badRequest().body("삭제할 데이터가 없습니다.");
         }
 
-        System.out.println("====== [DEBUG] deleteMemrStlmPt ======");
-        System.out.println("Target: " + form);
-        System.out.println("======================================");
+        try {
+            // 리스트 처리용 서비스 메서드 호출
+            memrStlmPtService.deleteMemrStlmPtList(list);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("삭제 중 오류 발생");
+        }
+    }
 
-        memrStlmPtService.deleteMemrStlmPt(form);
+    /** -----------------------------------------
+     * 2-4. 수기정산내역 선택 승인 API (일괄 지급처리)
+     * ---------------------------------------- */
+    @PostMapping(path = "/memrStlmPt/approve.do")
+    @ResponseBody
+    public ResponseEntity<String> approveMemrStlmPtList(
+            @RequestBody List<MemrStlmPtRspVO> list
+    ) {
+        if (list == null || list.isEmpty()) {
+            return ResponseEntity.badRequest().body("승인할 데이터가 없습니다.");
+        }
+
+        try {
+            memrStlmPtService.saveApproveMemrStlmPtList(list);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("승인 처리 중 오류가 발생했습니다.");
+        }
+    }
+
+
+    /** -----------------------------------------
+     * 수기정산내역 업로드
+     * ---------------------------------------- */
+    @PostMapping(path = "/memrStlmPt/import.do")
+    @ResponseBody
+    public ResponseEntity<Void> importMemrStlmPt(
+            @RequestBody @Valid List<MemrStlmPtRspVO> list // RspVO 사용
+    ) {
+
+        for (MemrStlmPtRspVO form : list) {
+            // 기관코드 없을 시 기본 처리
+            if (form.getOrgCd() == null || form.getOrgCd().isEmpty()) {
+                form.setOrgCd("000000");
+            }
+    
+            memrStlmPtService.saveMemrStlmPt(form);
+        }
 
         return ResponseEntity.ok().build();
     }
+
+
 }

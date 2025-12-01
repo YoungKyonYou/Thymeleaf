@@ -26,4 +26,10 @@ public interface MemrStlmPtService {
     
     // 삭제(승인코드 요청인 것만 삭제 가능)
     void deleteMemrStlmPt(@Valid MemrStlmPtRspVO form);
+
+    // 삭제(승인코드 요청인 것만 삭제 가능)
+    void deleteMemrStlmPtList(List<MemrStlmPtRspVO> list);
+
+    // 선택 승인 (일괄 지급처리)
+    void saveApproveMemrStlmPtList(List<MemrStlmPtRspVO> list);
 }

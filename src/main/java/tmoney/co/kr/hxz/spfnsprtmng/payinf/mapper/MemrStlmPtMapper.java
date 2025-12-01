@@ -23,7 +23,7 @@ public interface MemrStlmPtMapper {
 
     void saveMemrStlmPt(MemrStlmPtRspVO form);
 
-    void updateMemrStlmPt(MemrStlmPtRspVO form);
+    int updateMemrStlmPt(MemrStlmPtRspVO form);
 
     void deleteMemrStlmPt(MemrStlmPtRspVO form);
 }

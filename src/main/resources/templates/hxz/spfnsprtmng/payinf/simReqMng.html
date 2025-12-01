@@ -66,6 +66,7 @@
                                 id="import-file"
                                 accept=".xlsx"
                                 style="display:none;" />
+                            <button type="button" id="import-file-template" class="btn btn-dark-line">업로드 예시파일</button>
                             <button type="button" id="btn-import" class="btn btn-dark-line">업로드</button>
                             <button id="new-line" type="button" class="btn btn-blue">신규등록</button>
                         </div>
@@ -253,6 +254,7 @@
                 const loading = document.getElementById('mini-sp-loading');
                 const btnImport = document.getElementById('btn-import');
                 const fileImport = document.getElementById('import-file');
+                const btnImportTmpl = document.getElementById('import-file-template');
                 
 
                 // 하단 폼 관련 요소
@@ -543,24 +545,38 @@
                     });
                 }
 
+                if (btnImportTmpl) {
+                    btnImportTmpl.addEventListener('click', function () {
+                        // 타임리프 없을 때를 위해 fallback 도 같이 둠
+                        const url = '/import/template/xlsx?provider=시뮬레이션요청관리';
+                        window.location.href = url;
+                    });
+                }
+
 
                 document.addEventListener('DOMContentLoaded', function(){
 
                     Common.bindExcelImport(
                         fileImport,
                         '시뮬레이션요청관리',
-                        async function (rows) {
-                            const res = await Common.sendSafe('/spfnsprtmng/payinf/simReqMng/import', {
+                        function (rows) {
+                            Common.sendSafe('/spfnsprtmng/payinf/simReqMng/import', {
                                 method: 'POST',
                                 data: rows,
                                 clientErrorMsg: '요청이 올바르지 않습니다.',
                                 otherErrorMsg: '일시적인 오류가 발생했습니다.'
                             });
 
-                            console.log(res);
                         },
                         function (errors) {
+                            if (errors.length == 0)
+                                return;
                             // 에러발생
+                            Common.modalShow({
+                                title: '오류',
+                                message: '업로드중 오류가 발생했습니다.',
+                                buttons: 'close'
+                            });
                         },
                         {
                             // 필요하면 extraParams 넣기

@@ -60,7 +60,11 @@ public class MemrStlmPtRspVO {
     // 서비스유형명 = 지원유형
     private String tpwSvcTypNm;
 
+    private String payAmt;
 
+    //  DB 원본 14자리 (YYYYMMDDHHMISS)
+    // 프론트에서 이 이름("reqDtmRaw")으로 값을 보내야 함
+    private String reqDtmRaw;
 
     // 한도금액 (lmt_amt)
     @Size(max = 15, message = "한도금액은 15자리 이하입니다.")

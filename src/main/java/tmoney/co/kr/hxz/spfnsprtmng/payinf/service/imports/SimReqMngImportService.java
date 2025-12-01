@@ -4,12 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tmoney.co.kr.imports.ImportColumn;
 import tmoney.co.kr.imports.ImportProvider;
-import tmoney.co.kr.imports.ImportResult;
-import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.SimReqMngService;
-import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,8 +14,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Component
 public class SimReqMngImportService implements ImportProvider<SimReqMngRspVO> {
-
-    private final SimReqMngService simReqMngService;
 
     @Override
     public String name() {
@@ -74,28 +68,4 @@ public class SimReqMngImportService implements ImportProvider<SimReqMngRspVO> {
             }
         );
     }
-
-
-    // @Override
-    // public ImportResult<SimReqMngRspVO> apply(List<SimReqMngRspVO> list) {
-    //     List<String> errors = new ArrayList<>();
-    //     int success = 0;
-
-    //     for (SimReqMngRspVO vo : list) {
-    //         try {
-    //             simReqMngService.saveSimReqSfpn(vo);
-    //             simReqMngService.saveSimReqStlm(vo);
-    //             success++;
-    //         } catch (Exception e) {
-    //             errors.add("회원ID=" + vo.getMbrsId() + " 오류: " + e.getMessage());
-    //         }
-    //     }
-
-    //     return new ImportResult<>(
-    //         success,
-    //         list.size() - success,
-    //         list,
-    //         errors
-    //     );
-    // }
 }
