@@ -18,7 +18,7 @@ public class TpwSvcService {
 
 
     public TpwSvcDropRstVO processTpwSvcInf(List<TpwSvcInfVO> tpwSvcInfVO) {
-        Map<String, List<TpwSvcInfVO>> svcMap = new HashMap<>();
+        Map<String, List<TpwSvcInfVO>> svcMap = new LinkedHashMap<>();
         List<TpwSvcVO> tpwSvcVOList = new ArrayList<>();
         Set<String> tpwSvcIdSet = new HashSet<>();
 

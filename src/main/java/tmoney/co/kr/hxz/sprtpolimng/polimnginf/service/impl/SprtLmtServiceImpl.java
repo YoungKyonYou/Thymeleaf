@@ -519,13 +519,25 @@ public class SprtLmtServiceImpl implements SprtLmtService {
     }
 
 
+    /**
+     * N 처리 대상 판단용 겹침 여부.
+     *
+     * 스펙:
+     *   - 입력시작년월 <= 한도시작년월
+     *   - 또는 입력시작년월이 한도시작년월~한도종료년월 사이
+     *
+     * 수식 정리:
+     *   -> 기존 종료년월(oldTo) >= 입력 시작년월(newFrom) 인 경우 N 대상
+     */
     private boolean overlaps(YearMonth newFrom, YearMonth newTo,
                              YearMonth oldFrom, YearMonth oldTo) {
-        if (newFrom == null || newTo == null || oldFrom == null || oldTo == null) {
+        if (newFrom == null || oldFrom == null || oldTo == null) {
             return false;
         }
-        // newTo < oldFrom 또는 oldTo < newFrom 이 아니면 = 한 달이라도 겹침
-        return !newTo.isBefore(oldFrom) && !oldTo.isBefore(newFrom);
+
+        // 기존 종료년월이 입력 시작년월보다 이전이면(완전히 과거) N 대상 아님
+        // 그 외(= oldTo >= newFrom)는 모두 N 대상
+        return !oldTo.isBefore(newFrom);
     }
 
 
@@ -808,7 +820,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
             Map<PeriodKeyVO, String> prevSnoByPeriod = new HashMap<>();
             Set<PeriodKeyVO> newKeys = new LinkedHashSet<>();
 
-            if (editMode && hasExisting && "01".equals(curDvs)) {
+            if (editMode && hasExisting && "02".equals(curDvs)) {
                 // 수정 모드: 기존 동일 기간은 관리번호 & 이전 SNO 기억
                 for (SprtLmtRspVO row : existing) {
                     if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
@@ -898,7 +910,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                         req.getTpwSvcTypId(),
                         mngNo,
                         rowSno,
-                        "01",
+                        "02",
                         nextTyp,
                         normalizeYm(a.getLmtSttYm()),
                         normalizeYm(a.getLmtEndYm()),
@@ -927,7 +939,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         List<String> generated = Collections.emptyList();
 
-        if (editMode && hasExisting && "02".equals(curDvs)) {
+        if (editMode && hasExisting && "01".equals(curDvs)) {
             // 수정 모드: 관리번호가 없는 행(신규)에 대해서만 시퀀스 발급
             int needNew = (int) ncntSrc.stream()
                     .filter(n -> n.getSpfnLmtMngNo() == null || n.getSpfnLmtMngNo().isBlank())
@@ -990,7 +1002,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
                     req.getTpwSvcTypId(),
                     mngNo,
                     rowSno,
-                    "02",
+                    "01",
                     nextTyp,
                     sttYm,
                     endYm,
