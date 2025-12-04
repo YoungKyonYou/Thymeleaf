@@ -29,7 +29,7 @@ public class PenAplPtInfServiceImpl implements PenAplPtInfService {
     public PageDataVO<PenAplPtInfRspVO> readPenAplPtInfPaging(PenAplPtInfReqVO req, String orgCd) {
 
         // 페이지네이션 offset 계산
-        final int offset = req.getPage() * req.getSize();
+        // final int offset = req.getPage() * req.getSize();
 
         // 총 건수 조회
         long total = penAplPtInfMapper.readPenAplPtInfListCnt(req, orgCd);

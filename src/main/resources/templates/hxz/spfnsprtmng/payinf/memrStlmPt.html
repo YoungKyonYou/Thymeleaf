@@ -19,6 +19,7 @@
 
         <section class="section" id="grid">
             <form class="section-header" th:object="${req}" id="searchForm">
+                <!-- Mapper에서 사용하는 searchType은 날짜 기준(reqDtm 등)을 위해 사용 -->
                 <input type="hidden" name="searchType" id="realSearchType" th:value="*{searchType}">
                 <input type="hidden" name="page" id="page" th:value="*{page}">
                 <input type="hidden" name="size" id="size" th:value="*{size}">
@@ -48,6 +49,7 @@
                                 <li role="option" class="dropdown_option" data-value="reqDtm">요청일자</li>
                                 <li role="option" class="dropdown_option" data-value="prcgDt">처리일자</li>
                             </ul>
+                            <!-- 화면상의 날짜 타입 선택용 (실제 submit 시 realSearchType에 세팅) -->
                             <input type="hidden" name="dateType" id="dateType" value="reqDtm">
                         </div>
                     </div>
@@ -68,12 +70,14 @@
                                 <li role="option" class="dropdown_option" data-value="mbrsId">회원ID</li>
                                 <li role="option" class="dropdown_option" data-value="mbrsNm">회원명</li>
                             </ul>
+                            <!-- 검색어 필드명 결정을 위한 hidden 값 -->
                             <input type="hidden" name="textType" id="textType" value="mbrsId">
                         </div>
                     </div>
 
                     <div class="box">
                         <p class="field-title">검색어</p>
+                        <!-- 초기 name은 keyword이지만 submit 시 mbrsId/mbrsNm으로 변경됨 -->
                         <input class="text-field keyword-search" name="keyword" th:value="*{keyword}" type="search" placeholder="검색어를 입력하세요">
                     </div>
                 </div>
@@ -199,6 +203,7 @@
                                         </div>
                                     </td>
 
+                                    <!-- 0-based 페이징 순번: (page * size) + count -->
                                     <td th:text="${(pageData.page * pageData.size) + stat.count}"></td>
                                     <td th:text="*{mbrsId}"></td>
                                     <td th:text="*{mbrsNm}"></td>
@@ -363,9 +368,9 @@
                     if(hiddenInput) hiddenInput.value = value;
                 });
 
-                // 4. 페이징
+                // 4. 페이징 (0-based)
                 if (typeof bindPagination === 'function') {
-                    bindPagination(baseUrl, {
+                        bindPagination(baseUrl, {
                         page: 0,
                         size: parseInt(hiddenSize?.value || '10', 10),
                         dir: document.getElementById('dir')?.value || 'asc',
@@ -376,13 +381,22 @@
                 // 5. 검색 Submit
                 searchForm.addEventListener('submit', (e) => {
                     e.preventDefault();
+
+                    // 날짜 필드 name 보정
                     if(startDateInput && !startDateInput.name) startDateInput.name = 'sttDt';
                     if(endDateInput && !endDateInput.name) endDateInput.name = 'endDt';
 
+                    // [핵심] 검색어 입력 여부에 따라 searchType과 keyword input name 변경
                     if (keywordInput && keywordInput.value.trim() !== '') {
+                        // 텍스트 검색 시: searchType = mbrsId or mbrsNm
                         realSearchType.value = textTypeInput.value;
+                        // keyword input의 name을 mbrsId 또는 mbrsNm으로 변경하여 전송
+                        keywordInput.name = textTypeInput.value;
                     } else {
+                        // 날짜 검색 시: searchType = reqDtm or prcgDt
                         realSearchType.value = dateTypeInput.value;
+                        // keyword가 비어있으면 name을 keyword로 되돌림 (혹시 모를 오동작 방지)
+                        if(keywordInput) keywordInput.name = 'keyword';
                     }
 
                     if(rowAddForm) rowAddForm.style.display = 'none';
@@ -455,7 +469,6 @@
                     const tr = e.target.closest('tr');
                     if(!tr || tr.querySelector('td[colspan]')) return;
 
-                    // [수정] 조건: manualPrcgSta == '02' (승인) 일 때 ReadOnly
                     const manualSta = tr.querySelector('input[name="grid_manualPrcgSta"]').value;
                     const isLocked = (manualSta === '02');
 
@@ -521,7 +534,7 @@
                     });
                 }
 
-                // 10. 삭제 (선택건 일괄)
+                // 10. 삭제
                 if(btnDel) {
                     btnDel.addEventListener('click', async () => {
                         const checkboxes = document.querySelectorAll('input[name="chk"]:checked:not(:disabled)');
@@ -559,7 +572,7 @@
                     });
                 }
 
-                // 11. 승인 (일괄 지급처리)
+                // 11. 승인
                 if(btnApprove) {
                     btnApprove.addEventListener('click', async () => {
                         const checkboxes = document.querySelectorAll('input[name="chk"]:checked:not(:disabled)');
@@ -593,13 +606,11 @@
                     });
                 }
 
-                // 12. 한도 체크
+                // 12. 한도 체크 및 기타 로직
                 const parseAmt = (val) => val ? (parseInt(val.replace(/[^0-9-]/g, ''), 10) || 0) : 0;
 
-                // (1) 개별 체크
                 document.getElementById('data-table').addEventListener('change', (e) => {
                     if (e.target.name !== 'chk' || !e.target.checked) return;
-
                     const limitValStr = limitAmtInput.value;
                     const limitAmt = parseAmt(limitValStr);
                     if(limitAmt <= 0) return;
@@ -607,8 +618,7 @@
                     let currentSum = 0;
                     document.querySelectorAll('input[name="chk"]:checked').forEach(chk => {
                         const tr = chk.closest('tr');
-                        const payAmtVal = tr.querySelector('input[name="grid_payAmt"]').value;
-                        currentSum += parseAmt(payAmtVal);
+                        currentSum += parseAmt(tr.querySelector('input[name="grid_payAmt"]').value);
                     });
 
                     if (currentSum > limitAmt) {
@@ -619,7 +629,6 @@
                     }
                 });
 
-                // (2) 버튼 확인
                 if (btnApplyLimit) {
                     btnApplyLimit.addEventListener('click', () => {
                         const limitAmt = parseAmt(limitAmtInput.value);
@@ -637,7 +646,6 @@
                     });
                 }
 
-                // (3) 전체 선택 (스마트 선택)
                 const chkAll = document.getElementById('chkAll');
                 if (chkAll) {
                     chkAll.addEventListener('click', function(e) {
@@ -676,13 +684,9 @@
                                 stopSelection = true;
                             }
                         });
-
-                        if (stopSelection) {
-                            alert(`설정된 한도(${limitAmt.toLocaleString()}원) 내에서 가능한 항목까지만 선택되었습니다.`);
-                        }
+                        if (stopSelection) alert(`설정된 한도(${limitAmt.toLocaleString()}원) 내에서 가능한 항목까지만 선택되었습니다.`);
                     });
                 }
-
 
                 if (btnImport && fileImport) {
                     btnImport.addEventListener('click', function () {
@@ -692,7 +696,6 @@
 
                 if (btnImportTmpl) {
                     btnImportTmpl.addEventListener('click', function () {
-                        // 타임리프 없을 때를 위해 fallback 도 같이 둠
                         const url = '/import/template/xlsx?provider=수기정산내역조회';
                         window.location.href = url;
                     });
@@ -708,22 +711,16 @@
                             clientErrorMsg: '요청이 올바르지 않습니다.',
                             otherErrorMsg: '일시적인 오류가 발생했습니다.'
                         });
-
                     },
                     function (errors) {
-                        if (errors.length == 0)
-                            return;
-                        // 에러발생
+                        if (errors.length == 0) return;
                         Common.modalShow({
                             title: '오류',
                             message: '업로드중 오류가 발생했습니다.',
                             buttons: 'close'
                         });
                     },
-                    {
-                        // 필요하면 extraParams 넣기
-                        // orgCd: /*[[${orgCd}]]*/ '0001'
-                    }
+                    {}
                 );
 
                 btnExport.addEventListener('click', (e) => {
@@ -732,8 +729,6 @@
                     Common.bindExcelExport(searchForm, btnExport, inputSort.value, inputDir.value, 'mbrs_id', {});
                     setTimeout(() => { loading.style.display = 'none'; }, 1000);
                 });
-
-
 
             }); // End DOMContentLoaded
         </script>

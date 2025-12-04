@@ -37,6 +37,14 @@ public class MemrStlmPtReqVO {
     @Size(max = 100, message = "행정동명은 100 이하의 길이여야 합니다.")
     private String addoNm;
 
+    // TODO: 행정동코드
+    private String addoCd;
+
+    // TODO: 가입유형
+    private String tpwJoinTypCd;
+    // TODO: 카드번호
+    private String cardNo;
+
     // 처리상태 코드
     @Size(max = 2, message = "처리상태코드는 2 이하의 길이여야 합니다.")
     private String tpwMemrPrcgStaCd;
@@ -44,6 +52,11 @@ public class MemrStlmPtReqVO {
     // 회원id
     @Size(max = 20, message = "회원id는 20 이하의 길이여야 합니다.")
     private String mbrsId;
+
+
+    // TODO: 회원상태
+    @Size(max = 2, message = "회원상태 코드는 2 이하의 길이여야 합니다.")
+    private String mbrsStaCd;
 
     // 기관코드
     @Size(max = 7, message = "기관코드는 7 이하의 길이여야 합니다.")

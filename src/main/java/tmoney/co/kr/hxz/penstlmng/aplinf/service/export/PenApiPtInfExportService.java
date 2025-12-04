@@ -61,7 +61,8 @@ public class PenApiPtInfExportService implements ExportProvider<PenAplPtInfRspVO
     public Stream<PenAplPtInfRspVO> stream(Map<String, String> params) {
         final String sort = params.getOrDefault("sort", "mbrs_id");
         final String dir = params.getOrDefault("dir", "asc");
-        final int pageSize = parseIntOrDefault(params.get("size"), QUERY_LIMIT);
+        // final int pageSize = parseIntOrDefault(params.get("size"), QUERY_LIMIT);
+        final int pageSize = QUERY_LIMIT;
 
         final String orgCd    = params.get("orgCd");
         final String sttDt    = params.get("sttDt");

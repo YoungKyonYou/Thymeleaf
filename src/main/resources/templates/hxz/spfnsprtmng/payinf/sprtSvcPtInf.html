@@ -3,57 +3,62 @@
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
 
-        <section class="section">
+        <script type="text/javascript">
+            function goPage(page) {
+                console.log("목록 페이지 이동: " + page);
+                const form = document.getElementById('searchForm');
 
+                // page hidden input 처리
+                let pageInput = form.querySelector('input[name="page"]');
+                if (!pageInput) {
+                    pageInput = document.createElement('input');
+                    pageInput.type = 'hidden';
+                    pageInput.name = 'page';
+                    form.appendChild(pageInput);
+                }
+                pageInput.value = page;
+
+                form.submit();
+            }
+        </script>
+
+        <section class="section">
             <div class="section-header">
-                <form id="searchForm" action="/spfnsprtmng/payinf/sprtSvcPtInf.do" method="get"  th:object="${req}">
+                <form id="searchForm" action="/spfnsprtmng/payinf/sprtSvcPtInf.do" method="get" th:object="${req}">
                     <input type="hidden" th:field="*{sort}">
                     <input type="hidden" th:field="*{dir}">
+
                     <div class="title-wrap">
                         <h3 class="section-title">지원서비스내역조회</h3>
                     </div>
 
                     <div class="box-wrap">
-<!--                        <div class="box">-->
-<!--                            <p class="field-title">기관코드</p>-->
-<!--                            <input type="text" class="dp-input text-field" name="orgCd" th:value="*{orgCd}">-->
-<!--                        </div>-->
                         <div class="box">
                             <th:block th:replace="~{common/fragment/cmncd-dropdown :: cmncd('지원대상', '0024','cmnCd','선택하세요')}"></th:block>
-
                             <input type="hidden" th:field="*{tpwMbrsTypCdNm}" id="tpwMbrsTypCdNmInput" />
                         </div>
                     </div>
-                    <div class="box-wrap">
-                        <div class="box">
-                            <p class="field-title">서비스 선택</p>
-<!--                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown('svcOnlyRoot', 'tpwSvcId', 'tpwSvcTypId', true)}"></th:block>-->
-                        </div>
-                    </div>
+
                     <div class="box-wrap">
                         <div class="box">
                             <p class="field-title">서비스기간</p>
                             <div class="text-field datepicker">
-                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                       id="sttDt" th:value="${req.sttDt}">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="sttDt" name="sttDt" th:value="${req.sttDt}">
                                 <button type="button" class="dp-btn" data-dp-toggle></button>
-
                             </div>
                         </div>
                         <div class="box">
                             <p class="field-title">&nbsp;</p>
                             <div class="text-field datepicker">
-                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                       id="endDt"  th:value="${req.endDt}">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="endDt" name="endDt" th:value="${req.endDt}">
                                 <button type="button" class="dp-btn" data-dp-toggle></button>
-
                             </div>
                         </div>
                     </div>
 
                     <div class="btn-wrap">
-                        <button type="submit" class="btn btn-primary btn-icon-left"
-                                sec:authorize="hasPermission('지원서비스내역조회', 'READ')">검색 <i class="icon icon-search"></i>
+                        <button type="button" class="btn btn-primary btn-icon-left" onclick="goPage(0)">
+                            검색 <i class="icon icon-search"></i>
                         </button>
                     </div>
                 </form>
@@ -66,12 +71,8 @@
                         <a class="btn btn-primary btn-icon-left" href="/spfnsprtmng/payinf/newSprtSvcPtInfForm.do">
                             신규등록
                         </a>
-                        <button type="button" class="btn btn-secondary btn-icon-left"
-                            data-export="xlsx"
-                            data-provider="지원서비스내역조회"
-                        >
-                            다운로드
-                            <i class="icon icon-save"></i>
+                        <button type="button" class="btn btn-secondary btn-icon-left" data-export="xlsx" data-provider="지원서비스내역조회">
+                            다운로드 <i class="icon icon-save"></i>
                         </button>
                         <button type="button" class="btn btn-dark-line">목록</button>
                     </div>
@@ -80,197 +81,144 @@
                 <div class="table-wrap mt20">
                     <table class="table" id="grid">
                         <caption class="blind">지원서비스내역조회 테이블</caption>
-                            <colgroup>
-                                <col width="80px">
-                                <col width="150px">
-                                <col width="200px">
-                                <col width="150px">
-                                <col width="150px">
-                                <col width="150px">
-                            </colgroup>
+                        <colgroup>
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="150px">
+                        </colgroup>
                         <thead id="grid-header">
-                            <tr>
-                                <th scope="col">순번</th>
-                                <th scope="col" data-sort="tpw_org_nm">기관</th>
-                                <th scope="col" data-sort="tpw_svc_ctt">지원서비스내용</th>
-                                <th scope="col" data-sort="tpw_svc_stt_dt">서비스시작일자</th>
-                                <th scope="col" data-sort="tpw_svc_end_dt">서비스종료일자</th>
-                                <th scope="col" data-sort="tpw_svc_nm">서비스유형</th>
-                            </tr>
+                        <tr>
+                            <th scope="col">순번</th>
+                            <th scope="col" data-sort="tpw_org_nm">기관</th>
+                            <th scope="col" data-sort="tpw_svc_ctt">지원서비스내용</th>
+                            <th scope="col" data-sort="tpw_svc_stt_dt">서비스시작일자</th>
+                            <th scope="col" data-sort="tpw_svc_end_dt">서비스종료일자</th>
+                            <th scope="col" data-sort="tpw_svc_nm">서비스유형</th>
+                        </tr>
                         </thead>
                         <tbody id="grid-tbody">
-                            <tr th:if="${pageData == null or #lists.isEmpty(pageData.content)}">
-                                <td class="text-center" th:colspan="6">조회된 데이터가 없습니다.</td>
-                            </tr>
-                            <th:block th:if="${pageData != null and !#lists.isEmpty(pageData.content)}">
-                                <th:block th:each="u, stat : ${pageData.content}"
-                                        th:object="${u}"
-                                        th:with="base=${(pageData.page)} * ${pageData.size}">
+                        <tr th:if="${pageData == null or #lists.isEmpty(pageData.content)}">
+                            <td class="text-center" th:colspan="6">조회된 데이터가 없습니다.</td>
+                        </tr>
 
-                                    <tr class="data-row"
-                                        th:data-orgcd="*{orgCd}"
-                                        th:data-svcid="*{tpwSvcId}">
-                                        <td th:text="${base + stat.index + 1}">1</td>
-                                        <td th:text="*{tpwOrgNm}">기관명</td>
-                                        <td th:text="*{tpwSvcCtt}">지원서비스내용</td>
-                                        <td th:text="*{ tpwSvcSttDt != null and #strings.length(tpwSvcSttDt) == 8 ? T(java.lang.String).format('%s-%s-%s', #strings.substring(tpwSvcSttDt, 0, 4), #strings.substring(tpwSvcSttDt, 4, 6), #strings.substring(tpwSvcSttDt, 6, 8) ) : '' }">서비스시작일자</td>
-                                        <td th:text="*{ tpwSvcEndDt != null and #strings.length(tpwSvcEndDt) == 8 ? T(java.lang.String).format('%s-%s-%s', #strings.substring(tpwSvcEndDt, 0, 4), #strings.substring(tpwSvcEndDt, 4, 6), #strings.substring(tpwSvcEndDt, 6, 8) ) : '' }">서비스종료일자</td>
-                                        <td th:text="*{tpwSvcNm}">서비스유형</td>
-                                    </tr>
-                                </th:block>
-                            </th:block>
+                        <th:block th:if="${pageData != null and !#lists.isEmpty(pageData.content)}">
+                            <tr th:each="u, stat : ${pageData.content}"
+                                th:object="${u}"
+                                class="data-row"
+                                style="cursor: pointer;"
+                                th:attr="data-orgcd=*{orgCd}, data-svcid=*{tpwSvcId}">
+
+                                <td th:text="${(pageData.page * pageData.size) + stat.count}">1</td>
+                                <td th:text="*{tpwOrgNm}">기관명</td>
+                                <td th:text="*{tpwSvcCtt}">내용</td>
+                                <td th:text="*{ tpwSvcSttDt != null and #strings.length(tpwSvcSttDt) == 8 ? #strings.substring(tpwSvcSttDt,0,4) + '-' + #strings.substring(tpwSvcSttDt,4,6) + '-' + #strings.substring(tpwSvcSttDt,6,8) : tpwSvcSttDt }">시작</td>
+                                <td th:text="*{ tpwSvcEndDt != null and #strings.length(tpwSvcEndDt) == 8 ? #strings.substring(tpwSvcEndDt,0,4) + '-' + #strings.substring(tpwSvcEndDt,4,6) + '-' + #strings.substring(tpwSvcEndDt,6,8) : tpwSvcEndDt }">종료</td>
+                                <td th:text="*{tpwSvcNm}">유형</td>
+                            </tr>
+                        </th:block>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- 페이징 -->
                 <div class="mt20" id="grid-pager">
-                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData}, linkFunc='goPage')}"></th:block>
                 </div>
             </div>
         </section>
 
-        <!-- JS -->
         <script th:inline="javascript">
-
             document.addEventListener('DOMContentLoaded', () => {
-                const req = /*[[${req}]]*/ {} || {};
 
-                // -----------------------------
-                // 1. cmncd-dropdown (지원대상)
-                // -----------------------------
-                    var ddCmn = document.querySelector('.dropdown[data-cmn-grp-id="0024"]');
-                    if(ddCmn) {
-                        function updateCmnCd() {
-                            if(typeof ddCmn.getSelected !== 'function') return;
-                            var sel = ddCmn.getSelected();
-                            if(!sel || !sel.ready) return;
-                            var hidden = document.querySelector('#tpwMbrsTypCdNmInput');
-                            if(hidden) hidden.value = sel.value;  // VO 필드 tpwMbrsTypCdNm로 전달됨
-                        }
-                        ddCmn.addEventListener('cmncd:ready', updateCmnCd);
-                        ddCmn.addEventListener('cmncd:change', updateCmnCd);
-                        setTimeout(updateCmnCd, 0);
+                // 1. 서버에서 받은 검색 조건 객체
+                const req = /*[[${req}]]*/ {};
+                console.log("검색조건:", req);
+
+                // 2. 드롭다운(공통코드) 값 유지 로직 [핵심 수정]
+                const ddCmn = document.querySelector('.dropdown[data-cmn-grp-id="0024"]');
+                if(ddCmn) {
+                    // 드롭다운 변경 시 Hidden Input에 값 넣기
+                    function updateCmnCd() {
+                        if(typeof ddCmn.getSelected !== 'function') return;
+                        const sel = ddCmn.getSelected();
+                        if(!sel || !sel.ready) return;
+                        const hidden = document.querySelector('#tpwMbrsTypCdNmInput');
+                        if(hidden) hidden.value = sel.value;
                     }
+                    ddCmn.addEventListener('cmncd:ready', updateCmnCd);
+                    ddCmn.addEventListener('cmncd:change', updateCmnCd);
 
-                // -----------------------------
-                // 2. 서비스 선택 dropdown
-                // -----------------------------
-                var svcDd = document.getElementById('svcPair1');
-                if(svcDd && typeof svcDd.selectByValues === 'function'){
-                    setTimeout(() => {
-                        svcDd.selectByValues(req.tpwSvcId, req.tpwSvcTypId);
-                    }, 100);
-                }
-
-                // -----------------------------
-                // 3. 서비스기간 (날짜)
-                // -----------------------------
-                   const stt = document.getElementById('sttDt');
-                    const end = document.getElementById('endDt');
-                    if(stt && req.sttDt) stt.value = req.sttDt;
-                    if(end && req.endDt) end.value = req.endDt;
-            });
-
-            // -----------------------------
-            // 테이블 row 클릭
-            // -----------------------------
-            document.addEventListener('DOMContentLoaded', function() {
-                var tableBody = document.querySelector('.table tbody');
-                if (tableBody) {
-                    tableBody.addEventListener('click', function(event) {
-                        var row = event.target.closest('tr.data-row');
-                        if (row) {
-                            var orgCd = row.getAttribute('data-orgcd');
-                            var tpwSvcId = row.getAttribute('data-svcid');
-                            if (orgCd && tpwSvcId) {
-                                window.location.href = '/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd='
-                                    + encodeURIComponent(orgCd)
-                                    + '&tpwSvcId='
-                                    + encodeURIComponent(tpwSvcId);
+                    // [중요] 초기값 세팅: req에 값이 있다면 해당 옵션을 강제로 클릭(선택)함
+                    if (req.tpwMbrsTypCdNm) {
+                        // 약간의 딜레이를 주어 드롭다운 리스트가 렌더링 된 후 실행
+                        setTimeout(() => {
+                            // data-value가 검색값과 일치하는 li 요소를 찾음
+                            const targetOption = ddCmn.querySelector(`.dropdown_option[data-value="${req.tpwMbrsTypCdNm}"]`);
+                            if (targetOption) {
+                                targetOption.click(); // 강제 클릭하여 선택 상태로 만듦
                             }
-                        }
-                    });
+                        }, 100);
+                    }
+                }
+
+                // 3. 날짜 필드 값 유지 (HTML의 th:value로 처리되지만 안전장치로 추가)
+                const stt = document.getElementById('sttDt');
+                const end = document.getElementById('endDt');
+                if(stt && req.sttDt) stt.value = req.sttDt;
+                if(end && req.endDt) end.value = req.endDt;
+            });
+
+            /* 테이블 Row 클릭 (상세 이동) */
+            document.addEventListener('click', function(event) {
+                const row = event.target.closest('tr.data-row');
+                if (row) {
+                    const orgCd = row.dataset.orgcd;
+                    const tpwSvcId = row.dataset.svcid;
+                    if (orgCd && tpwSvcId) {
+                        window.location.href = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${orgCd}&tpwSvcId=${tpwSvcId}`;
+                    }
                 }
             });
 
+            /* 엑셀 다운로드 및 기타 */
             (function () {
-                const baseUrl = '/spfnsprtmng/payinf/sprtSvcPtInf.do';
-                const grid = document.getElementById('grid');
-                const head = document.getElementById('grid-header');
                 const searchForm = document.getElementById('searchForm');
-                const selectSize = searchForm.querySelector('select[name="size"]');
                 const inputSort = document.getElementById('sort');
                 const inputDir = document.getElementById('dir');
                 const loading = document.getElementById('mini-sp-loading');
 
-                // 페이로드 (엑셀 다운로드 등)
-                const payload = { dnRsn: '' };
-
-
                 const exportHandler = (e) => {
                     const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
-                    setTimeout(() => {
-                        loading.style.display = 'none';
-                    }, 1000);
+                    if (!exportBtn) return;
+                    const payload = { dnRsn: '' };
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'tpw_svc_id', payload);
+                    if(loading) setTimeout(() => { loading.style.display = 'none'; }, 1000);
                 };
                 document.body.addEventListener('click', exportHandler);
 
-                // bindPagination event 등록
-                bindPagination(baseUrl, {
-                    page: 0,
-                    size: parseInt(selectSize?.value || '10', 10),
-                    dir: inputDir?.value || 'asc',
-                    sort: inputSort?.value || 'batTakDt'
-                });
+                const head = document.getElementById('grid-header');
+                if(head) {
+                    head.addEventListener('click', (e) => {
+                        const a = e.target.closest('[data-sort]');
+                        if (!a) return;
+                        e.preventDefault();
 
-                // 테이블 헤더 클릭 정렬
-                head.addEventListener('click', (e) => {
-                    const a = e.target.closest('[data-sort]');
-                    if (!a) return;
+                        const next = a.dataset.sort;
+                        const curr = inputSort?.value;
+                        const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
 
-                    e.preventDefault();
-                    const next = a.dataset.sort;
-                    const curr = inputSort?.value || 'batTakDt';
-                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+                        if (inputSort) inputSort.value = next;
+                        if (inputDir) inputDir.value = dir;
 
-                    if (inputSort) inputSort.value = next;
-                    if (inputDir) inputDir.value = dir;
-
-                    const applied = Common.collectFromForm(searchForm);
-                    Common.reloadList({
-                        page: 0,
-                        defaultSortColumn: 'batTakDt',
-                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
-                        selectSize,
-                        baseUrl,
-                        inputSort,
-                        inputDir,
-                        applied
+                        goPage(0); // 정렬 시 1페이지로
                     });
-                });
-
-                // 검색폼 submit 이벤트
-                searchForm?.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const applied = Common.collectFromForm(searchForm);
-                    Common.reloadList({
-                        page: 0,
-                        defaultSortColumn: 'batTakDt',
-                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
-                        selectSize,
-                        baseUrl,
-                        inputSort,
-                        inputDir,
-                        applied
-                    });
-                });
+                }
             })();
         </script>
 
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
-
     </th:block>
 </th:block>
 </html>

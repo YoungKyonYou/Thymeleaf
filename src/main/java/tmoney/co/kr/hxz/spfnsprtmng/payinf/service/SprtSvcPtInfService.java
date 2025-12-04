@@ -22,7 +22,7 @@ public interface SprtSvcPtInfService { // 인
     // =====================
     PageDataVO<SprtSvcDtlRspVO> readSprtSvcPtInfList(SprtSvcPtInfReqVO reqVO, String orgCd);
 
-    SprtSvcDtlRspVO readSprtSvcPtInf(String tpwSvcId, String orgCd);
+    SprtSvcDtlRspVO readSprtSvcPtInf(String tpwSvcId, String orgCd, int page, int size);
     void saveSprtSvcPtInf(SprtSvcPtInfRspVO form);
     void updateSprtSvcPtInfByService(SprtSvcPtInfRspVO form);
 
@@ -46,4 +46,6 @@ public interface SprtSvcPtInfService { // 인
     void updateSprtSvcTyp(SprtSvcTypRspVO form);
     //수정할때 기록 조회용
     void updateUseYnN(SprtSvcTypRspVO form);
+
+    long readSprtSvcTypListCnt(String tpwSvcId);
 }

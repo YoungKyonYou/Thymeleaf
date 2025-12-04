@@ -13,18 +13,19 @@
                     <input type="hidden" name="tpwSvcId" th:value="*{tpwSvcId}">
                     <input type="hidden" name="tpwSvcTypId" th:value="*{tpwSvcTypId}">
                     <input type="hidden" name="tpwSvcTypSno" th:value="*{tpwSvcTypSno}">
+                    <input type="hidden" name="orgCd" th:value="*{orgCd}">
 
                     <div class="box-wrap">
                         <div class="box">
-                            <p class="field-title">서비스 ID (상위)</p>
+                            <p class="field-title">서비스 ID (상위) <span class="required">*</span></p>
                             <input class="dp-input text-field" type="text" th:value="*{tpwSvcId}" readonly>
                         </div>
                         <div class="box">
-                            <p class="field-title">유형명</p>
-                            <input class="dp-input text-field" type="text" name="tpwSvcTypNm" th:value="*{tpwSvcTypNm}">
+                            <p class="field-title">유형명 <span class="required">*</span></p>
+                            <input class="dp-input text-field" type="text" name="tpwSvcTypNm" th:value="*{tpwSvcTypNm}" placeholder="유형명을 입력하세요">
                         </div>
                         <div class="box">
-                            <p class="field-title">정산주기</p>
+                            <p class="field-title">정산주기 <span class="required">*</span></p>
                             <div th:class="*{tpwStlmCycDvsCd != null and tpwStlmCycDvsCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmCycDvsCd">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 주기 구분 코드 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmCycDvsCd != null ? tpwStlmCycDvsCd : '선택하세요'}">선택하세요</span>
@@ -40,7 +41,7 @@
 
                     <div class="box-wrap">
                         <div class="box">
-                            <p class="field-title">서비스기간</p>
+                            <p class="field-title">서비스기간 <span class="required">*</span></p>
                             <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed}"></th:block>
                         </div>
 
@@ -62,10 +63,11 @@
 
                     <div class="box-wrap">
                         <div id="cmn-box" class="box">
-                            <th:block th:replace="~{common/fragment/cmncd-dropdown :: cmncd('지원대상', '0024','tpwMbrsTypCd','선택하세요')}"></th:block>
+                            <p class="field-title" style="margin-bottom: 8px;">지원대상 <span class="required">*</span></p>
+                            <th:block th:replace="~{common/fragment/cmncd-dropdown :: cmncd('', '0024','tpwMbrsTypCd','선택하세요')}"></th:block>
                         </div>
                         <div class="box">
-                            <p class="field-title">지원중복여부</p>
+                            <p class="field-title">지원중복여부 <span class="required">*</span></p>
                             <div th:class="*{sprtDplcYn != null and sprtDplcYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="sprtDplcYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="지원중복여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{sprtDplcYn != null ? sprtDplcYn : '선택하세요'}">선택하세요</span>
@@ -78,7 +80,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">외국인지원여부</p>
+                            <p class="field-title">외국인지원여부 <span class="required">*</span></p>
                             <div th:class="*{frgnSprtYn != null and frgnSprtYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="frgnSprtYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="외국인지원여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{frgnSprtYn != null ? frgnSprtYn : '선택하세요'}">선택하세요</span>
@@ -108,7 +110,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">다인승제외여부</p>
+                            <p class="field-title">다인승제외여부 <span class="required">*</span></p>
                             <div th:class="*{trnsTrdMlprExYn != null and trnsTrdMlprExYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="trnsTrdMlprExYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="다인승제외여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{trnsTrdMlprExYn != null ? trnsTrdMlprExYn : '선택하세요'}">선택하세요</span>
@@ -121,7 +123,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">정산 분류 코드</p>
+                            <p class="field-title">정산 분류 코드 <span class="required">*</span></p>
                             <div th:class="*{tpwStlmCtgCd != null and tpwStlmCtgCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmCtgCd">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 분류 코드 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmCtgCd != null ? tpwStlmCtgCd : '선택하세요'}">선택하세요</span>
@@ -137,7 +139,7 @@
 
                     <div class="box-wrap">
                         <div class="box">
-                            <p class="field-title">지원교통수단</p>
+                            <p class="field-title">지원교통수단 <span class="required">*</span></p>
                             <div th:class="*{tpwMntnCd != null and tpwMntnCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwMntnCd">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="지원교통수단 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwMntnCd != null ? tpwMntnCd : '선택하세요'}">선택하세요</span>
@@ -154,7 +156,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">정산실행단계</p>
+                            <p class="field-title">정산실행단계 <span class="required">*</span></p>
                             <div th:class="*{tpwStlmActDvsCd != null and tpwStlmActDvsCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmActDvsCd">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 실행 단계 구분 코드 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmActDvsCd != null ? tpwStlmActDvsCd : '선택하세요'}">선택하세요</span>
@@ -174,10 +176,9 @@
                         </div>
                     </div>
 
-
                     <div class="box-wrap">
                         <div class="box">
-                            <p class="field-title">자동신청여부</p>
+                            <p class="field-title">자동신청여부 <span class="required">*</span></p>
                             <div th:class="*{autAplYn != null and autAplYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="autAplYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="자동신청여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{autAplYn != null ? autAplYn : '선택하세요'}">선택하세요</span>
@@ -190,7 +191,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">증빙서류여부</p>
+                            <p class="field-title">증빙서류여부 <span class="required">*</span></p>
                             <div th:class="*{evdnYn != null and evdnYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="evdnYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="증빙서류여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{evdnYn != null ? evdnYn : '선택하세요'}">선택하세요</span>
@@ -203,7 +204,7 @@
                             </div>
                         </div>
                         <div class="box">
-                            <p class="field-title">사용여부</p>
+                            <p class="field-title">사용여부 <span class="required">*</span></p>
                             <div th:class="*{useYn != null and useYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="useYn">
                                 <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="사용여부 드롭다운">
                                     <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{useYn != null ? useYn : '선택하세요'}">선택하세요</span>
@@ -216,6 +217,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 유형 내용 <span class="required">*</span></p>
+                            <div class="textarea-box">
+                                <textarea class="dp-input" name="tpwSvcTypCtt"
+                                          placeholder="서비스 유형 내용을 입력하세요"
+                                          th:text="*{tpwSvcTypCtt}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                 </form>
 
                 <div class="btn-wrap">
@@ -230,142 +243,115 @@
 
         <script th:inline="javascript">
 
-            /**
-             * 날짜 필드 초기화 함수 (ID 기반으로 찾도록 수정)
-             * @param {string} id - 날짜 필드의 ID (sttDt, endDt)
-             * @param {string} value - 설정할 날짜 값 (YYYY-MM-DD 또는 YYYYMMDD)
-             */
+            /* 1. 날짜 포맷팅 및 초기화 */
             const initDatepicker = (id, value) => {
                 const input = document.getElementById(id);
                 if (input && value) {
                     let formattedValue = value.trim();
-
-                    // YYYYMMDD (8자리) 형식으로 넘어왔다면 YYYY-MM-DD (10자리)로 변환
                     if (formattedValue.length === 8 && /^\d{8}$/.test(formattedValue)) {
                         formattedValue = formattedValue.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
                     }
-                    // 입력 필드에 설정
                     input.value = formattedValue;
                 }
             };
 
-            /* 폼 초기화 */
+            /* 2. 폼 초기화 (데이터 바인딩) */
             document.addEventListener('DOMContentLoaded', function () {
                 const detail = /*[[${typDetail}]]*/ {};
 
-                console.log(detail)
-
-                setTimeout(()=>{
+                setTimeout(() => {
                     const arr = [
                         'sprtDplcYn','frgnSprtYn','trnsTrdMlprExYn','autAplYn','evdnYn','useYn',
                         'trnsTrdReqYn','ldgrTrdReqYn','taxiTrdReqYn','areaTrdReqYn','trdNcntLtnAdptYn',
-
                         'tpwRsdcAuthCycCd','tpwStlmCtgCd','tpwMntnCd','tpwStlmActDvsCd','tpwTrdOrgCd',
                         'tpwCrovDvsCd',
                         'tpwStlmCycDvsCd',
                     ];
                     for (const k of arr) {
                         const target = document.querySelector(`[data-name="${k}"] [data-value="${detail[k]}"]`);
-                        if ( target == null )
-                        {
-                            console.log('없는키',k)
-                            continue;
+                        if (target) {
+                            const ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                            target.dispatchEvent(ev);
                         }
-                        const ev = new MouseEvent('click', {
-                            bubbles: true,
-                            cancelable: true,
-                            view: window
-                        });
-                        target.dispatchEvent(ev);
                     }
-                    cmdBox.querySelector(`.dropdown_option[data-value="${detail.tpwMbrsTypCd}"]`).click();
-                    cmdBox.querySelector('input').value = detail.tpwMbrsTypCd;
+
+                    // 지원대상 공통코드
+                    const cmdBox = document.querySelector('#cmn-box');
+                    if(cmdBox && detail.tpwMbrsTypCd) {
+                        const option = cmdBox.querySelector(`.dropdown_option[data-value="${detail.tpwMbrsTypCd}"]`);
+                        if(option) option.click();
+                        const input = cmdBox.querySelector('input');
+                        if(input) input.value = detail.tpwMbrsTypCd;
+                    }
+
                     initDatepicker('sttDt', detail.tpwSvcTypSttDt);
                     initDatepicker('endDt', detail.tpwSvcTypEndDt);
                 }, 200);
-
-
-                // --- 달력 초기화 (기존 주석 처리된 부분) ---
-                // if (typeof initializeCalendar === 'function') {
-                //     initializeCalendar('.calendar-field');
-                // } else {
-                //     console.warn("Calendar initialization function not found.");
-                // }
             });
-        </script>
 
-        <script th:inline="javascript">
-
-            // 등록/수정 구분을 위해 SNO 값 가져오기
+            /* 3. 저장 및 닫기 버튼 이벤트 */
             const tpwSvcTypSno = /*[[${typDetail.tpwSvcTypSno}]]*/ 0;
             const isUpdate = tpwSvcTypSno != null && tpwSvcTypSno != 0;
             const cmdBox = document.querySelector('#cmn-box');
-
-            const orgCd = /*[[${typDetail.orgCd}]]*/ 0;
-            const tpwSvcId = /*[[${typDetail.tpwSvcId}]]*/ 0;
-            const detailLink = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${orgCd}&tpwSvcId=${tpwSvcId}`;
 
             document.querySelector('.btn-save').addEventListener('click', async function (e) {
                 e.preventDefault();
                 const form = document.querySelector('form');
 
-                // Common.collectFromForm 함수를 사용하여 폼 데이터 수집
+                // 폼 데이터 수집
                 const data = Common.collectFromForm(form);
 
+                // 날짜 하이픈 제거
                 const sttDtInput = document.getElementById('sttDt');
                 const endDtInput = document.getElementById('endDt');
+                const cleanDate = (el) => el && el.value ? el.value.replace(/-/g, '').trim() : null;
 
-                const cleanDate = (inputElement) => {
-                    if (inputElement && inputElement.value) {
-                        // 하이픈 제거: '2025-11-14' -> '20251114'
-                        const cleaned = inputElement.value.replace(/-/g, '').trim();
-                        return cleaned || null;
-                    }
-                    return null;
-                };
-
-                // data 객체에 최종 전송될 값을 덮어씀
                 data.tpwSvcTypSttDt = cleanDate(sttDtInput);
                 data.tpwSvcTypEndDt = cleanDate(endDtInput);
-                data.tpwMbrsTypCd = cmdBox.querySelector('input').value;
+                if(cmdBox) data.tpwMbrsTypCd = cmdBox.querySelector('input').value;
 
-                let url;
-                let method;
-                let message;
+                // URL 결정
+                const url = isUpdate ? '/spfnsprtmng/payinf/updateSvcTyp' : '/spfnsprtmng/payinf/SprtsvcTypadd';
+                const method = isUpdate ? 'PUT' : 'POST';
+                const message = isUpdate ? '유형 수정이 완료되었습니다.' : '유형 등록이 완료되었습니다.';
 
-                if (isUpdate) {
-                    // 수정 로직 (SNO가 존재할 때)
-                    url = '/spfnsprtmng/payinf/updateSvcTyp';
-                    method = 'PUT';
-                    message = '유형 수정이 완료되었습니다.';
-                } else {
-                    // 신규 등록 로직 (SNO가 null/0일 때)
-                    url = '/spfnsprtmng/payinf/SprtsvcTypadd';
-                    method = 'POST';
-                    message = '유형 등록이 완료되었습니다.';
-                }
-
+                // 서버 전송
                 const res = await Common.sendSafe(url, { method, data });
 
                 if (res.ok) {
                     alert(message);
-                    // 팝업/모달을 닫고 부모 페이지 새로고침
+
+                    // 팝업 부모창 새로고침
                     if (window.opener && !window.opener.closed) {
                          window.opener.location.reload();
                     }
-                    // window.close();
-                    // history.back();
-                    location.href = detailLink;
+
+                    // 이동 (상위 상세 페이지로)
+                    const resultOrgCd = form.querySelector('input[name="orgCd"]').value;
+                    const resultSvcId = form.querySelector('input[name="tpwSvcId"]').value;
+
+                    if (!resultOrgCd || resultOrgCd === 'null') {
+                        location.href = "/spfnsprtmng/payinf/sprtSvcPtInf.do";
+                    } else {
+                        location.href = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${resultOrgCd}&tpwSvcId=${resultSvcId}`;
+                    }
                 } else {
-                    // 서버 응답에서 오류 메시지를 가져와 표시할 수 있도록 수정
                     const errorText = await res.text().catch(() => '알 수 없는 오류');
                     modalShow({ title: '경고', message: `저장 중 에러가 발생했습니다.\n상세: ${errorText.substring(0, 100)}...`, buttons: ['close'] });
                 }
             });
 
-            // 닫기 버튼 로직 (팝업/모달 닫기)
+            // 닫기 버튼
             document.querySelector('.btn-close').addEventListener('click', function () {
-                location.href = detailLink;
+                const form = document.querySelector('form');
+                const currentOrgCd = form.querySelector('input[name="orgCd"]').value;
+                const currentSvcId = form.querySelector('input[name="tpwSvcId"]').value;
+
+                if (!currentOrgCd || currentOrgCd === 'null' || !currentSvcId) {
+                    location.href = "/spfnsprtmng/payinf/sprtSvcPtInf.do";
+                } else {
+                    location.href = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${currentOrgCd}&tpwSvcId=${currentSvcId}`;
+                }
             });
         </script>
 

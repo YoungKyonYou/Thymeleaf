@@ -12,6 +12,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @HxzDb
 @Mapper
@@ -25,7 +26,7 @@ public interface SprtSvcPtInfMapper { // 💡 Mapper 이름 변경
                                                @Param("orgCd") String orgCd);
 
     SprtSvcDtlRspVO readSprtSvcPtInf(@Param("tpwSvcId") String tpwSvcId,
-                                     @Param("orgCd") String orgCd);
+                                     @Param("orgCd") String orgCd, int i, int i1);
 
 
     void saveSprtSvcPtInf(@Param("form") SprtSvcPtInfRspVO form);
@@ -56,4 +57,18 @@ public interface SprtSvcPtInfMapper { // 💡 Mapper 이름 변경
     );
 
     SprtSvcTypRspVO readSprtSvcTypById(@Param("form") SprtSvcTypRspVO form);
+
+    long readSprtSvcTypListCnt(@Param("tpwSvcId") String tpwSvcId);
+
+    List<SprtSvcTypRspVO> rreadSprtSvcTypListPaging(@Param("tpwSvcId") String tpwSvcId,
+                                                    @Param("size") int size,
+                                                    @Param("offset") int offset);
+
+    List<SprtSvcTypRspVO> readSprtSvcTypListPaging(String tpwSvcId, int size, int offset);
+
+
+    // 페이징용
+    List<SprtSvcTypRspVO> readSprtSvcTypListPaging(Map<String, Object> params);
+
+
 }

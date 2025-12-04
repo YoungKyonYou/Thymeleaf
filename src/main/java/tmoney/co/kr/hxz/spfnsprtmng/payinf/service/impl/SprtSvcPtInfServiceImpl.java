@@ -16,7 +16,6 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt.SprtSvcTypRspVO;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ============================================
@@ -36,6 +35,11 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
     @Override
     @Transactional(readOnly = true)
     public PageDataVO<SprtSvcDtlRspVO> readSprtSvcPtInfList(SprtSvcPtInfReqVO reqVO, String orgCd) {
+
+        int offset = reqVO.getPage() * reqVO.getSize();
+
+
+
         long total = sprtSvcPtInfMapper.readSprtSvcPtInfListCnt(reqVO, orgCd);
         List<SprtSvcDtlRspVO> content = sprtSvcPtInfMapper.readSprtSvcPtInfList(reqVO, orgCd);
 
@@ -54,26 +58,37 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
 
     @Override
     @Transactional(readOnly = true)
-    public SprtSvcDtlRspVO readSprtSvcPtInf(String tpwSvcId, String orgCd) {
+    public SprtSvcDtlRspVO readSprtSvcPtInf(String tpwSvcId, String orgCd, int page, int size) {
 
         // Mapper에서 SprtSvcPtInfRspVO로 조회
-        SprtSvcDtlRspVO baseInfo = sprtSvcPtInfMapper.readSprtSvcPtInf(tpwSvcId, orgCd);
+        SprtSvcDtlRspVO baseInfo = sprtSvcPtInfMapper.readSprtSvcPtInf(tpwSvcId, orgCd, 0, 1000);
 
         if (baseInfo == null) {
-            return null;
+            return new SprtSvcDtlRspVO();
         }
 
         // BeanUtils로 DtlRspVO로 변환
         SprtSvcDtlRspVO main = new SprtSvcDtlRspVO();
         BeanUtils.copyProperties(baseInfo, main);
 
+
+        int offset = page * size;
+
+
+
+
         // TODO: PageDataVo로 해줘야 할듯?
         // 하위 서비스유형 리스트 추가 조회
-        main.setSvcTypList(sprtSvcPtInfMapper.readSprtSvcTypList(tpwSvcId));
+//        main.setSvcTypList(sprtSvcPtInfMapper.readSprtSvcTypList(tpwSvcId, size, offset));
+
+        List<SprtSvcTypRspVO> subList = sprtSvcPtInfMapper.readSprtSvcTypListPaging(tpwSvcId, size, offset);
+
+        main.setSvcTypList(subList);
 
         // 변환된 DtlRspVO를 반환
         return main;
     }
+
 
     @Override
     @Transactional
@@ -206,5 +221,10 @@ public class SprtSvcPtInfServiceImpl implements SprtSvcPtInfService {
     public void updateUseYnN(SprtSvcTypRspVO form) {
         // Mapper의 updateUseYnN은 단일 VO를 받도록 XML과 매칭되어 있습니다.
         sprtSvcPtInfMapper.updateUseYnN(form);
+    }
+
+    @Override
+    public long readSprtSvcTypListCnt(String tpwSvcId) {
+        return sprtSvcPtInfMapper.readSprtSvcTypListCnt(tpwSvcId);
     }
 }

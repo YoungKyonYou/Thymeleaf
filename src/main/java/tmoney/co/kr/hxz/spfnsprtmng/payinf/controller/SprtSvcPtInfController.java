@@ -102,20 +102,21 @@ public class SprtSvcPtInfController {
      * - 신규 버튼 클릭 시 호출
      * - 빈 VO 객체를 Model에 전달
      * ---------------------------------------- */
-    @GetMapping(path = "/newSprtSvcPtInfForm.do")
-    public String newSprtSvcPtInfForm(Model model) {
+        @GetMapping(path = "/newSprtSvcPtInfForm.do")
+        public String newSprtSvcPtInfForm(Model model) {
+            // 1. 메인 상세 객체
+            SprtSvcDtlRspVO contents = new SprtSvcDtlRspVO();
+            contents.setSvcTypList(new ArrayList<>());
+            contents.setUseYn("Y");
+            model.addAttribute("detail", contents);
 
-        // 신규 등록용 VO 객체 초기화
-        SprtSvcDtlRspVO contents = new SprtSvcDtlRspVO();
-        contents.setSvcTypList(new ArrayList<>());
-        contents.setUseYn("Y");  // 기본값 세팅 가능
+            // 2. [추가] 하위 리스트 빈 페이징 객체 (이걸 추가하면 HTML 에러 안 남)
+            // (빈 리스트, 0페이지, 10사이즈, 0개)
+            PageDataVO<SprtSvcTypRspVO> emptyPage = new PageDataVO<>(new ArrayList<>(), 0, 10, 0);
+            model.addAttribute("svcTypPage", emptyPage);
 
-        // 하위 서비스유형 리스트 초기화
-        contents.setSvcTypList(null);
-
-        model.addAttribute("detail", contents);
-        return "/hxz/spfnsprtmng/payinf/sprtSvcPtInfForm";
-    }
+            return "/hxz/spfnsprtmng/payinf/sprtSvcPtInfForm";
+        }
 
     /**
      * -----------------------------------------
@@ -127,13 +128,38 @@ public class SprtSvcPtInfController {
     public String detailSprtSvcPtInfForm(
             @RequestParam("tpwSvcId") String tpwSvcId,
             @RequestParam("orgCd") String orgCd,
+            @RequestParam(value = "page", defaultValue = "0") int page,
             Model model
     ) {
-
+        final int size = 10; // 페이지당 항목 수 고정
         // ✅ 타입 수정됨 (DtlRspVO로 받기)
-        SprtSvcDtlRspVO contents = sprtSvcPtInfService.readSprtSvcPtInf(tpwSvcId, orgCd);
+        SprtSvcDtlRspVO contents = sprtSvcPtInfService.readSprtSvcPtInf(tpwSvcId, orgCd, page, size);
+
+        if (contents == null) {
+            contents = new SprtSvcDtlRspVO();
+            contents.setSvcTypList(new ArrayList<>());
+            // 필요하다면 orgCd라도 세팅해서 보냄 (화면 깨짐 방지)
+            contents.setOrgCd(orgCd);
+        }
 
         model.addAttribute("detail", contents);
+
+        // 2. 하위 목록의 전체 개수 조회
+        long totalCount = sprtSvcPtInfService.readSprtSvcTypListCnt(tpwSvcId);
+
+        List<SprtSvcTypRspVO> list = contents.getSvcTypList();
+        if (list == null) list = new ArrayList<>();
+
+        // (데이터 리스트, 현재페이지, 사이즈, 전체개수)
+        // 현재는 상세화면이므로 전체 개수 = 리스트 사이즈
+        PageDataVO<SprtSvcTypRspVO> svcTypPage = new PageDataVO<>(
+                list,
+                page, // 현재 페이지 번호
+                size, // 페이지 사이즈
+                totalCount // total count
+        );
+
+        model.addAttribute("svcTypPage", svcTypPage);
 
         return "/hxz/spfnsprtmng/payinf/sprtSvcPtInfForm";
     }
@@ -237,7 +263,8 @@ public class SprtSvcPtInfController {
      * ---------------------------------------- */
     @GetMapping(path = "/newSprtSvcTypForm.do")
     public String newSprtSvcTypForm(
-            @RequestParam("tpwSvcId") String tpwSvcId, // 상위 서비스ID
+            @RequestParam("tpwSvcId") String tpwSvcId,
+            @RequestParam(value = "orgCd", required = false) String orgCd,// 상위 서비스ID
             Model model
     ) {
         // 1. 신규 등록용 VO 객체 초기화
@@ -246,7 +273,7 @@ public class SprtSvcPtInfController {
         // 상위 서비스ID를 VO에 세팅
         typDetail.setTpwSvcId(tpwSvcId); // 상위 서비스 ID 세팅
         typDetail.setUseYn("Y"); // 기본값 세팅
-
+        typDetail.setOrgCd(orgCd);
         model.addAttribute("typDetail", typDetail);
 
 

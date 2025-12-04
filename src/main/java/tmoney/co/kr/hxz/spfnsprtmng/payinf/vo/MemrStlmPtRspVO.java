@@ -24,6 +24,24 @@ public class MemrStlmPtRspVO {
     //회원ID
     private String mbrsId;
 
+
+    // TODO: 회원상태코드
+    private String mbrsStaCd;
+
+    // TODO: 행정동코드
+    private String addoCd;
+
+    // TODO: mbrsSvcJoinDt
+    private String mbrsSvcJoinDt;
+
+    // TODO: 카드번호
+    private String cardNo;
+    
+    // TODO: 은행코드?
+    private String bnkCd;
+    // TODO: 계좌번호?
+    private String acntNo;
+
     //회원명 (조인해야함) tbhxzm101테이블의 mbrs_id 조인
     private String mbrsNm;
 
