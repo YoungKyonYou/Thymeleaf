@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.SimReqMngMapper">
+
+    <!-- ========================================= -->
+    <!-- 시뮬레이션요청관리 리스트 조회 -->
+    <!-- ========================================= -->
+    <select id="readSimReqMngList"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngReqVO"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+
+        select
+             simReq.mbrs_id as mbrsId               -- 회원ID
+            ,simReq.mbrs_nm as mbrsNm               -- 회원명
+
+            , simReq.tpw_svc_nm as tpwSvcNm     -- 서비스명
+            , simReq.tpw_svc_typ_nm as tpwSvcTypNm -- 서비스유형명
+            , simReq.tpw_svc_typ_sno as tpwSvcTypSno -- 서비스유형일련번호
+            ,simReq.tpw_svc_id as tpwSvcId              <!-- 서비스ID -->
+            ,simReq.tpw_svc_typ_id as tpwSvcTypId       <!-- 서비스유형ID -->
+            ,simReq.tpw_svc_typ_sno as tpwSvcTypSno     <!-- 서비스유형일련번호 -->
+            ,simReq.tpw_svc_nm as tpwSvcNm              <!-- 서비스명 -->
+            ,simReq.tpw_svc_typ_nm as tpwSvcTypNm       <!-- 서비스유형명 -->
+            ,simReq.apl_dt as aplDt                      <!-- 신청일자 -->
+            ,simReq.card_stt_dt as cardSttDt            <!-- 카드 종료일자 -->
+            ,simReq.card_end_dt as cardEndDt            <!-- 카드 종료일자 -->
+            ,simReq.prcg_fn_yn as prcgFnYn              <!-- 처리완료여부(Y/N) -->
+            ,simReq.card_no as cardNo                   <!-- 카드번호 -->
+            ,simReq.prcg_sta_nm as prcgStaNm            <!--처리 상태 -->
+        from (
+            select
+                d222.tpw_svc_id ,
+                d222.tpw_svc_typ_id ,
+                d222.tpw_svc_typ_sno ,
+                m201.tpw_svc_nm ,
+                m202.tpw_svc_typ_nm ,
+                d222.apl_dt ,
+                m208.card_stt_dt,
+                m208.card_end_dt ,
+                d222.prcg_fn_yn ,
+                m208.mbrs_id  ,
+                m101.mbrs_nm ,
+                m208.card_no,
+                case
+                when m207.dw_req_yn = 'N' then '요청'
+                when m207.dw_req_yn = 'Y' then '정산'
+                else '요청전'
+                end as prcg_sta_nm
+            from tbhxzd222 d222
+                <!-- TODO: left 임시, 연결조건 너무 많은데 -->
+                join tbhxzm201 m201
+                    on m201.tpw_svc_id = d222.tpw_svc_id
+                    and m201.use_yn = 'Y'
+                join tbhxzm208 m208
+                    on m208.tpw_svc_id = d222.tpw_svc_id
+                    and m208.tpw_svc_typ_id = d222.tpw_svc_typ_id
+                    and m208.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+                    and m208.apl_dt = d222.apl_dt
+                left join tbhxzm202 m202
+                    on m202.tpw_svc_id = d222.tpw_svc_id
+                    and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+                    and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+                left join tbhxzm101 m101
+                    on m101.mbrs_id = m208.mbrs_id
+                    and m101.mbrs_sta_cd = '00'
+                left join tbhxzm207 m207
+                    on m207.tpw_svc_id = m208.tpw_svc_id
+                    and m207.tpw_svc_typ_id = m208.tpw_svc_typ_id
+                    and m207.tpw_svc_typ_sno = m208.tpw_svc_typ_sno
+                    and m207.apl_dt = m208.apl_dt
+                    and m207.mbrs_id = m208.mbrs_id
+                    and m207.card_no = m208.card_no
+        where 1=1
+
+
+        <!-- 지자체 관리자인경우 -->
+        <if test="orgCd != '0000000'">
+            and m201.org_cd = #{orgCd}
+        </if>
+
+        <!-- 기관코드 -->
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', #{orgCd}, '%')
+        </if>
+
+        <!-- 카드번호 검색  -->
+        <if test="req.cardNo != null and req.cardNo != ''">
+            and m208.card_no like concat('%', #{req.cardNo}, '%')
+        </if>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+                </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+        </if>
+
+        <!-- 신청기간 검색 -->
+        <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+            and d222.apl_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+        </if>
+
+
+        ) simReq
+        order by ${req.sort} ${req.dir}
+        limit #{req.size} offset #{req.page} * #{req.size}
+    </select>
+
+    <!-- ========================================= -->
+    <!-- 시뮬레이션 포인트 정보 총 건수 조회 -->
+    <!-- ========================================= -->
+    <select id="readSimReqMngListCnt"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.MemrStlmPtReqVO"
+            resultType="long">
+
+    select count(1)
+        from tbhxzd222 d222
+            join tbhxzm201 m201
+            on m201.tpw_svc_id = d222.tpw_svc_id
+            and m201.use_yn = 'Y'
+            join tbhxzm208 m208
+            on m208.tpw_svc_id = d222.tpw_svc_id
+            and m208.tpw_svc_typ_id = d222.tpw_svc_typ_id
+            and m208.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            and m208.apl_dt = d222.apl_dt
+            join tbhxzm202 m202
+            on m202.tpw_svc_id = d222.tpw_svc_id
+            and m202.tpw_svc_typ_id = d222.tpw_svc_typ_id
+            and m202.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            join tbhxzm101 m101
+            on m101.mbrs_id = m208.mbrs_id
+            and m101.mbrs_sta_cd = '00'
+            left join tbhxzm207 m207
+            on m207.tpw_svc_id = m208.tpw_svc_id
+            and m207.tpw_svc_typ_id = m208.tpw_svc_typ_id
+            and m207.tpw_svc_typ_sno = m208.tpw_svc_typ_sno
+            and m207.apl_dt = m208.apl_dt
+            and m207.mbrs_id = m208.mbrs_id
+            and m207.card_no = m208.card_no
+            where 1=1
+    <!-- 지자체 관리자인경우 -->
+    <if test="orgCd != '0000000'">
+        and m201.org_cd = #{orgCd}
+    </if>
+
+    <!-- 기관코드 -->
+    <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+        and m201.org_cd like concat('%', #{orgCd}, '%')
+    </if>
+
+    <!-- 카드번호 검색  -->
+    <if test="req.cardNo != null and req.cardNo != ''">
+        and d218.card_no like concat('%', #{req.cardNo}, '%')
+    </if>
+
+        <if test="orgCd != '0000000'">
+            and m201.org_cd = #{orgCd}
+        </if>
+
+        <!-- 기관코드 -->
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', #{orgCd}, '%')
+        </if>
+
+        <!-- 카드번호 검색  -->
+        <if test="req.cardNo != null and req.cardNo != ''">
+            and m208.card_no like concat('%', #{req.cardNo}, '%')
+        </if>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+                </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+        </if>
+
+        <!-- 신청기간 검색 -->
+        <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+            and d222.apl_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+        </if>
+
+    </select>
+
+
+
+    <!-- tbhxzm208 등록 -->
+    <insert id="saveSimReqSfpn" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        insert into tbhxzm208 (
+            tpw_svc_id,
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            apl_dt,
+            mbrs_id,
+            apl_card_sno,
+            card_no,
+            card_stt_dt,
+            card_end_dt,
+            <!-- TODO: 폼이나 SimReqMngRspVO에 없음 -->
+             rgsr_id,
+            rgt_dtm
+        )
+        values (
+            #{tpwSvcId},
+            #{tpwSvcTypId},
+            #{tpwSvcTypSno},
+            replace(#{aplDt}, '-', ''),
+            #{mbrsId},
+            (
+                select coalesce(max(apl_card_sno),0)+1
+                from tbhxzm208
+                where tpw_svc_id = #{tpwSvcId}
+                and tpw_svc_typ_id = #{tpwSvcTypId}
+                and tpw_svc_typ_sno = #{tpwSvcTypSno}
+                and apl_dt = #{aplDt}
+                and mbrs_id = #{mbrsId}
+            ),
+            #{cardNo},
+            replace(#{cardSttDt}, '-', ''),
+            replace(#{cardEndDt}, '-', ''),
+            'system' ,  <!--     일단주석        #{rgsrId}, -->
+            to_char(now(),'YYYYMMDDHH24MISS')
+        )
+    </insert>
+
+
+    <!-- tbhxzm207 등록 -->
+    <insert id="saveSimReqStlm" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        insert into tbhxzm207
+        (
+            tpw_svc_id,
+            tpw_svc_typ_id,
+            tpw_svc_typ_sno,
+            apl_dt,
+            mbrs_id,
+            card_no,
+            tak_req_dt,
+            tpw_trd_stt_dt,
+            tpw_trd_end_dt,
+            dw_req_yn
+        )
+            select
+            d222.tpw_svc_id,
+            d222.tpw_svc_typ_id,
+            d222.tpw_svc_typ_sno,
+            d222.apl_dt,
+            m208.mbrs_id,
+            m208.card_no,
+            replace(#{aplDt}, '-', ''),
+            case
+                when d222.tpw_trd_stt_dt &lt; m208.card_stt_dt
+                then m208.card_stt_dt
+                else d222.tpw_trd_stt_dt
+              end,
+            case
+                when d222.tpw_trd_end_dt &gt; m208.card_end_dt
+                then m208.card_end_dt
+                else d222.tpw_trd_end_dt
+              end,
+            'N'
+            from tbhxzd222 d222
+            join tbhxzm208 m208
+            on m208.tpw_svc_id      = d222.tpw_svc_id
+            and m208.tpw_svc_typ_id  = d222.tpw_svc_typ_id
+            and m208.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            and m208.apl_dt          = d222.apl_dt
+            where d222.tpw_svc_id      = #{tpwSvcId}
+            and d222.tpw_svc_typ_id  = #{tpwSvcTypId}
+            and d222.tpw_svc_typ_sno = #{tpwSvcTypSno}
+            and d222.apl_dt          = #{aplDt}
+            and m208.mbrs_id         = #{mbrsId}
+            and m208.card_no         = #{cardNo}
+            and d222.prcg_fn_yn is null
+    </insert>
+
+    <update id="updateSimReqStlm" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        update tbhxzm207 m207
+        set
+        tpw_svc_id       = #{tpwSvcId},
+        tpw_svc_typ_id   = #{tpwSvcTypId},
+        tpw_svc_typ_sno  = cast(#{tpwSvcTypSno} as numeric),
+        apl_dt           = replace(#{aplDt}, '-', ''),
+        mbrs_id          = #{mbrsId},
+        card_no          = #{cardNo},
+        tak_req_dt       = replace(#{aplDt}, '-', ''), -- 요청일자 = 신청일자
+        tpw_trd_stt_dt   = replace(#{tpwTrdSttDt}, '-', ''), -- VO에 추가 필요
+        tpw_trd_end_dt   = replace(#{tpwTrdEndDt}, '-', ''), -- VO에 추가 필요
+        dw_req_yn        = 'N'
+        from tbhxzd222 d222
+        where m207.tpw_svc_id      = #{origTpwSvcId}
+        and m207.tpw_svc_typ_id  = #{origTpwSvcTypId}
+        and m207.tpw_svc_typ_sno = cast(#{origTpwSvcTypSno} as numeric)
+        and m207.apl_dt          = replace(#{origAplDt}, '-', '')
+        and m207.mbrs_id         = #{origMbrsId}
+        and m207.card_no         = #{origCardNo} -- VO 이름과 일치
+
+        and d222.tpw_svc_id      = #{tpwSvcId}
+        and d222.tpw_svc_typ_id  = #{tpwSvcTypId}
+        and d222.tpw_svc_typ_sno = cast(#{tpwSvcTypSno} as numeric)
+        and d222.apl_dt          = replace(#{aplDt}, '-', '')
+        and (d222.prcg_fn_yn = 'N' or d222.prcg_fn_yn is null)
+    </update>
+
+    <update id="updateSimReqSfpn" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        update tbhxzm208 m208
+        set
+        tpw_svc_id      = #{tpwSvcId},
+        tpw_svc_typ_id  = #{tpwSvcTypId},
+        tpw_svc_typ_sno = #{tpwSvcTypSno},
+        apl_dt          = replace(#{aplDt}, '-', ''),
+
+        card_no         = #{cardNo},
+        card_stt_dt     = replace(#{cardSttDt}, '-', ''),
+        card_end_dt     = replace(#{cardEndDt}, '-', ''),
+        rgsr_id         = 'system',
+        rgt_dtm         = to_char(now(),'YYYYMMDDHH24MISS')
+
+        from tbhxzd222 d222
+
+        where m208.tpw_svc_id      = #{origTpwSvcId}
+        and m208.tpw_svc_typ_id  = #{origTpwSvcTypId}
+        and m208.tpw_svc_typ_sno = cast(#{origTpwSvcTypSno} as numeric)
+        and m208.apl_dt          = replace(#{origAplDt}, '-', '')
+        and m208.mbrs_id         = #{origMbrsId}
+
+        -- [수정] 오타 수정: orgnCardNo -> origCardNo
+        and m208.card_no         = #{origCardNo}
+
+        -- [안전장치] 이동하려는 '새로운' 서비스(d222)가 마감되지 않았는지 체크
+        and d222.tpw_svc_id      = #{tpwSvcId}
+        and d222.tpw_svc_typ_id  = #{tpwSvcTypId}
+        and d222.tpw_svc_typ_sno = cast(#{tpwSvcTypSno} as numeric)
+        and d222.apl_dt          = replace(#{aplDt}, '-', '')
+        and (d222.prcg_fn_yn is null or d222.prcg_fn_yn = 'N')
+    </update>
+
+
+
+    <update id="deleteSimReqMng" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+    <!--
+
+
+그냥 207시뮬레이션정산대상카드
+tbhxzm208 시뮬레이션지원금신청카드 물리삭제 없이그냥 delete
+
+tpw_svc_typ_id, tpw_svc_typ_sno, apl_dt, mbrs_id, apl_card_sno, tpw_svc_id
+
+
+207 pk
+    tpw_svc_typ_id, tpw_svc_typ_sno, apl_dt, mbrs_id, card_no, tak_req_dt, tpw_svc_id
+208 pk 
+    tpw_svc_typ_id, tpw_svc_typ_sno, apl_dt, mbrs_id, apl_card_sno, tpw_svc_id
+
+    삭제불가조건 prcg_fn_yn Y
+    
+    -->
+        update tbhxzm201 set 
+            use_yn = 'N'
+        where
+            org_cd = #{orgCd}
+            and tpw_svc_id = #{tpwSvcId}
+    </update>
+
+
+    <delete id="deleteSimReqStlm" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        delete from tbhxzm207 m207
+            using tbhxzd222 d222
+            where m207.tpw_svc_id      = d222.tpw_svc_id
+            and m207.tpw_svc_typ_id  = d222.tpw_svc_typ_id
+            and m207.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            and m207.apl_dt          = d222.apl_dt
+
+            -- 파라미터 조건
+            and m207.tpw_svc_id      = #{tpwSvcId}
+            and m207.tpw_svc_typ_id  = #{tpwSvcTypId}
+            and m207.tpw_svc_typ_sno = #{tpwSvcTypSno}
+            and m207.apl_dt          = replace(#{aplDt}, '-', '')
+            and m207.mbrs_id         = #{mbrsId}
+            and m207.card_no         = #{cardNo}
+
+            -- 마감여부 체크
+            and (d222.prcg_fn_yn is null or d222.prcg_fn_yn = 'N')
+    </delete>
+
+    <delete id="deleteSimReqSfpn" parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO">
+        delete from tbhxzm208 m208
+            using tbhxzd222 d222
+            where m208.tpw_svc_id      = d222.tpw_svc_id
+            and m208.tpw_svc_typ_id  = d222.tpw_svc_typ_id
+            and m208.tpw_svc_typ_sno = d222.tpw_svc_typ_sno
+            and m208.apl_dt          = d222.apl_dt
+
+            -- 파라미터 조건
+            and m208.tpw_svc_id      = #{tpwSvcId}
+            and m208.tpw_svc_typ_id  = #{tpwSvcTypId}
+            and m208.tpw_svc_typ_sno = #{tpwSvcTypSno}
+            and m208.apl_dt          = replace(#{aplDt}, '-', '')
+            and m208.mbrs_id         = #{mbrsId}
+            and m208.card_no         = #{cardNo}
+
+            -- 마감여부 체크
+            and (d222.prcg_fn_yn is null or d222.prcg_fn_yn = 'N')
+    </delete>
+
+</mapper>

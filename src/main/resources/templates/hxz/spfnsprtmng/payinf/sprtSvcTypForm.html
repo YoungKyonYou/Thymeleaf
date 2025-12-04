@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <section class="section" th:object="${typDetail}">
+            <div class="section-header">
+                <div class="title-wrap">
+                    <h3 class="section-title" th:text="*{tpwSvcTypSno != null and tpwSvcTypSno != 0} ? '서비스유형관리 (수정)' : '서비스유형관리 (신규)'">서비스유형관리</h3>
+                </div>
+
+                <form th:object="${typDetail}">
+                    <input type="hidden" name="tpwSvcId" th:value="*{tpwSvcId}">
+                    <input type="hidden" name="tpwSvcTypId" th:value="*{tpwSvcTypId}">
+                    <input type="hidden" name="tpwSvcTypSno" th:value="*{tpwSvcTypSno}">
+                    <input type="hidden" name="orgCd" th:value="*{orgCd}">
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 ID (상위) <span class="required">*</span></p>
+                            <input class="dp-input text-field" type="text" th:value="*{tpwSvcId}" readonly>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">유형명 <span class="required">*</span></p>
+                            <input class="dp-input text-field" type="text" name="tpwSvcTypNm" th:value="*{tpwSvcTypNm}" placeholder="유형명을 입력하세요">
+                        </div>
+                        <div class="box">
+                            <p class="field-title">정산주기 <span class="required">*</span></p>
+                            <div th:class="*{tpwStlmCycDvsCd != null and tpwStlmCycDvsCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmCycDvsCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 주기 구분 코드 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmCycDvsCd != null ? tpwStlmCycDvsCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">월정산</li>
+                                    <li role="option" class="dropdown_option" data-value="02">분기</li>
+                                </ul>
+                                <input type="hidden" name="tpwStlmCycDvsCd" th:value="*{tpwStlmCycDvsCd}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스기간 <span class="required">*</span></p>
+                            <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed}"></th:block>
+                        </div>
+
+                        <div class="box">
+                            <p class="field-title">이월구분</p>
+                            <div th:class="*{tpwCrovDvsCd != null and tpwCrovDvsCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwCrovDvsCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="이월구분 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwCrovDvsCd != null ? tpwCrovDvsCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="00">없음</li>
+                                    <li role="option" class="dropdown_option" data-value="02">분기내</li>
+                                    <li role="option" class="dropdown_option" data-value="03">연환 이월</li>
+                                </ul>
+                                <input type="hidden" name="tpwCrovDvsCd" th:value="*{tpwCrovDvsCd}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div id="cmn-box" class="box">
+                            <p class="field-title" style="margin-bottom: 8px;">지원대상 <span class="required">*</span></p>
+                            <th:block th:replace="~{common/fragment/cmncd-dropdown :: cmncd('', '0024','tpwMbrsTypCd','선택하세요')}"></th:block>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">지원중복여부 <span class="required">*</span></p>
+                            <div th:class="*{sprtDplcYn != null and sprtDplcYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="sprtDplcYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="지원중복여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{sprtDplcYn != null ? sprtDplcYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="sprtDplcYn" th:value="*{sprtDplcYn}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">외국인지원여부 <span class="required">*</span></p>
+                            <div th:class="*{frgnSprtYn != null and frgnSprtYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="frgnSprtYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="외국인지원여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{frgnSprtYn != null ? frgnSprtYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="frgnSprtYn" th:value="*{frgnSprtYn}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">거주지인증주기</p>
+                            <div th:class="*{tpwRsdcAuthCycCd != null and tpwRsdcAuthCycCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwRsdcAuthCycCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="거주지인증주기 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwRsdcAuthCycCd != null ? tpwRsdcAuthCycCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">월</li>
+                                    <li role="option" class="dropdown_option" data-value="02">분기</li>
+                                    <li role="option" class="dropdown_option" data-value="03">반기</li>
+                                </ul>
+                                <input type="hidden" name="tpwRsdcAuthCycCd" th:value="*{tpwRsdcAuthCycCd}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">다인승제외여부 <span class="required">*</span></p>
+                            <div th:class="*{trnsTrdMlprExYn != null and trnsTrdMlprExYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="trnsTrdMlprExYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="다인승제외여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{trnsTrdMlprExYn != null ? trnsTrdMlprExYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="trnsTrdMlprExYn" th:value="*{trnsTrdMlprExYn}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">정산 분류 코드 <span class="required">*</span></p>
+                            <div th:class="*{tpwStlmCtgCd != null and tpwStlmCtgCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmCtgCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 분류 코드 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmCtgCd != null ? tpwStlmCtgCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">정액</li>
+                                    <li role="option" class="dropdown_option" data-value="02">정률</li>
+                                </ul>
+                                <input type="hidden" name="tpwStlmCtgCd" th:value="*{tpwStlmCtgCd}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">지원교통수단 <span class="required">*</span></p>
+                            <div th:class="*{tpwMntnCd != null and tpwMntnCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwMntnCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="지원교통수단 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwMntnCd != null ? tpwMntnCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="000">기타</li>
+                                    <li role="option" class="dropdown_option" data-value="100">버스</li>
+                                    <li role="option" class="dropdown_option" data-value="200">도시철도</li>
+                                    <li role="option" class="dropdown_option" data-value="300">택시</li>
+                                    <li role="option" class="dropdown_option" data-value="101">도시형버스</li>
+                                    <li role="option" class="dropdown_option" data-value="102">일반좌석버스</li>
+                                </ul>
+                                <input type="hidden" name="tpwMntnCd" th:value="*{tpwMntnCd}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">정산실행단계 <span class="required">*</span></p>
+                            <div th:class="*{tpwStlmActDvsCd != null and tpwStlmActDvsCd != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="tpwStlmActDvsCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="정산 실행 단계 구분 코드 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{tpwStlmActDvsCd != null ? tpwStlmActDvsCd : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">지원대상</li>
+                                    <li role="option" class="dropdown_option" data-value="02">거래내역</li>
+                                    <li role="option" class="dropdown_option" data-value="03">정산내역</li>
+                                    <li role="option" class="dropdown_option" data-value="04">지급실행</li>
+                                </ul>
+                                <input type="hidden" name="tpwStlmActDvsCd" th:value="*{tpwStlmActDvsCd}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">교통거래기관</p>
+                            <input class="dp-input text-field" type="text" name="tpwTrdOrgCd" th:value="*{tpwTrdOrgCd}">
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">자동신청여부 <span class="required">*</span></p>
+                            <div th:class="*{autAplYn != null and autAplYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="autAplYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="자동신청여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{autAplYn != null ? autAplYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="autAplYn" th:value="*{autAplYn}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">증빙서류여부 <span class="required">*</span></p>
+                            <div th:class="*{evdnYn != null and evdnYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="evdnYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="증빙서류여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{evdnYn != null ? evdnYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="evdnYn" th:value="*{evdnYn}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">사용여부 <span class="required">*</span></p>
+                            <div th:class="*{useYn != null and useYn != ''} ? 'dropdown' : 'dropdown is-placeholder'" data-name="useYn">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="사용여부 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요" th:text="*{useYn != null ? useYn : '선택하세요'}">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="Y">Y</li>
+                                    <li role="option" class="dropdown_option" data-value="N">N</li>
+                                </ul>
+                                <input type="hidden" name="useYn" th:value="*{useYn}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 유형 내용 <span class="required">*</span></p>
+                            <div class="textarea-box">
+                                <textarea class="dp-input" name="tpwSvcTypCtt"
+                                          placeholder="서비스 유형 내용을 입력하세요"
+                                          th:text="*{tpwSvcTypCtt}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+
+                <div class="btn-wrap">
+                    <button type="button" class="btn btn-primary btn-save" th:text="*{tpwSvcTypSno != null and tpwSvcTypSno != 0} ? '수정' : '등록'">등록</button>
+                    <button type="button" class="btn btn-dark-line btn-close">닫기</button>
+                </div>
+            </div>
+
+        </section>
+
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+        <script th:inline="javascript">
+
+            /* 1. 날짜 포맷팅 및 초기화 */
+            const initDatepicker = (id, value) => {
+                const input = document.getElementById(id);
+                if (input && value) {
+                    let formattedValue = value.trim();
+                    if (formattedValue.length === 8 && /^\d{8}$/.test(formattedValue)) {
+                        formattedValue = formattedValue.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                    }
+                    input.value = formattedValue;
+                }
+            };
+
+            /* 2. 폼 초기화 (데이터 바인딩) */
+            document.addEventListener('DOMContentLoaded', function () {
+                const detail = /*[[${typDetail}]]*/ {};
+
+                setTimeout(() => {
+                    const arr = [
+                        'sprtDplcYn','frgnSprtYn','trnsTrdMlprExYn','autAplYn','evdnYn','useYn',
+                        'trnsTrdReqYn','ldgrTrdReqYn','taxiTrdReqYn','areaTrdReqYn','trdNcntLtnAdptYn',
+                        'tpwRsdcAuthCycCd','tpwStlmCtgCd','tpwMntnCd','tpwStlmActDvsCd','tpwTrdOrgCd',
+                        'tpwCrovDvsCd',
+                        'tpwStlmCycDvsCd',
+                    ];
+                    for (const k of arr) {
+                        const target = document.querySelector(`[data-name="${k}"] [data-value="${detail[k]}"]`);
+                        if (target) {
+                            const ev = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+                            target.dispatchEvent(ev);
+                        }
+                    }
+
+                    // 지원대상 공통코드
+                    const cmdBox = document.querySelector('#cmn-box');
+                    if(cmdBox && detail.tpwMbrsTypCd) {
+                        const option = cmdBox.querySelector(`.dropdown_option[data-value="${detail.tpwMbrsTypCd}"]`);
+                        if(option) option.click();
+                        const input = cmdBox.querySelector('input');
+                        if(input) input.value = detail.tpwMbrsTypCd;
+                    }
+
+                    initDatepicker('sttDt', detail.tpwSvcTypSttDt);
+                    initDatepicker('endDt', detail.tpwSvcTypEndDt);
+                }, 200);
+            });
+
+            /* 3. 저장 및 닫기 버튼 이벤트 */
+            const tpwSvcTypSno = /*[[${typDetail.tpwSvcTypSno}]]*/ 0;
+            const isUpdate = tpwSvcTypSno != null && tpwSvcTypSno != 0;
+            const cmdBox = document.querySelector('#cmn-box');
+
+            document.querySelector('.btn-save').addEventListener('click', async function (e) {
+                e.preventDefault();
+                const form = document.querySelector('form');
+
+                // 폼 데이터 수집
+                const data = Common.collectFromForm(form);
+
+                // 날짜 하이픈 제거
+                const sttDtInput = document.getElementById('sttDt');
+                const endDtInput = document.getElementById('endDt');
+                const cleanDate = (el) => el && el.value ? el.value.replace(/-/g, '').trim() : null;
+
+                data.tpwSvcTypSttDt = cleanDate(sttDtInput);
+                data.tpwSvcTypEndDt = cleanDate(endDtInput);
+                if(cmdBox) data.tpwMbrsTypCd = cmdBox.querySelector('input').value;
+
+                // URL 결정
+                const url = isUpdate ? '/spfnsprtmng/payinf/updateSvcTyp' : '/spfnsprtmng/payinf/SprtsvcTypadd';
+                const method = isUpdate ? 'PUT' : 'POST';
+                const message = isUpdate ? '유형 수정이 완료되었습니다.' : '유형 등록이 완료되었습니다.';
+
+                // 서버 전송
+                const res = await Common.sendSafe(url, { method, data });
+
+                if (res.ok) {
+                    alert(message);
+
+                    // 팝업 부모창 새로고침
+                    if (window.opener && !window.opener.closed) {
+                         window.opener.location.reload();
+                    }
+
+                    // 이동 (상위 상세 페이지로)
+                    const resultOrgCd = form.querySelector('input[name="orgCd"]').value;
+                    const resultSvcId = form.querySelector('input[name="tpwSvcId"]').value;
+
+                    if (!resultOrgCd || resultOrgCd === 'null') {
+                        location.href = "/spfnsprtmng/payinf/sprtSvcPtInf.do";
+                    } else {
+                        location.href = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${resultOrgCd}&tpwSvcId=${resultSvcId}`;
+                    }
+                } else {
+                    const errorText = await res.text().catch(() => '알 수 없는 오류');
+                    modalShow({ title: '경고', message: `저장 중 에러가 발생했습니다.\n상세: ${errorText.substring(0, 100)}...`, buttons: ['close'] });
+                }
+            });
+
+            // 닫기 버튼
+            document.querySelector('.btn-close').addEventListener('click', function () {
+                const form = document.querySelector('form');
+                const currentOrgCd = form.querySelector('input[name="orgCd"]').value;
+                const currentSvcId = form.querySelector('input[name="tpwSvcId"]').value;
+
+                if (!currentOrgCd || currentOrgCd === 'null' || !currentSvcId) {
+                    location.href = "/spfnsprtmng/payinf/sprtSvcPtInf.do";
+                } else {
+                    location.href = `/spfnsprtmng/payinf/sprtSvcInfDetail.do?orgCd=${currentOrgCd}&tpwSvcId=${currentSvcId}`;
+                }
+            });
+        </script>
+
+    </th:block>
+</th:block>
+</html>

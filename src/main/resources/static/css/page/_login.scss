@@ -1,0 +1,34 @@
+.login-wrap {
+  max-width: 500px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 auto;
+  img {
+    width: 250px;
+    display: block;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .fluid {
+    width: 100%;
+  }
+  .text-field {
+    height: 50px;
+  }
+  .btn-login {
+    width: 100%;
+  }
+  .btn-wrap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    .btn {
+      width: 100%;
+    }
+  }
+}

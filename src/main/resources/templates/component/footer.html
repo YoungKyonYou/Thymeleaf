@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<footer id="footer" th:fragment="footer">
+    <div class="container">
+        <div class="footer-inner">
+            <div class="top-box flex">
+                <div class="box-item">
+                    <div class="logo-box"></div>
+                </div>
+                <div class="box-item">
+                    <p class="info-item"><b>T</b>02-332-1514</p>
+                    <p class="info-item"><b>F</b>02-332-1516</p>
+                    <p class="info-item"><b>E</b>ginzaryoko@ginzaryoko.co.kr</p>
+                    <p class="info-item"><b>제휴문의</b>partner@ginzaryoko.kr</p>
+                </div>
+            </div>
+            <div class="bot-box flex">
+                <div class="box-item">
+                    <address>
+                        <span>서울특별시 서초구 강남대로101길 34(잠원동 8-9) 금좌빌딩</span>
+                        <span class="bar">사업자등록증 : 762-81-02333</span>
+                        <span>대표이사 : 원일호, 김인교</span>
+                    </address>
+                </div>
+            </div>
+            <p class="copy">COPYRIGHT ⓒ 2025. GINZARYOKO. ALL RIGHTS RESERVED.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- top button -->
+<button id="goTop" title="맨 위로 이동">
+    <em></em>
+</button>
+
+<script>
+    (function () {
+        const btn = document.getElementById('goTop');
+        const footer = document.getElementById('footer');
+        const BASE = 40; // px
+        if (!btn) return;
+
+        function scrollTop() {
+            return window.pageYOffset || document.documentElement.scrollTop || 0;
+        }
+        function onScrollResize() {
+            const st = scrollTop();
+            btn.classList.toggle('on', st > 1);
+
+            const winH = window.innerHeight || document.documentElement.clientHeight;
+            const footTop = footer ? footer.getBoundingClientRect().top + st : Infinity;
+            const space = footTop - (st + winH);
+            btn.style.bottom = (space < 0 ? BASE - space : BASE) + 'px';
+        }
+
+        // jQuery.animate(..., 600, 'swing')와 동일한 600ms 이징(Quadratic easeInOut)
+        function easeInOutQuad(t){ return t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; }
+        function animateToTop600() {
+            const start = performance.now();
+            const from = scrollTop();
+            const dur = 600;
+
+            function frame(now) {
+                const p = Math.min(1, (now - start) / dur);
+                const y = from * (1 - easeInOutQuad(p));
+                window.scrollTo(0, y);
+                if (p < 1) requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        }
+
+        window.addEventListener('scroll', onScrollResize, { passive: true });
+        window.addEventListener('resize', onScrollResize);
+        onScrollResize();
+
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            animateToTop600();
+        });
+    })();
+</script>
+
+</body>
+</html>

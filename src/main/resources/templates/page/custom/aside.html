@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside id="aside" th:fragment="aside(roleMenu)">
+    <div class="aside-inner">
+        <h1>
+            <a th:href="@{/tmoney/cms/index}">
+                <!-- 로고/타이틀 영역 -->
+            </a>
+        </h1>
+
+        <nav class="aside-nav">
+            <ul>
+                <!-- 1뎁스 루프 -->
+                <li th:each="lv1 : ${roleMenu.menuNode}"
+                    th:with="
+              ActionCls=${T(tmoney.co.kr.hxz.constants.ScreenAction)},
+              lv1Perms=${roleMenu.screenAction[lv1.id]},
+              lv1Readable=${lv1Perms != null and lv1Perms.contains(ActionCls.READ)},
+              lv1IsCategory=${lv1.children != null and !#lists.isEmpty(lv1.children)}
+            ">
+                    <th:block th:if="${lv1IsCategory or lv1Readable}">
+                        <a class="depth1"
+                           th:href="${lv1.url} ?: ''"
+                           th:text="${lv1.name}">1뎁스</a>
+
+                        <ul class="depth2">
+                            <!-- 2뎁스 루프 -->
+                            <li class="depth2-item"
+                                th:each="lv2 : ${lv1.children}"
+                                th:with="
+                    lv2Perms=${roleMenu.screenAction[lv2.id]},
+                    lv2Readable=${lv2Perms != null and lv2Perms.contains(ActionCls.READ)},
+                    lv2IsCategory=${lv2.children != null and !#lists.isEmpty(lv2.children)}
+                  ">
+                                <th:block th:if="${lv2IsCategory or lv2Readable}">
+                                    <a th:href="${lv2.url} ?: ''"
+                                       th:text="${lv2.name}">2뎁스</a>
+
+                                    <!-- 3뎁스가 있을 때만 출력 -->
+                                    <ul aria-hidden="true" class="depth3"
+                                        th:if="${lv2.children != null and !#lists.isEmpty(lv2.children)}">
+                                        <li th:each="lv3 : ${lv2.children}"
+                                            th:with="
+                          lv3Perms=${roleMenu.screenAction[lv3.id]},
+                          lv3Readable=${lv3Perms != null and lv3Perms.contains(ActionCls.READ)},
+                          lv3IsCategory=${lv3.children != null and !#lists.isEmpty(lv3.children)}
+                        ">
+                                            <th:block th:if="${lv3IsCategory or lv3Readable}">
+                                                <a th:href="${lv3.url} ?: ''"
+                                                   th:text="${lv3.name}">3뎁스</a>
+                                            </th:block>
+                                        </li>
+                                    </ul>
+                                </th:block>
+                            </li>
+                        </ul>
+                    </th:block>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</aside>
+</body>
+</html>

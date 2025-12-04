@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <section class="section">
+            <form class="section-header" action="/penstlmng/aplinf/penAplPtInf.do" th:object="${req}">
+
+                    <div class="title-wrap">
+                        <h3 class="section-title">지급금신청내역관리</h3>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 선택</p>
+                            <th:block th:replace="~{common/fragment/dropdowns ::cascadingDropdown('svcOnlyRoot', 'tpwSvcId', 'tpwSvcTypId', true)}">
+                            </th:block>
+                        </div>
+                    </div>
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">정산일자</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
+                                       name="sttDt" th:value="*{sttDt}"
+                                >
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">회원ID</p>
+                            <input type="text" name="mbrsId" class="dp-input text-field" th:value="*{mbrsId}">
+                        </div>
+                        <div class="box">
+                            <p class="field-title">승인상태</p>
+                            <div class="dropdown is-placeholder" data-name="aprvStaCd">
+                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false" aria-label="변경유형 드롭다운">
+                                    <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="01">요청</li>
+                                    <li role="option" class="dropdown_option" data-value="02">반려</li>
+                                    <li role="option" class="dropdown_option" data-value="03">승인</li>
+                                </ul>
+                                <input type="hidden" name="aprvStaCd" th:value="*{aprvStaCd}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-wrap">
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="지급금신청내역조회"
+                        >
+                            엑셀 다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
+                <input th:field="*{sort}" type="hidden">
+                <input th:field="*{dir}" type="hidden">
+            </form>
+
+            <div class="section-content">
+                <div class="flex justify-space-between">
+                    <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
+                    <div class="flex col-">
+
+                        <button type="button" class="btn btn-dark-line">목록</button>
+                    </div>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table class="table" id="grid">
+                        <caption class="blind">지급금신청내역관리 테이블</caption>
+                        <colgroup>
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="200px">
+                            <col width="150px">
+                            <col width="150px">
+                            <col width="80px">
+                            <col width="150px">
+                            <col width="300px">
+                            <col width="150px">
+                        </colgroup>
+                        <thead id="grid-header">
+                        <tr>
+                            <th>
+                                <div class="control checkbox">
+                                    <input type="checkbox" id="cb0">
+                                    <label for="cb0"></label>
+                                </div>
+                            </th>
+                            <th scope="col" data-sort="tpwSvcTypNm">서비스유형명</th>
+                            <th scope="col" data-sort="stlmDt">정산일자</th>
+                            <th scope="col" data-sort="mbrsId">회원ID</th>
+                            <th scope="col" data-sort="aplDt">신청일자</th>
+                            <th scope="col" data-sort="cardNo">카드번호</th>
+                            <th scope="col" data-sort="bnkCd">은행명</th>
+                            <th scope="col" data-sort="acntNo">계좌번호</th>
+                            <th scope="col" data-sort="ooaNm">예금주명</th>
+                            <th scope="col" data-sort="aproId">승인자ID</th>
+                            <th scope="col" data-sort="aprvDtm">승인일시</th>
+                            <th scope="col" data-sort="aprvStaCd">승인상태</th>
+                            <th scope="col" data-sort="">승인하기</th>
+                            <th scope="col" data-sort="tpwMbrsTypCdNm">지원 대상 유형</th>
+                            <th scope="col" data-sort="atflMngNo">첨부파일관리번호(링크 미리보기)</th>
+                            <th scope="col" data-sort="tpwAplPrgsStaCd">신청진행상태</th>
+                        </tr>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <tr th:if="${pageData == null or #lists.isEmpty(pageData.content)}">
+                            <td class="text-center" th:colspan="16">조회된 데이터가 없습니다.</td>
+                        </tr>
+                        <th:block th:if="${pageData != null and !#lists.isEmpty(pageData.content)}">
+                            <th:block th:each="u, stat : ${pageData.content}"
+                                      th:object="${u}"
+                                      th:with="base=${(pageData.page)} * ${pageData.size}">
+                                <tr>
+                                    <td>
+                                        <div class="control checkbox">
+                                            <input type="checkbox" th:id="'cb' + ${stat.index}">
+                                            <label th:for="'cb' + ${stat.index}"></label>
+                                        </div>
+                                    </td>
+
+                                    <td th:text="*{tpwSvcTypNm}"></td>
+
+                                    <td th:text="${#strings.substring(u.stlmDt, 0, 4) + '-' + #strings.substring(u.stlmDt, 4, 6) + '-' + #strings.substring(u.stlmDt, 6, 8)}"></td>
+
+                                    <td th:text="*{mbrsId}"></td>
+
+                                    <td th:text="${#strings.substring(u.aplDt, 0, 4) + '-' + #strings.substring(u.aplDt, 4, 6) + '-' + #strings.substring(u.aplDt, 6, 8)}"></td>
+
+                                    <td th:text="*{cardNo}"></td>
+
+                                    <!-- 은행코드ㅡ 0041-->
+                                    <td th:text="*{
+                                        bnkCd == '026' ? '신한은행' :
+                                        bnkCd == '027' ? '씨티은행(구한미)' :
+                                        bnkCd == '028' ? '동화은행' :
+                                        bnkCd == '029' ? '동남은행' :
+                                        bnkCd == '030' ? '대동은행' :
+                                        bnkCd == '031' ? '대구은행' :
+                                        bnkCd == '032' ? '부산은행' :
+                                        bnkCd == '033' ? '충청은행' :
+                                        bnkCd == '034' ? '광주은행' :
+                                        bnkCd == '050' ? '상호저축은행' :
+                                        bnkCd == '053' ? '씨티은행' :
+                                        bnkCd == '054' ? '홍콩상하이' :
+                                        bnkCd == '055' ? '도이치뱅크' :
+                                        bnkCd == '064' ? '산림조합' :
+                                        bnkCd == '071' ? '우체국' :
+                                        bnkCd == '081' ? '하나은행' :
+                                        bnkCd == '082' ? '보람은행' :
+                                        bnkCd == '083' ? '평화은행' :
+                                        ''
+                                    }">
+
+                                    </td>
+
+                                    <td th:text="*{acntNo}"></td>
+
+                                    <td th:text="*{ooaNm}"></td>
+
+                                    <td th:text="*{aproId}"></td>
+
+                                    <td th:text="${#strings.substring(u.aprvDtm, 0, 4) + '-' + #strings.substring(u.aprvDtm, 4, 6) + '-' + #strings.substring(u.aprvDtm, 6, 8) + ' ' + #strings.substring(u.aprvDtm, 8, 10) + ':' + #strings.substring(u.aprvDtm, 10, 12) + ':' + #strings.substring(u.aprvDtm, 12, 14)}"></td>
+
+
+
+                                    <td th:text="*{aprvStaCd == '01' ? '요청'
+                                             : aprvStaCd == '02' ? '반려'
+                                             : aprvStaCd == '03' ? '승인'
+                                             : '' }">
+                                    </td>
+
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-approve"
+                                                th:disabled="${u.aprvStaCd == '03'}"
+                                                th:data-tpw-svc-id="*{tpwSvcId}"
+                                                th:data-tpw-svc-typ-sno="*{tpwSvcTypSno}"
+                                                th:data-stlm-dt="*{stlmDt}"
+                                                th:data-mbrs-id="*{mbrsId}"
+                                                th:data-tpw-svc-typ-id="*{tpwSvcTypId}">
+                                            <span th:text="${u.aprvStaCd == '03'} ? '승인완료' : '승인하기'"></span>
+                                        </button>
+                                    </td>
+
+                                    <td th:text="*{tpwMbrsTypCdNm}"></td>
+
+
+
+                                    <!-- TODO: orgCd는 안받는걸로 시스템에서 바뀌어야 함 MngrVO에서 받는걸로-->
+                                    <td>
+                                        <a th:if="*{atflMngNo != null}"
+                                           th:href="@{'/attachments/' + ${orgCd} + '/' + *{atflMngNo} + '/preview'}"
+                                           th:text="'미리보기 (' + *{atflMngNo} + ')'"
+                                           target="_blank">
+                                        </a>
+                                    </td>
+
+                                    <!-- 0017 신청진행상태-->
+
+                                    <td th:text="*{tpwAplPrgsStaCd == '01' ? '선급'
+                                             : tpwAplPrgsStaCd == '02' ? '정산내역'
+                                             : tpwAplPrgsStaCd == '03' ? '지급'
+                                             : '' }">
+                                    </td>
+                                </tr>
+                            </th:block>
+                        </th:block>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="title-wrap"><h3 class="section-title">신청현황</h3></div>
+
+                <!--일별 -->
+                <div class="table-wrap mt20">
+                    <table class="table">
+                        <caption class="blind">신청현황 테이블 (일별)</caption>
+                        <colgroup>
+                            <col width="160px">
+                            <col width="100px" th:each="d : ${daily}" th:if="${not #lists.isEmpty(daily)}"/>
+                        </colgroup>
+                        <tbody>
+
+                        <th:block th:unless="${#lists.isEmpty(daily)}">
+                            <tr>
+                                <th scope="row">일</th>
+                                <td th:each="d : ${daily}" th:text="${d.aplDay}">1</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">신청자 수</th>
+                                <td th:each="d : ${daily}" th:text="${d.aplCnt}">0</td>
+                            </tr>
+                        </th:block>
+
+                        <tr th:if="${#lists.isEmpty(daily)}">
+                            <th scope="row">일</th>
+                            <td class="text-center" colspan="30">-</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(daily)}">
+                            <th scope="row">신청자 수</th>
+                            <td class="text-center" colspan="30">일별 조회된 데이터가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!--월별-->
+                <div class="table-wrap mt20">
+                    <table class="table">
+                        <caption class="blind">신청현황 테이블 (월별)</caption>
+                        <colgroup>
+                            <col width="160px">
+                            <col width="100px" th:each="m : ${monthly}" th:if="${not #lists.isEmpty(monthly)}"/>
+                        </colgroup>
+                        <tbody>
+
+                        <th:block th:unless="${#lists.isEmpty(monthly)}">
+                            <tr>
+                                <th scope="row">월</th>
+                                <td th:each="m : ${monthly}" th:text="${m.aplYm}">2025-01</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">신청자 수</th>
+                                <td th:each="m : ${monthly}" th:text="${m.aplCnt}">0</td>
+                            </tr >
+                        </th:block>
+
+                        <tr th:if="${#lists.isEmpty(monthly)}">
+                            <th scope="row">월</th>
+                            <td class="text-center" colspan="30">-</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(monthly)}">
+                            <th scope="row">신청자 수</th>
+                            <td class="text-center" colspan="30">월별 조회된 데이터가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', () => {
+                const req = /*[[${req}]]*/ {};
+
+                // 서비스 선택
+                var dd = document.getElementById('svcPair1');
+                setTimeout(() => {
+                    if (dd && typeof dd.selectByValues === 'function') {
+                        dd.selectByValues(req.tpwSvcId, req.tpwSvcTypId);
+                    }
+                }, 100);
+
+                // 정산일자 (endDt 필드만 있으므로 endDt만 처리)
+                const endDtInput = document.querySelector('input[name="endDt"]');
+                if (endDtInput) endDtInput.value = req.endDt || '';
+
+                // 승인상태 드롭다운 초기값 설정
+                setTimeout(() => {
+                    const cd = document.querySelector('[data-name="aprvStaCd"]');
+                    const targetOption = cd?.querySelector(`[data-value="${req.aprvStaCd}"]`);
+                    if (targetOption && typeof targetOption.click === 'function') {
+                        targetOption.click();
+                    }
+                }, 100);
+            });
+        </script>
+
+        <script data-page="penApiPtInf" th:inline="javascript" type="text/javascript">
+
+            
+            (function (){
+                const baseUrl = '/penstlmng/aplinf/penAplPtInf.do';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-header');
+                const searchForm = document.querySelector('form');
+                const selectSize = searchForm?.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const orgCd = [[${orgCd}]];
+                // const mngrId = [[${mngr?.mngrId}]];
+                const mngrId = '';
+                const loading = document.getElementById('mini-sp-loading');
+
+                const payload = { orgCd, mngrId, dnRsn: '' };
+
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                };
+                document.body.addEventListener('click', exportHandler);
+
+
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id'
+                });
+
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort.value || 'asc';
+                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+            })();
+        </script>
+
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+    </th:block>
+</th:block>
+</html>

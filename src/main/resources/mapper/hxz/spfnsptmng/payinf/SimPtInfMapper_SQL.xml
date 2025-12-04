@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.spfnsprtmng.payinf.mapper.SimPtInfMapper">
+
+    <!-- ========================================= -->
+    <!-- 시뮬레이션 정보 리스트 조회 -->
+    <!-- ========================================= -->
+    <select id="readSimPtList"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimPtInfRspVO">
+
+        select
+            simpt.trpr_act_sqno as trprActSqno,     -- 거래내역실행순번
+            simpt.mbrs_id as mbrsId,               -- 회원ID
+            simpt.mbrs_nm as mbrsNm,               -- 회원명
+        <if test="req.orgCd != null and req.orgCd != '' and req.orgCd == '0000000'">
+            simpt.tpw_svc_nm as tpwSvcNm,     -- 서비스명
+            simpt.tpw_svc_typ_nm as tpwSvcTypNm, -- 서비스유형명
+            simpt.tpw_svc_typ_sno as tpwSvcTypSno, -- 서비스유형일련번호
+        </if>
+            simpt.card_no as cardNo,               -- 카드번호
+            simpt.trcr_dvs_cd as trcrDvsCd,        -- 교통카드 구분
+            simpt.trcr_user_dvs_cd as trcrUserDvsCd, -- 교통카드사용처
+            simpt.ride_dtm as rideDtm,             -- 승차일시
+            simpt.ride_amt as rideAmt,             -- 승차금액
+            -- TODO: 없는 컬럼이라고 나옴
+            -- simpt.mntn_cd as mntnCd,               -- 교통수단
+            simpt.rot_nm as rotNm,                 -- 노선명
+            simpt.ride_stn_nm as rideStnNm,        -- 승차역명
+            simpt.algh_dtm as alghDtm,             -- 하차일시
+            simpt.algh_amt as alghAmt,             -- 하차금액
+            simpt.algh_stn_nm as alghStnNm,        -- 하차역명
+            simpt.trrd_amt as trrdAmt,             -- 이용금액
+            simpt.trtr_grp_sno as trtrGrpSno,      -- 환승그룹일련번호
+            simpt.fctt as fctt,                    -- 환승횟수
+            simpt.stex_rsn_cd as stexRsnCd         -- 요금할인제외사유
+        from (
+            select
+                d218.trpr_act_sqno,
+                m101.mbrs_id,
+                m101.mbrs_nm,
+                d218.card_no,
+                d218.trcr_dvs_cd,
+                d218.trcr_user_dvs_cd,
+                to_char(to_date(d218.ride_dtm, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') as ride_dtm,  -- 승차일시 변환
+                d218.ride_amt,
+                -- TODO: 없는 컬럼이라고 나옴
+                -- d218.mntn_cd,
+                d218.rot_nm,
+                d218.ride_stn_nm,
+                to_char(to_date(d218.algh_dtm, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD') as algh_dtm,  -- 하차일시 변환
+                d218.algh_amt,
+                d218.algh_stn_nm,
+                d218.trrd_amt,
+                d218.trtr_grp_sno,
+                d218.fctt,
+                d218.stex_rsn_cd,
+                m201.tpw_svc_nm,
+                m202.tpw_svc_typ_nm,
+                m202.tpw_svc_typ_sno
+        from tbhxzd218 d218   -- 거래 테이블: tbhxzd218 별칭 d218
+            join tbhxzm207 m207  -- 신청정보 테이블 조인
+                on d218.tpw_svc_id = m207.tpw_svc_id               -- 서비스ID 일치
+                and d218.tpw_svc_typ_id = m207.tpw_svc_typ_id     -- 서비스유형ID 일치
+                and d218.tpw_svc_typ_sno = m207.tpw_svc_typ_sno   -- 서비스유형일련번호 일치
+                and d218.card_no = m207.card_no                   -- 카드번호 일치
+            join tbhxzm101 m101  -- 회원정보 테이블 조인
+                on m207.mbrs_id = m101.mbrs_id                    -- 회원ID 일치
+            join tbhxzm201 m201  -- 서비스 기본정보 테이블 조인
+                on d218.tpw_svc_id = m201.tpw_svc_id             -- 서비스ID 일치
+            join tbhxzm202 m202  -- 서비스 유형정보 테이블 조인
+                on d218.tpw_svc_id = m202.tpw_svc_id
+                and d218.tpw_svc_typ_id = m202.tpw_svc_typ_id
+                and d218.tpw_svc_typ_sno = m202.tpw_svc_typ_sno
+        where 1=1
+        <!-- 지자체 관리자인경우 -->
+        <if test="req.orgCd != '0000000'">
+            and m201.org_cd = #{req.orgCd}
+        </if>
+
+        <!-- 기관코드 -->
+        <if test="req.orgCd != null and req.orgCd != '' and req.orgCd != '0000000'">
+            and m201.org_cd like concat('%', #{req.orgCd}, '%')
+        </if>
+
+        <!-- 카드번호 검색  -->
+        <if test="req.cardNo != null and req.cardNo != ''">
+            and d218.card_no like concat('%', #{req.cardNo}, '%')
+        </if>
+
+        <!-- 서비스ID 검색 -->
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}  -- 서비스ID 검색
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}  -- 서비스유형ID 검색
+                </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+        </if>
+
+        <!-- 신청기간 검색 -->
+        <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+            and d218.apl_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+        </if>
+
+        <!--        &lt;!&ndash; 서비스명 검색 &ndash;&gt;-->
+        <!--        <if test="req.svcNm != null and req.svcNm != ''">-->
+        <!--            and m201.tpw_svc_nm like concat('%', #{req.svcNm}, '%')  &#45;&#45; 서비스명 검색-->
+        <!--        </if>-->
+
+        <!--        &lt;!&ndash; 서비스유형명 검색 &ndash;&gt;-->
+        <!--        <if test="req.svcTypNm != null and req.svcTypNm != ''">-->
+        <!--            and m202.tpw_svc_typ_nm like concat('%', #{req.svcTypNm}, '%')  &#45;&#45; 서비스유형명 검색-->
+        <!--        </if>-->
+
+        <!--        &lt;!&ndash; 서비스유형일련번호 검색 &ndash;&gt;-->
+        <!--        <if test="req.tpwSvcTypSno != null and req.tpwSvcTypSno != ''">-->
+        <!--            and d218.tpw_svc_typ_sno = #{req.tpwSvcTypSno}  &#45;&#45; 서비스유형일련번호 검색-->
+        <!--        </if>-->
+
+        ) simpt
+        order by simpt.${req.sort} ${req.dir}
+        limit #{req.size} offset #{req.page} * #{req.size}
+    </select>
+
+    <!-- ========================================= -->
+    <!-- 시뮬레이션 포인트 정보 총 건수 조회 -->
+    <!-- ========================================= -->
+    <select id="readSimPtListCnt"
+            parameterType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimPtInfReqVO"
+            resultType="long">
+
+    select count(1)
+        from tbhxzd218 d218
+            join tbhxzm207 m207
+                on d218.tpw_svc_id = m207.tpw_svc_id
+                and d218.tpw_svc_typ_id = m207.tpw_svc_typ_id
+                and d218.tpw_svc_typ_sno = m207.tpw_svc_typ_sno
+                and d218.card_no = m207.card_no
+            join tbhxzm101 m101
+                on m207.mbrs_id = m101.mbrs_id
+            join tbhxzm201 m201
+                on d218.tpw_svc_id = m201.tpw_svc_id
+            join tbhxzm202 m202
+                on d218.tpw_svc_id = m202.tpw_svc_id
+                and d218.tpw_svc_typ_id = m202.tpw_svc_typ_id
+                and d218.tpw_svc_typ_sno = m202.tpw_svc_typ_sno
+    where 1=1
+    <!-- 지자체 관리자인경우 -->
+    <if test="req.orgCd != '0000000'">
+        and m201.org_cd = #{req.orgCd}
+    </if>
+
+    <!-- 기관코드 -->
+    <if test="req.orgCd != null and req.orgCd != '' and req.orgCd != '0000000'">
+        and m201.org_cd like concat('%', #{req.orgCd}, '%')
+    </if>
+
+    <!-- 카드번호 검색  -->
+    <if test="req.cardNo != null and req.cardNo != ''">
+        and d218.card_no like concat('%', #{req.cardNo}, '%')
+    </if>
+
+    <!-- 서비스ID 검색 -->
+    <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+        and m201.tpw_svc_id = #{req.tpwSvcId}
+        <choose>
+            <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+            </when>
+            <otherwise>
+                and m201.tpw_svc_id = m202.tpw_svc_id
+            </otherwise>
+        </choose>
+    </if>
+
+    <!-- 신청기간 검색 -->
+    <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+        and d218.apl_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+    </if>
+
+    <!-- 서비스명 검색 -->
+    <if test="req.svcNm != null and req.svcNm != ''">
+        and m201.tpw_svc_nm like concat('%', #{req.svcNm}, '%')
+    </if>
+
+    <!-- 서비스유형명 검색 -->
+    <if test="req.svcTypNm != null and req.svcTypNm != ''">
+        and m202.tpw_svc_typ_nm like concat('%', #{req.svcTypNm}, '%')
+    </if>
+
+    <!-- 서비스유형일련번호 검색 -->
+    <if test="req.tpwSvcTypSno != null and req.tpwSvcTypSno != ''">
+        and d218.tpw_svc_typ_sno = #{req.tpwSvcTypSno}  -- 서비스유형일련번호 검색
+    </if>
+
+    </select>
+
+</mapper>

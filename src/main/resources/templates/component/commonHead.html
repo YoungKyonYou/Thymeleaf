@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" data-theme="light" th:fragment="layout(content)">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tmoney CMS" />
+  <meta name="keywords" content="Tmoney CMS" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Tmoney CMS" />
+  <meta property="og:description" content="Tmoney CMS" />
+
+  <title th:text="${pageTitle} ?: 'Tmoney CMS'">Tmoney CMS</title>
+
+  <div aria-hidden="true" aria-labelledby="modal-title-basic" aria-modal="true" class="modal" id="modal-common"
+    role="dialog" th:fragment="modal-basic">
+    <div class="modal-overlay" data-dismiss></div>
+
+    <div class="modal-container" role="document" tabindex="-1">
+      <header class="modal-header">
+        <!-- 모달 타이틀 -->
+        <h3 class="modal-title" id="modal-title-basic"></h3>
+        <button aria-label="닫기" class="modal-close" data-dismiss type="button"></button>
+      </header>
+
+      <!-- 모달 내용 영역입니다. 폼·테이블·문구 등을 배치하세요. -->
+      <div class="modal-body">
+      </div>
+
+      <footer class="modal-footer">
+        <!-- 취소 -->
+        <button class="btn btn-dark-line" data-dismiss type="button"></button>
+        <button class="btn btn-blue" type="button"></button>
+      </footer>
+    </div>
+  </div>
+  <!-- CSS (로컬) -->
+  <link rel="stylesheet" th:href="@{/css/vendor/jquery-ui.css}" />
+  <link rel="stylesheet" th:href="@{/css/vendor/aos.css}" />
+  <link rel="stylesheet" th:href="@{/css/index.css}" />
+  <link rel="stylesheet" th:href="@{/css/components/components.css}" />
+
+  <!-- JS (로컬/순서 중요: jQuery → UI → 나머지) -->
+  <script th:src="@{/js/vendor/jquery-3.6.0.min.js}"></script>
+  <script th:src="@{/js/vendor/jquery-ui.min.js}"></script>
+
+  <script defer th:src="@{/js/theme.js}"></script>
+  <script defer th:src="@{/js/vendor/common.js}"></script>
+  <script defer th:src="@{/js/vendor/aos.js}"></script>
+  <script defer th:src="@{/js/datepicker.js}"></script>
+  <script defer th:src="@{/js/common.js}"></script>
+
+
+  <!-- AOS init -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.AOS && !window.__aosInited) {
+        AOS.init(); /* 옵션 필요 시 { duration: 600, once: true } */
+        window.__aosInited = true;
+      }
+    });
+  </script>
+  <style>
+    /* 전역 로더 기본 스타일 (FOUC 방지 + JS 로딩 전에도 적용) */
+    #mini-sp-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    #mini-sp-loading .global-loading-backdrop {
+      position: absolute;
+      inset: 0;
+      /* TMONEY 보라/노랑 그라디언트 + 훨씬 밝은 오버레이 */
+      background:
+        radial-gradient(circle at 10% 0%, rgba(91, 33, 255, 0.18), transparent 55%),
+        radial-gradient(circle at 90% 100%, rgba(255, 212, 0, 0.22), transparent 55%),
+        rgba(15, 23, 42, 0.25);
+      backdrop-filter: blur(8px);
+    }
+
+    #mini-sp-loading .global-loading-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 24px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.92);
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.55);
+      color: #e5e7eb;
+      pointer-events: auto;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    #mini-sp-loading .rabbit-wrapper {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 0%, #ffd400, #5b21ff 72%);
+      overflow: hidden;
+    }
+
+    #mini-sp-loading .rabbit-orbit {
+      position: absolute;
+      inset: 10px;
+      border-radius: inherit;
+      border: 2px dashed rgba(248, 250, 252, 0.65);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6) inset;
+      animation: rabbit-orbit-spin 1.4s linear infinite;
+    }
+
+    #mini-sp-loading .rabbit-img {
+      width: 48px;
+      height: auto;
+      position: relative;
+      z-index: 1;
+      animation: rabbit-hop 0.8s ease-in-out infinite;
+      filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.9));
+    }
+
+    #mini-sp-loading .rabbit-shadow {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 34px;
+      height: 10px;
+      background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.65), transparent 70%);
+      opacity: 0.8;
+      filter: blur(1px);
+      z-index: 0;
+      animation: rabbit-shadow 0.8s ease-in-out infinite;
+    }
+
+    #mini-sp-loading .global-loading-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #mini-sp-loading .global-loading-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+
+    #mini-sp-loading .global-loading-text {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #cbd5f5;
+      white-space: nowrap;
+    }
+
+    @keyframes rabbit-hop {
+
+      0%,
+      100% {
+        transform: translateY(2px);
+      }
+
+      40% {
+        transform: translateY(-9px);
+      }
+    }
+
+    @keyframes rabbit-shadow {
+
+      0%,
+      100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 0.8;
+      }
+
+      40% {
+        transform: translateX(-50%) scale(0.8);
+        opacity: 0.45;
+      }
+    }
+
+    @keyframes rabbit-orbit-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 640px) {
+      #mini-sp-loading .global-loading-card {
+        padding: 14px 18px;
+        gap: 12px;
+      }
+
+      #mini-sp-loading .rabbit-wrapper {
+        width: 64px;
+        height: 64px;
+      }
+
+      #mini-sp-loading .global-loading-text {
+        font-size: 0.78rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="mini-sp-loading">
+    <div class="global-loading-backdrop"></div>
+    <div class="global-loading-card" role="status" aria-label="불러오는 중">
+      <div class="rabbit-wrapper">
+        <div class="rabbit-orbit"></div>
+        <img th:src="@{/images/img-rabbit.png}" src="/images/img-rabbit.png" alt="Tmoney 로딩 토끼" class="rabbit-img" />
+        <div class="rabbit-shadow"></div>
+      </div>
+      <div class="global-loading-copy">
+        <p class="global-loading-title">Tmoney CMS</p>
+        <p class="global-loading-text">데이터를 불러오는 중입니다...</p>
+      </div>
+    </div>
+  </div>
+  <!-- 테마 적용(IIFE) -->
+  <script>
+    (function () {
+      try {
+        const KEY = 'theme';
+        const stored = localStorage.getItem(KEY);
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
+  <div id="wrapper">
+    <!-- 공통 사이드/헤더 -->
+    <th:block th:replace="~{component/aside :: aside}"></th:block>
+    <th:block th:replace="~{component/header :: header(${session.userName})}"></th:block>
+
+    <main id="contents">
+      <div class="container">
+        <!-- 🔽 페이지에서 넘겨줄 본문 슬롯 -->
+        <th:block th:replace="${content}">
+
+        </th:block>
+      </div>
+    </main>
+  </div>
+
+</body>
+
+</html>

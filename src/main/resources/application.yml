@@ -1,28 +1,77 @@
 spring:
-  session:
-    jdbc:
-      initialize-schema: always
+  # -------------------------------
+  # (옵션) 데이터소스: 필요 시 주석 해제
+  # -------------------------------
   datasource:
-    url: jdbc:h2:file:./data/testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
-
+    hikari:
+      schema: ohxzown
+    url: jdbc:postgresql://whyzoo.i234.me:5032/postgres?currentSchema=ohxzown
+    username: tmoney
+    password: tmoney2288!
+    driver-class-name: org.postgresql.Driver
   thymeleaf:
+    prefix: "file:src/main/resources/templates/"
+    suffix: ".html"
     cache: false
-  servlet:
-    multipart:
+    check-template-location: true
+    mode: HTML
+
+  web:
+    resources:
+      static-locations: "file:src/main/resources/static/"
+      chain:
+        cache: false
+      cache:
+        period: 0
+
+  devtools:
+    livereload:
       enabled: true
-      max-file-size: 100MB
-      max-request-size: 200MB
+    restart:
+      poll-interval: 1000
+      quiet-period: 400
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+decorator:
+  datasource:
+    p6spy:
+      enabled: true
+      multiline: true
+logging:
+  level:
+    com.example.springbatchtest.batch.job: DEBUG
+    net.ttddyy.dsproxy: DEBUG
+    com.github.gavlyukovskiy.boot.jdbc.decorator: DEBUG
+    org.springframework.jdbc.core: DEBUG
+    org.springframework.jdbc.core.JdbcTemplate: DEBUG
+    org.springframework.jdbc.core.namedparam: DEBUG
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE
+    org.springframework.batch.item.database: DEBUG
+    tmoney.co.kr.hxz.sprtpolimng.polimnginf.mapper.SprtLmtMapper: DEBUG
+app:
+  totp:
+    issuer: "TMONEY"
+  onboarding:
+    token-ttl-minutes: 10 # 진행 토큰 (onb) JWT TTL 10분, 각 단계의 진행 토큰 유효시간
+    hmac-secret: "dGhpc19pc19hX2RlbW9fMzJieXRlX2tleV9mb3JfSE1BQ1MyNTY="
+    cookie:
+      onb-max-age-seconds: 3600      #  /signup/start에서 쓰는 onb 쿠키 Max-Age
+    receipt:
+      step-ttl-minutes: 30
+    done-token-ttl-seconds: 600           # 완료 토큰(JWT) TTL (기본 10분 예시)
+
+
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+file:
+  base-dir: /data/attachments
+

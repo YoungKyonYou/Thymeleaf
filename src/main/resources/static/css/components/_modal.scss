@@ -1,0 +1,174 @@
+/* Modal (theme-aware) */
+.modal {
+  /* ✨ 모달 전용 변수: 테마별로 표면/전경/오버레이 제어 */
+  --modal-surface: var(--color-white);
+  --modal-foreground: var(--color-darken);
+  --modal-overlay: rgba(0, 0, 0, .45);
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none; /* aria-hidden="true"일 때 숨김 */
+
+  &[aria-hidden="false"] { display: block; }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--modal-overlay);
+    backdrop-filter: blur(2px); /* 어둠 속에서도 레이어 분리감 */
+  }
+
+  .modal-container {
+    position: relative;
+    width: min(720px, calc(100% - 32px));
+    max-height: calc(100dvh - 80px);
+    margin: 40px auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--modal-surface);
+    //color: var(--modal-foreground); /* ✅ 테마 전경색 사용 */
+    color: var(--color-darken);
+    border: 1px solid var(--border-darken);
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, .18);
+    outline: none;
+    transform: translateY(16px);
+    opacity: 0;
+    transition: transform .2s ease, opacity .2s ease;
+  }
+
+  &[aria-hidden="false"] .modal-container {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--gray-500);
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      //color: inherit; /* 전경색 상속 */
+      color: var(--color-darken);
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 8px;
+      position: relative;
+      //color: var(--modal-foreground); /* 아이콘 색 기준 */
+      color: var(--color-darken);
+      border: 1px solid var(--color-darken);
+
+      &::before,
+      &::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 18px;
+        height: 2px;
+        background: currentColor; /* 테마에 따라 자동 적응 */
+        transform-origin: 50% 50%;
+      }
+      &::before { transform: translate(-50%, -50%) rotate(45deg); }
+      &::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+      &:hover { background: var(--gray-200); }
+      &:focus-visible { outline: 2px solid rgba(var(--color-primary-rgb), .4); outline-offset: 2px; }
+    }
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow: auto;
+    color: inherit; /* ✅ 전경색 상속 */
+    .table { min-width: 100%; }
+  }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--gray-500);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* 사이즈 변형 */
+  &-sm .modal-container { width: min(420px, calc(100% - 32px)); }
+  &-lg .modal-container { width: min(1000px, calc(100% - 32px)); }
+
+  /* 드로어형 (오른쪽 슬라이드) */
+  &-drawer {
+    .modal-container {
+      margin: 0 0 0 auto;
+      height: 100dvh;
+      width: min(480px, 100%);
+      border-radius: 0;
+      transform: translateX(24px);
+      opacity: 1;
+    }
+    &[aria-hidden="false"] .modal-container { transform: translateX(0); }
+  }
+
+  .box-wrap {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+    .box {
+      width: 100%;
+      min-width: 0;
+      .flex * { min-width: 0; }
+      &.col2 { grid-column: span 2; }
+      &.col3 { grid-column: span 3; }
+      &.col4 { grid-column: span 4; }
+    }
+  }
+}
+
+/* 바디 스크롤 잠금 */
+.body-lock { overflow: hidden; }
+
+/* 🌙 다크 테마 전용 오버라이드 */
+:root {
+  /* 폴백: color-mix 미지원 시 사용될 약간 어두운 표면색 */
+  --modal-surface-dark-fallback: #f2f2f5;
+}
+
+/* 최신 브라우저: color-mix 사용 (OKLab 추천) */
+@supports (color: color-mix(in oklab, white, black)) {
+  :root {
+    --modal-surface-dark: color-mix(in oklab, var(--color-white), black 16%);
+  }
+}
+
+/* 다크 테마
+   - 표면은 화이트를 16% 블랙으로 톤다운
+   - 전경은 진한 #121212
+   - 오버레이는 조금 더 진하게 */
+[data-theme="dark"] .modal {
+  --modal-surface: var(--modal-surface-dark, var(--modal-surface-dark-fallback));
+  --modal-foreground: #121212;
+  --modal-overlay: rgba(0, 0, 0, .6);
+}
+
+/* 다크 테마 디테일 튜닝: 보더/호버 대비 과하지 않게 */
+[data-theme="dark"] .modal .modal-container {
+  border-color: color-mix(in oklab, var(--border-darken), white 28%);
+}
+[data-theme="dark"] .modal .modal-header,
+[data-theme="dark"] .modal .modal-footer {
+  border-color: color-mix(in oklab, var(--gray-500), white 30%);
+}
+[data-theme="dark"] .modal .modal-header .modal-close:hover {
+  background: color-mix(in oklab, var(--gray-200), black 12%);
+}

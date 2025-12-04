@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pager Fragment</title>
+</head>
+<body>
+
+<th:block th:fragment="pager(pageData)">
+
+    <div class="mt20">
+        <div class="pagination" role="navigation" aria-label="목록 페이지 이동">
+
+            <!-- Prev: data-page = 현재(0-base) - 1 -->
+            <button type="button"
+                    class="pager-btn prev"
+                    aria-label="이전 페이지"
+                    th:classappend="${(pageData == null) or !pageData.hasPrev} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page - 1 : 0}">
+                Prev
+            </button>
+
+            <!-- 숫자 버튼: data-page = 0-base(i), 표시는 i+1, 활성 비교 = pageData.page(0-base) -->
+            <th:block th:if="${pageData != null and pageData.total > 0}"
+                      th:with="
+                  current=${pageData.page},
+                  totalPages=${pageData.getTotalPages()},
+                  totalPagesInt=${T(java.lang.Math).toIntExact(totalPages)},
+                  blockIdx=${current / 10},
+                  blockStart=${blockIdx * 10},
+                  blockEnd=${T(java.lang.Math).min(blockStart + 9, totalPagesInt - 1)}
+                ">
+
+                <button type="button"
+                        class="pager-item"
+                        th:each="i : ${#numbers.sequence(blockStart, blockEnd)}"
+                        th:classappend="${i == pageData.page} ? ' is-active'"
+                        th:attr="data-page=${i}"
+                        th:aria-current="${i == pageData.page} ? 'page' : null"
+                        th:text="${i + 1}">
+                </button>
+            </th:block>
+
+            <!-- Next: data-page = 현재(0-base) + 1 -->
+            <button type="button"
+                    class="pager-btn next"
+                    aria-label="다음 페이지"
+                    th:classappend="${(pageData == null) or !pageData.hasNext} ? ' disabled'"
+                    th:attr="data-page=${pageData != null ? pageData.page + 1 : 0}">
+                Next
+            </button>
+
+        </div>
+    </div>
+
+    <!--
+      사용 예)
+
+      1) 기존 화면들(그대로 사용)
+      bindPagination(baseUrl, {
+          page: 0,
+          size: parseInt(selectSize?.value || '10', 10),
+          dir:  inputDir?.value || 'asc',
+          sort: inputSort?.value || 'mbrs_id',
+      });
+
+      2) 셀렉터까지 명시하고 싶은 화면
+      bindPagination(baseUrl, {
+          page: 0,
+          size: parseInt(selectSize?.value || '10', 10),
+          dir:  inputDir?.value || 'asc',
+          sort: inputSort?.value || 'mbrs_id',
+      }, ['#grid-header', '#grid-tbody', '#grid-pager', '#grid-title', '#grid-head']);
+    -->
+    <script>
+        function putParam(params, key, value) {
+          if (value === null || value === undefined || value === '') return;
+          if (Array.isArray(value)) value.forEach(v => putParam(params, key, v));
+          else params.set(key, value);
+        }
+
+        /**
+         * fetchAndSwap(u, selectors?)
+         * - selectors를 안 넘기면 기본(grid-*) 셀렉터 세트를 사용
+         * - 넘기면 그 리스트대로 for문 돌면서 교체
+         */
+        async function fetchAndSwap(u, selectors) {
+          // 기본 교체 규칙 (기존 동작 유지: pager는 innerHTML, 나머지는 replaceWith)
+          const defaultSwaps = [
+            { selector: '#grid-header', mode: 'replace' },
+            { selector: '#grid-tbody',  mode: 'replace' },
+            { selector: '#grid-pager',  mode: 'inner'   },
+            { selector: '#grid-title',  mode: 'replace' },
+            { selector: '#grid-head',   mode: 'replace' },
+          ];
+
+          // 사용자가 배열을 넘겼으면 그걸로 덮어씀. (사용자 셀렉터는 전부 replace 모드)
+          const swaps = (Array.isArray(selectors) && selectors.length > 0)
+            ? selectors.map(sel => ({ selector: sel, mode: 'replace' }))
+            : defaultSwaps;
+
+          const res = await fetch(u.toString(), { headers: { 'X-Requested-With': 'fetch' } });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const html = await res.text();
+
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+
+
+          for (const cfg of swaps) {
+            const sel  = cfg.selector;
+            const mode = cfg.mode || 'replace';
+
+            if (!sel) continue;
+
+            const newEl = doc.querySelector(sel);
+            const curEl = document.querySelector(sel);
+
+            if (!newEl || !curEl) continue;
+
+            if (mode === 'inner') {
+              curEl.innerHTML = newEl.innerHTML;
+            } else {
+              curEl.replaceWith(newEl);
+            }
+          }
+
+          // 주소창만 갱신 (전체 새로고침 X)
+          history.pushState(null, '', u.toString());
+        }
+
+        /**
+         * 시그니처 유지:
+         *   bindPagination(url, baseArgs, selectors?)
+         */
+        function bindPagination(url, baseArgs, selectors) {
+          const baseUrl = new URL(url, window.location.origin);
+          const args    = Object.assign({}, baseArgs || {});
+
+          // 브라우저 뒤로/앞으로 가기 지원
+          window.addEventListener('popstate', () => {
+            fetchAndSwap(new URL(window.location.href), selectors).catch(console.error);
+          });
+
+          document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.pagination [data-page]');
+            if (!btn) return;
+
+            if (btn.classList.contains('disabled')) return;
+            e.preventDefault(); // 혹시 모를 기본동작 차단
+
+            const page = Number(btn.dataset.page);
+
+            const u = new URL(baseUrl.toString());
+            const p = new URLSearchParams(u.search);
+
+            const size = args.size ?? null; // null이면 생략
+            const dir  = args.dir  ?? 'asc';
+            const sort = args.sort ?? null; // null/''이면 생략
+
+            putParam(p, 'size', size);
+            putParam(p, 'page', page); // 0-base 그대로
+            putParam(p, 'dir',  dir);
+            if (sort !== null && sort !== undefined && sort !== '') {
+              putParam(p, 'sort', sort);
+            }
+
+            const skip = new Set(['size','page','dir','sort']);
+            Object.entries(args).forEach(([k, v]) => {
+              if (!skip.has(k)) putParam(p, k, v);
+            });
+
+            u.search = p.toString();
+
+            fetchAndSwap(u, selectors).catch(console.error);
+          });
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+#header {
+  border-bottom: 1px solid var(--gray-600);
+  width: 100%;
+  grid-area: header;
+  .container {
+    padding: 0 20px;
+    .gnb {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-left: auto;
+      gap: 20px;
+      height: 75px;
+    }
+  }
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    .icon {
+      width: 30px;
+      height: 30px;
+      &::before {
+        background-image: url(../../images/icon/icon-user.svg);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+      }
+    }
+    p {
+      font-size: 18px;
+      color: var(--color-darken)
+    }
+  }
+  .btn-logout {
+    padding: 8px 16px;
+    border: 1px solid var(--border-darken);
+    border-radius: 4px;
+    background-color: transparent;
+    font-size: 14px;
+    color: var(--color-darken);
+    cursor: pointer;
+    transition: all 0.3s;
+    &:hover {
+      background-color: var(--gray-100);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+  }
+}

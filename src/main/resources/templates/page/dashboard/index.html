@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
+<!--~는 Thymeleaf에서 템플릿 경로를 표현할 때 사용-->
+<!--::content는 현재 템플릿 파일에서 정의된 th:fragment="content"를 참조합니다.-->
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <!-- 페이지 전용 CSS (필요 시) -->
+        <link rel="stylesheet" th:href="@{/css/page/page.css}"/>
+
+        <section class="section dashboard-wrap">
+            <div class="box-wrap col3">
+                <div class="box">
+                    <div class="title-box"><p class="field-title">회원현황</p></div>
+                    <ul>
+                        <li class="primary">
+                            <div class="img-box"><img th:src="@{/images/img-rabbit.png}" alt=""></div>
+                            <span>총 회원</span><span>50,260명</span>
+                        </li>
+                        <li class="secondary">
+                            <div class="img-box"><img th:src="@{/images/img-rabbit.png}" alt=""></div>
+                            <span>금일 방문자</span><span>59,059명</span>
+                        </li>
+                        <li class="point">
+                            <div class="img-box"><img th:src="@{/images/img-rabbit.png}" alt=""></div>
+                            <span>금일 지원금 신청</span><span>29,980명</span>
+                        </li>
+                        <li class="white">
+                            <div class="img-box"><img th:src="@{/images/img-rabbit.png}" alt=""></div>
+                            <span>금일 지원금액</span><span>714,469원</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="box">
+                    <div class="title-box">
+                        <p class="field-title">방문자 추이</p>
+                        <!-- <a href="#" class="more">+ 더보기</a> -->
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="memberChart" data-radius="10" height="300"></canvas>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="title-box">
+                        <p class="field-title">지원금 신청/지급</p>
+                        <!-- <a href="#" class="more">+ 더보기</a> -->
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="memberChart2" data-radius="10" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-content">
+                <div class="title-wrap"><h3 class="section-title">관리자 공지 목록 조회</h3></div>
+
+                <div class="box-wrap col2">
+                    <div class="box">
+                        <div class="flex align-center justify-space-between">
+                            <p class="field-title">공지사항</p>
+                            <a href="#">+더보기</a>
+                        </div>
+
+                        <div class="list-box mt20">
+                            <div class="list-head">
+                                <div class="num">번호</div>
+                                <div class="title">제목</div>
+                                <div class="date">등록일</div>
+                            </div>
+                            <div class="list-body">
+                                <a href="" class="list-tr">
+                                    <div class="num">5</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">4</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">3</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">2</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">1</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box">
+                        <div class="flex align-center justify-space-between">
+                            <p class="field-title">자주하는 질문</p>
+                            <a href="#">+더보기</a>
+                        </div>
+
+                        <div class="list-box mt20">
+                            <div class="list-head">
+                                <div class="num">번호</div>
+                                <div class="title">제목</div>
+                                <div class="date">등록일</div>
+                            </div>
+                            <div class="list-body">
+                                <a href="" class="list-tr">
+                                    <div class="num">5</div>
+                                    <div class="title">지원 대상은 누구인가요?</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">4</div>
+                                    <div class="title">서울 종로구에 거주하는 외국인도 지원을 받을 수 있나요?</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">3</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">2</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                                <a href="" class="list-tr">
+                                    <div class="num">1</div>
+                                    <div class="title">교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드교통복지 카드에 대한 지차체별 할인혜택 가이드</div>
+                                    <div class="date">2025-07-10</div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <script th:src="@{/js/vendor/chart.umd.min.js}"></script>
+        <script th:src="@{/js/vendor/chartjs-plugin-datalabels.min.js}"></script>
+
+        <!-- 방문자 추이 -->
+        <script>
+            (function () {
+                const canvas = document.getElementById('memberChart');
+                if (!canvas) return;
+                const radius = canvas.dataset.radius ? parseInt(canvas.dataset.radius) : 0;
+                const ctx = canvas.getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['2025-08', '2025-07', '2025-06', '2025-05'],
+                        datasets: [
+                            { label: '남자', data: [4, 2, 3, 4], backgroundColor: '#861c7f', borderRadius: radius }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'bottom',
+                                labels: { boxWidth: 20, boxHeight: 10, color: '#333', font: { size: 14, weight: 'bold' }}} },
+                        scales: { y: { beginAtZero: true, suggestedMax: 5, ticks: { stepSize: 1 } } }
+                    }
+                });
+            })();
+        </script>
+
+        <!-- 지원금 신청/지급 -->
+        <script>
+            (function () {
+                const canvas = document.getElementById('memberChart2');
+                if (!canvas) return;
+                const radius = canvas.dataset.radius ? parseInt(canvas.dataset.radius) : 0;
+                const ctx = canvas.getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['2025-08', '2025-07', '2025-06', '2025-05'],
+                        datasets: [
+                            { label: '남자', data: [250, 220, 240, 400], backgroundColor: '#861c7f', borderRadius: radius },
+                            { label: '여자', data: [140, 190, 100, 380], backgroundColor: '#e3933a', borderRadius: radius }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: true, position: 'bottom',
+                                labels: { boxWidth: 20, boxHeight: 10, color: '#333', font: { size: 14, weight: 'bold' }}} },
+                        scales: { y: { beginAtZero: true, suggestedMax: 500, ticks: { stepSize: 100 } } }
+                    }
+                });
+            })();
+        </script>
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+
+    </th:block>
+</th:block>
+</html>

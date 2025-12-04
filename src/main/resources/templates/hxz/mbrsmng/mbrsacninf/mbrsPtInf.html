@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <style>
+            .hide { display: none; }
+            .table-vertical th { width: 10em; }
+            [name ^= cardNo] { display: inline-block; }
+            .disabled { background-color: #f5f5f5; cursor: not-allowed; }
+            #selected-section { border-top: 2px solid #333; padding-top: 20px; background: #f9f9f9; padding: 20px; }
+            .detail-info-row { font-size: 1.1em; font-weight: bold; margin-bottom: 10px; }
+            .detail-info-row span { color: #005eb8; margin-right: 20px; }
+        </style>
+
+        <section class="section" id="grid">
+            <div class="section-header">
+                <form id="search-form" action="/mbrsmng/mbrsacninf/mbrsPtInf.do" method="GET" th:object="${req}">
+                    <input th:field="*{sort}" type="hidden">
+                    <input th:field="*{dir}" type="hidden">
+
+                    <div class="title-wrap">
+                        <h3 class="section-title">회원정보내역조회</h3>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">가입기간</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="sttDt" th:value="*{sttDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">&nbsp;</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="endDt" th:value="*{endDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">회원상태</p>
+                            <div class="dropdown" data-name="mbrsStaCd">
+                                <button aria-expanded="false" aria-haspopup="listbox" aria-label="회원상태 드롭다운"
+                                        class="dropdown_button" type="button">
+                                    <span class="dropdown_value" data-placeholder="전체">전체</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="">전체</li>
+                                    <li role="option" class="dropdown_option" data-value="00">정상</li>
+                                    <li role="option" class="dropdown_option" data-value="01">휴면</li>
+                                    <li role="option" class="dropdown_option" data-value="99">탈퇴</li>
+                                </ul>
+                                <input type="hidden" name="mbrsStaCd" th:value="*{mbrsStaCd}">
+                            </div>
+                        </div>
+
+                        <div class="box">
+                            <p class="field-title">행정동코드</p>
+                            <input class="text-field" name="addoCd" th:value="*{addoCd}" maxlength="10" placeholder="코드 입력" type="search">
+                        </div>
+                    </div>
+
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">회원명</p>
+                            <input class="dp-input text-field" type="text" name="mbrsNm" th:value="*{mbrsNm}">
+                        </div>
+                        <div class="box">
+                            <p class="field-title">회원ID</p>
+                            <input class="dp-input text-field" type="text" name="mbrsId" th:value="*{mbrsId}">
+                        </div>
+                        <div class="box">
+                            <p class="field-title">가입유형</p>
+                            <div class="dropdown" data-name="tpwJoinTypCd">
+                                <button aria-expanded="false" aria-haspopup="listbox" aria-label="가입유형 드롭다운"
+                                        class="dropdown_button" type="button">
+                                    <span class="dropdown_value" data-placeholder="전체">전체</span>
+                                </button>
+                                <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                    <li role="option" class="dropdown_option" data-value="">전체</li>
+                                    <li role="option" class="dropdown_option" data-value="01">직접</li>
+                                    <li role="option" class="dropdown_option" data-value="02">대리</li>
+                                    <li role="option" class="dropdown_option" data-value="99">시스템</li>
+                                </ul>
+                                <input type="hidden" name="tpwJoinTypCd" th:value="*{tpwJoinTypCd}">
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">카드번호</p>
+                            <input class="dp-input text-field" type="text" name="cardNo" th:value="*{cardNo}">
+                        </div>
+                    </div>
+
+                    <div class="box-wrap" th:if="${orgCd == '0000000'}">
+                        <div class="box">
+                            <p class="field-title">기관코드</p>
+                            <input class="text-field" maxlength="7" name="orgCd" th:value="*{orgCd}" placeholder="기관코드 입력" type="search">
+                        </div>
+                        <div class="box"></div><div class="box"></div><div class="box"></div>
+                    </div>
+
+                    <div class="box" style="visibility: hidden; width: 0; padding:0; margin:0; height:0;">
+                        <select name="size" class="select-box">
+                            <option value="10" th:selected="*{size} == 10">10</option>
+                            <option value="20" th:selected="*{size} == 20">20</option>
+                            <option value="50" th:selected="*{size} == 50">50</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-wrap">
+                        <button type="button" class="btn btn-secondary btn-icon-left" data-export="xlsx" data-provider="회원정보내역조회">
+                            다운로드 <i class="icon icon-save"></i>
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-icon-left">
+                            검색 <i class="icon icon-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="section-content">
+                <div class="flex justify-space-between" th:object="${pageData}">
+                    <div class="flex justify-space-between" id="grid-header">
+                        <b th:text="'검색 결과 : ' + *{total} + '건'"></b>
+                    </div>
+                </div>
+
+                <div class="table-wrap mt20">
+                    <table id="table-list" class="table">
+                        <caption class="blind">회원정보내역조회</caption>
+                        <colgroup>
+                            <col width="60px">
+                            <col width="120px">
+                            <col width="120px">
+                            <col width="150px">
+                            <col width="100px">
+                            <col width="100px">
+                        </colgroup>
+                        <thead id="grid-head">
+                        <tr>
+                            <th scope="col">순번</th>
+                            <th scope="col"><a data-sort="mbrs_id">회원아이디</a></th>
+                            <th scope="col"><a data-sort="mbrs_nm">회원명</a></th>
+                            <th scope="col"><a data-sort="addo_cd">행정동</a></th>
+                            <th scope="col"><a data-sort="mbrs_sta_cd">회원상태</a></th>
+                            <th scope="col">상세정보</th>
+                        </tr>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <th:block th:if="${pageData.total > 0}" th:each="item, stat : ${pageData.content}">
+                            <tr>
+                                <!-- [수정] 순번 계산식: 1페이지(page=1)일 때 1번부터 시작하도록 (page - 1) 적용 -->
+                                <td th:text="${(pageData.page) * pageData.size + stat.count}">1</td>
+                                <td th:text="${item.mbrsId}">testID</td>
+                                <td th:text="${item.mbrsNm}">홍길동</td>
+                                <td th:text="${item.addoCd}">행정동코드</td>
+
+                                <td th:switch="${item.mbrsStaCd}">
+                                    <span th:case="'00'">정상</span>
+                                    <span th:case="'01'">휴면</span>
+                                    <span th:case="'99'">탈퇴</span>
+                                    <span th:case="*" th:text="${item.mbrsStaCd}"></span>
+                                </td>
+
+                                <td>
+                                    <button type="button" class="btn btn-dark-line btn-detail"
+                                            th:data-mbrs-id="${item.mbrsId}"
+                                            th:data-mbrs-nm="${item.mbrsNm}"
+                                            th:data-svc-nm="${item.tpwSvcNm}"
+                                            th:data-svc-typ-nm="${item.tpwSvcTypNm}"
+                                            th:data-join-dt="${item.mbrsSvcJoinDt}"
+                                            th:data-svc-sta="${item.tpwMbrsSvcStaCd}"
+                                            th:data-card-no="${item.cardNo}"
+                                            th:data-bnk-cd="${item.bnkCd}"
+                                            th:data-acnt-no="${item.acntNo}"
+                                            th:data-addo-cd="${item.addoCd}">
+                                        상세보기
+                                    </button>
+                                </td>
+                            </tr>
+                        </th:block>
+
+                        <tr th:if="${pageData.total == 0}">
+                            <td colspan="6" class="empty">조회 결과가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                </div>
+
+                <div id="selected-section" class="mt40 hide">
+                    <div class="detail-info-row">
+                        회원 ID: <span id="detail-mbrs-id"></span> /
+                        회원명: <span id="detail-mbrs-nm"></span> /
+                        행정동: <span id="detail-addo-cd"></span>
+                    </div>
+
+                    <table class="table mt20">
+                        <colgroup>
+                            <col width="16%">
+                            <col width="16%">
+                            <col width="16%">
+                            <col width="16%">
+                            <col width="16%">
+                            <col width="16%">
+                        </colgroup>
+                        <thead>
+                        <tr>
+                            <th>서비스명</th>
+                            <th>서비스유형명</th>
+                            <th>서비스가입일자</th>
+                            <th>회원서비스상태</th>
+                            <th>카드번호</th>
+                            <th>계좌번호</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td id="detail-svc-nm"></td>
+                            <td id="detail-svc-typ-nm"></td>
+                            <td id="detail-join-dt"></td>
+                            <td id="detail-svc-sta"></td>
+                            <td id="detail-card-no"></td>
+                            <td id="detail-acnt-info"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <script data-page="mbrsPtInf" th:inline="javascript" type="text/javascript">
+            (function () {
+                const grid = document.getElementById('grid');
+                const table = document.getElementById('table-list');
+                const head = document.getElementById('grid-head');
+                // const pager = document.getElementById('grid-pager'); // 삭제: 이벤트 위임 사용으로 개별 참조 불필요
+                const searchForm = document.querySelector('#search-form');
+                const baseUrl = searchForm.getAttribute('action');
+                const selectSize = searchForm.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const selSection = document.getElementById('selected-section');
+                const loading = document.getElementById('mini-sp-loading');
+
+                const svcStatusMap = {
+                    '01': '신청',
+                    '02': '재신청',
+                    '03': '반려',
+                    '04': '승인',
+                    '98': '자격상실',
+                    '99': '해지'
+                };
+
+                const detailEls = {
+                    mbrsId: document.getElementById('detail-mbrs-id'),
+                    mbrsNm: document.getElementById('detail-mbrs-nm'),
+                    addoCd: document.getElementById('detail-addo-cd'),
+                    svcNm: document.getElementById('detail-svc-nm'),
+                    svcTypNm: document.getElementById('detail-svc-typ-nm'),
+                    joinDt: document.getElementById('detail-join-dt'),
+                    svcSta: document.getElementById('detail-svc-sta'),
+                    cardNo: document.getElementById('detail-card-no'),
+                    acntInfo: document.getElementById('detail-acnt-info')
+                };
+
+                if(typeof bindPagination === 'function') {
+                    bindPagination(baseUrl, {
+                        page: 1,
+                        size: parseInt(selectSize?.value || '10', 10),
+                        dir: inputDir?.value || 'desc',
+                        sort: inputSort?.value || 'mbrs_svc_join_dt',
+                    });
+                }
+
+                // [수정] 모든 클릭 이벤트를 #grid 하나로 통합하여 이벤트 위임 처리
+                // 이렇게 해야 AJAX로 테이블/페이저가 교체되어도 이벤트가 유지됨
+                grid.addEventListener('click', (e) => {
+
+                    // 1. 상세보기 버튼 클릭
+                    const detailBtn = e.target.closest('.btn-detail');
+                    if (detailBtn) {
+                        const data = detailBtn.dataset;
+                        detailEls.mbrsId.textContent = data.mbrsId || '-';
+                        detailEls.mbrsNm.textContent = data.mbrsNm || '-';
+                        detailEls.addoCd.textContent = data.addoCd || '-';
+                        detailEls.svcNm.textContent = data.svcNm || '-';
+                        detailEls.svcTypNm.textContent = data.svcTypNm || '-';
+
+                        const joinDt = data.joinDt;
+                        detailEls.joinDt.textContent = joinDt && joinDt.length === 8
+                            ? `${joinDt.substring(0,4)}-${joinDt.substring(4,6)}-${joinDt.substring(6,8)}`
+                            : (joinDt || '-');
+
+                        const staCode = data.svcSta;
+                        detailEls.svcSta.textContent = svcStatusMap[staCode] || staCode || '-';
+
+                        detailEls.cardNo.textContent = data.cardNo || '-';
+
+                        const bnkCd = data.bnkCd ? `(${data.bnkCd})` : '';
+                        const acntNo = data.acntNo || '';
+                        detailEls.acntInfo.textContent = (bnkCd || acntNo) ? `${bnkCd} ${acntNo}` : '-';
+
+                        selSection.classList.remove('hide');
+                        selSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        return; // 처리 후 종료
+                    }
+
+                    // 2. 페이징 버튼 클릭 (검색 조건 유지)
+                    const pageLink = e.target.closest('#grid-pager a[data-page]');
+                    if (pageLink) {
+                        e.preventDefault();
+                        const pageNum = pageLink.dataset.page;
+                        if(typeof Common !== 'undefined') {
+                            const applied = Common.collectFromForm(searchForm);
+                            // 백엔드가 1-based 페이지라면 +1
+                            const targetPage = parseInt(pageNum, 10) + 1;
+
+                            Common.reloadList({
+                                page: targetPage,
+                                defaultSortColumn: 'mbrs_svc_join_dt',
+                                swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                                selectSize: selectSize,
+                                baseUrl: baseUrl,
+                                inputSort: inputSort,
+                                inputDir: inputDir,
+                                applied: applied
+                            });
+                        }
+                        return;
+                    }
+
+                    // 3. 엑셀 다운로드 버튼 클릭
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    if(exportBtn) {
+                        if(typeof Common !== 'undefined') {
+                            Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_svc_join_dt', {});
+                            setTimeout(() => { loading.style.display = 'none'; }, 1000);
+                        }
+                        return;
+                    }
+                });
+
+                searchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    selSection.classList.add('hide');
+                    if(typeof Common === 'undefined') { e.target.submit(); return; }
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 1,
+                        defaultSortColumn: 'mbrs_svc_join_dt',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                        selectSize: selectSize,
+                        baseUrl: baseUrl,
+                        inputSort: inputSort,
+                        inputDir: inputDir,
+                        applied: applied
+                    });
+                });
+
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('a[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort?.value || '';
+                    let dir = inputDir?.value || 'desc';
+                    dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'desc';
+                    inputSort.value = next;
+                    inputDir.value = dir;
+                    searchForm.dispatchEvent(new Event('submit'));
+                });
+            })();
+        </script>
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+    </th:block>
+</th:block>
+</html>

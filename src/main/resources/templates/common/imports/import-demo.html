@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<!-- 레이아웃에 이 페이지의 본문(content) 프래그먼트를 주입 -->
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+
+        <!-- 페이지 전용 CSS -->
+        <link rel="stylesheet" th:href="@{/css/page/page.css}" />
+
+        <!-- 예: user-list.html -->
+        <section class="section">
+            <div class="section-header">
+                <div class="title-wrap">
+                    <h3 class="section-title">사용자 목록 (엑셀 Import)</h3>
+                </div>
+            </div>
+
+            <div class="section-content">
+                <div class="toolbar" style="display:flex; gap:8px; align-items:center;">
+                    <!-- 숨겨진 파일 인풋 (버튼으로 트리거) -->
+                    <input type="file"
+                           id="user-import-file"
+                           accept=".xlsx"
+                           style="display:none;" />
+
+                    <!-- 엑셀 업로드 버튼 -->
+                    <button type="button"
+                            id="btn-user-import"
+                            class="btn btn-primary btn-icon-left">
+                        <i class="icon icon-save"></i>
+                        파일 선택
+                    </button>
+
+                    <!-- 예시 엑셀 다운로드 버튼 -->
+                    <button type="button"
+                            id="btn-user-template"
+                            class="btn btn-secondary btn-icon-left">
+                        <i class="icon icon-save"></i>
+                        Import 예시 파일
+                    </button>
+                </div>
+
+                <table class="table" id="user-grid">
+                    <thead>
+                    <tr>
+                        <th>사용자ID</th>
+                        <th>이름</th>
+                        <th>이메일</th>
+                        <th>나이</th>
+                        <th>전화번호</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- JS에서 rows로 채움 -->
+                    </tbody>
+                </table>
+
+                <div id="user-import-errors" class="error-area"></div>
+
+                <!-- ▼ 그리드 전체를 body로 만들어 서버에 보내는 버튼 -->
+                <div class="section-sub" style="margin-top: 24px;">
+                    <div class="title-wrap">
+                        <h4 class="section-title">그리드 전체 서버 전송 (table → payload)</h4>
+                    </div>
+
+                    <div class="toolbar">
+                        <button type="button" id="btn-send-grid" class="btn btn-primary">
+                            그리드 전체 서버 전송
+                        </button>
+                    </div>
+
+                    <pre id="user-grid-log"
+                         style="margin-top:16px; padding:8px; background:#111827; color:#e5e7eb; font-size:12px;
+                                border-radius:4px; white-space:pre-wrap; word-break:break-all;">
+[로그] 아직 아무 것도 전송되지 않았습니다.
+                    </pre>
+                </div>
+                <!-- ▲ 그리드 전체 서버 전송 끝 -->
+
+            </div>
+        </section>
+
+        <!-- common.js 에 bindExcelImport, collectTablePayload, sendSafe 가 정의되어 있다고 가정 -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+                const fileInput      = document.getElementById('user-import-file');
+                const btnUserImport  = document.getElementById('btn-user-import');
+                const btnUserTmpl    = document.getElementById('btn-user-template');
+                const tbody          = document.querySelector('#user-grid tbody');
+                const errorArea      = document.getElementById('user-import-errors');
+                const btnSendGrid    = document.getElementById('btn-send-grid');
+                const logEl          = document.getElementById('user-grid-log');
+
+                if (!window.Common) {
+                    console.error('Common 전역 객체가 없습니다. /js/common.js 포함 여부를 확인하세요.');
+                    return;
+                }
+
+                function setLog(obj, prefix) {
+                    const title = prefix ? (prefix + '\n') : '';
+                    logEl.textContent =
+                        '[로그]\n' +
+                        title +
+                        JSON.stringify(obj, null, 2);
+                }
+
+                // ==========================
+                // 0) 버튼 → 파일 선택창 열기
+                // ==========================
+                if (btnUserImport && fileInput) {
+                    btnUserImport.addEventListener('click', function () {
+                        fileInput.click();
+                    });
+                }
+
+                // ==========================
+                // 1) 엑셀 Import 바인딩
+                //    (POST /import/xlsx, provider=user)
+                // ==========================
+                Common.bindExcelImport(
+                    fileInput,
+                    'user', // ImportProviderRegistry 에 등록된 provider 이름
+                    function (rows) {
+                        // rows: UserImportRow[] 그대로 옴
+                        tbody.innerHTML = '';
+                        rows.forEach(function (r, idx) {
+                            const tr = document.createElement('tr');
+                            tr.dataset.idx = String(idx);
+
+                            tr.innerHTML = [
+                                r.userId || '',
+                                r.userName || '',
+                                r.email || '',
+                                (r.age != null ? r.age : ''),
+                                r.phone || ''
+                            ].map(function (v) {
+                                return '<td>' + (v == null ? '' : String(v)) + '</td>';
+                            }).join('');
+
+                            tbody.appendChild(tr);
+                        });
+
+                        // 에러 영역 초기화
+                        errorArea.textContent = '';
+                    },
+                    function (errors) {
+                        if (!errors || errors.length === 0) {
+                            errorArea.textContent = '';
+                            return;
+                        }
+                        errorArea.innerHTML = errors.map(function (e) {
+                            return 'Row ' + e.row + ', Col ' + e.col +
+                                ' [' + (e.header || '') + '] : ' +
+                                (e.message || '');
+                        }).join('<br/>');
+                    },
+                    {
+                        // 필요하면 extraParams 넣기
+                        // orgCd: /*[[${orgCd}]]*/ '0001'
+                    }
+                );
+
+                // ==========================
+                // 2) 예시 엑셀 다운로드
+                //    (GET /import/template/xlsx?provider=user)
+                // ==========================
+                if (btnUserTmpl) {
+                    btnUserTmpl.addEventListener('click', function () {
+                        // 타임리프 없을 때를 위해 fallback 도 같이 둠
+                        const url = '/import/template/xlsx?provider=user';
+                        window.location.href = url;
+                    });
+                }
+
+                // ==========================
+                // 3) 테이블 전체 → payload → sendSafe
+                // ==========================
+
+                // thead 헤더 텍스트 → DTO 필드명 매핑
+                const userHeaderMap = {
+                    '사용자id': 'userId',
+                    '이름': 'userName',
+                    '이메일': 'email',
+                    '나이': 'age',
+                    '전화번호': 'phone'
+                };
+
+                if (btnSendGrid) {
+                    btnSendGrid.addEventListener('click', async function () {
+                        try {
+                            // ① 테이블 → payload
+                            const payload = Common.collectTablePayload('#user-grid', {
+                                headerMap: userHeaderMap,
+                                requiredKeys: ['userId', 'userName', 'email'], // 필수 컬럼
+                                wrapperKey: 'list'
+                            });
+
+                            console.log('[Grid] payload:', payload);
+                            setLog(payload, '[Grid] /api/users/import 로 전송할 payload');
+
+                            // ② 서버로 전송 (예: /api/users/import)
+                            const res = await Common.sendSafe('/api/users/import', {
+                                method: 'POST',
+                                data: payload.list,
+                                clientErrorMsg: '요청이 올바르지 않습니다.',
+                                otherErrorMsg: '일시적인 오류가 발생했습니다.'
+                            });
+
+                            if (!res) return; // Abort 등
+
+                            if (res.ok) {
+                                Common.modalShow({
+                                    title: '완료',
+                                    message: '그리드 데이터가 정상적으로 서버에 전송되었습니다.',
+                                    buttons: 'close'
+                                });
+                            } else {
+                                setLog({ status: res.status, error: res.error }, '[Error] sendSafe 결과');
+                                // 에러 모달은 sendSafe 내부에서 이미 띄움
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            Common.modalShow({
+                                title: '오류',
+                                message: e.message || '그리드 데이터를 만들던 중 오류가 발생했습니다.',
+                                buttons: 'close'
+                            });
+                        }
+                    });
+                }
+            });
+        </script>
+
+    </th:block>
+</th:block>
+</html>

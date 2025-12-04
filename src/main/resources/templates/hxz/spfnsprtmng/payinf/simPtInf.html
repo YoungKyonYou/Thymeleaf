@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+        <script th:src="@{/js/datepicker.js}"></script>
+
+        <section class="section">
+            <div class="section-header">
+                <form action="/spfnsprtmng/payinf/simPtInf.do" method="GET" th:object="${req}">
+                    <input type="hidden" th:field="*{sort}">
+                    <input type="hidden" th:field="*{dir}">
+
+                    <div class="title-wrap">
+                        <h3 class="section-title">시뮬레이션내역조회</h3>
+                    </div>
+    
+                    <!-- 검색폼 -->
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">신청기간</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="sttDt" th:id="sttDt" th:value="${req.sttDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">&nbsp;</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="endDt" th:id="endDt" th:value="${req.endDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">카드번호</p>
+                            <input type="text" class="text-field" name="cardNo" th:id="cardNo" th:value="${req.cardNo}">
+                        </div>
+                    </div>
+    
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">서비스 선택</p>
+                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
+                                'svcPair1',
+                                'tpwSvcId',
+                                'tpwSvcTypId',
+                                true
+                            )}"></th:block>
+                        </div>
+                    </div>
+    
+                    <div class="btn-wrap">
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 검색결과 -->
+            <div class="section-content">
+                <div class="flex justify-space-between">
+                    <b>검색결과: <span id="search-count" th:text="${pageData.total}">0</span>건</b>
+                    <div class="flex col-">
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="시뮬레이션내역조회"
+                        >
+                            다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
+                        <button type="button" class="btn btn-dark-line" onclick="loadPage(0)">목록</button>
+                    </div>
+                </div>
+
+                <!-- 테이블 -->
+                <div class="table-wrap mt20">
+                    <table class="table" id="grid">
+                        <caption class="blind">시뮬레이션 요청 내역 테이블</caption>
+                        <thead id="grid-header">
+                        <tr>
+                            <th>
+                                <div class="control checkbox">
+                                    <input type="checkbox" id="cb0">
+                                    <label for="cb0"></label>
+                                </div>
+                            </th>
+                            <th scope="col">순번</th>
+                            <th scope="col">
+                                <a data-sort="tpwSvcNm">서비스</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="tpwSvcTypNm">서비스유형</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="aplDt">신청일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="cardStartDt">카드시작일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="cardEndDt">카드종료일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="completeYn">처리완료여부</a>
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <th:block th:each="u, stat : ${pageData.content}" th:with="base=${pageData.page} * ${pageData.size}" th:object="${u}">
+                            <tr th:if="${u != null}">
+                                <td>
+                                    <div class="control checkbox">
+                                        <input type="checkbox" th:id="'cb_' + ${stat.index}" th:value="${u.id}">
+                                        <label th:for="'cb_' + ${stat.index}"></label>
+                                    </div>
+                                </td>
+                                <td th:text="${base + stat.index + 1}"></td>
+                                <td th:text="${u.tpwSvcNm}"></td>
+                                <td th:text="${u.tpwSvcTypNm}"></td>
+                                <td th:text="${u.aplDt}"></td>
+                                <td th:text="${u.cardStartDt}"></td>
+                                <td th:text="${u.cardEndDt}"></td>
+                                <td th:text="${u.completeYn}"></td>
+                            </tr>
+                        </th:block>
+
+                        <tr th:if="${pageData.total == 0}">
+                            <td colspan="8" class="empty" aria-live="polite">조회 결과가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 페이징 -->
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                </div>
+            </div>
+        </section>
+
+        <script th:inline="javascript">
+
+            (function (){
+                const baseUrl = '';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-header');
+                const searchForm = document.querySelector('form');
+                const selectSize = searchForm?.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const orgCd = [[${orgCd}]];
+                // const mngrId = [[${mngr?.mngrId}]];
+                const mngrId = '';
+                const loading = document.getElementById('mini-sp-loading');
+
+                const payload = { orgCd, mngrId, dnRsn: '' };
+
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                };
+                document.body.addEventListener('click', exportHandler);
+
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id'
+                });
+
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('a[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort.value || 'asc';
+                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header','#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header','#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+            })();
+        </script>
+
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+    </th:block>
+</th:block>
+</html>

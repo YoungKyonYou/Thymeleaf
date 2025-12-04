@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/xhtml">
+<body>
+
+<th:block th:replace="~{component/commonHead :: layout(~{::content})}">
+    <th:block th:fragment="content">
+        <script th:src="@{/js/datepicker.js}"></script>
+        <link rel="stylesheet" th:href="@{/css/page/page.css}"/>
+
+        <style>
+            .hide { display: none; }
+            .table-vertical th { width: 10em; }
+            .disabled { background-color: #f5f5f5; cursor: not-allowed; }
+            .date-field-wrap { display: flex; align-items: center; }
+            #grid-tbody tr { cursor: pointer; }
+            /* 비활성화된 체크박스 스타일 */
+            .control.checkbox.disabled { opacity: 0.5; pointer-events: none; }
+        </style>
+
+        <section class="section" id="grid">
+            <form class="section-header" th:object="${req}" id="searchForm">
+                <!-- Mapper에서 사용하는 searchType은 날짜 기준(reqDtm 등)을 위해 사용 -->
+                <input type="hidden" name="searchType" id="realSearchType" th:value="*{searchType}">
+                <input type="hidden" name="page" id="page" th:value="*{page}">
+                <input type="hidden" name="size" id="size" th:value="*{size}">
+                <input type="hidden" name="sort" id="sort" th:value="*{sort}">
+                <input type="hidden" name="dir" id="dir" th:value="*{dir}">
+
+                <div class="title-wrap">
+                    <h3 class="section-title">수기정산내역조회</h3>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">서비스 선택</p>
+                        <th:block th:replace="~{common/fragment/dropdowns ::cascadingDropdown('svcOnlyRoot', 'tpwSvcId', 'tpwSvcTypId', true)}"></th:block>
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">기간</p>
+                        <div class="dropdown" data-name="dateType">
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="기간 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요">요청일자</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" data-value="reqDtm">요청일자</li>
+                                <li role="option" class="dropdown_option" data-value="prcgDt">처리일자</li>
+                            </ul>
+                            <!-- 화면상의 날짜 타입 선택용 (실제 submit 시 realSearchType에 세팅) -->
+                            <input type="hidden" name="dateType" id="dateType" value="reqDtm">
+                        </div>
+                    </div>
+                    <div class="box date-field-wrap" style="flex-direction: column-reverse;">
+                        <th:block th:replace="~{page/commonFragment/datepicker :: periodFixed(sttDt=*{sttDt}, endDt=*{endDt})}"></th:block>
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">전체</p>
+                        <div class="dropdown" data-name="textType">
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="검색 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요">회원ID</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" data-value="mbrsId">회원ID</li>
+                                <li role="option" class="dropdown_option" data-value="mbrsNm">회원명</li>
+                            </ul>
+                            <!-- 검색어 필드명 결정을 위한 hidden 값 -->
+                            <input type="hidden" name="textType" id="textType" value="mbrsId">
+                        </div>
+                    </div>
+
+                    <div class="box">
+                        <p class="field-title">검색어</p>
+                        <!-- 초기 name은 keyword이지만 submit 시 mbrsId/mbrsNm으로 변경됨 -->
+                        <input class="text-field keyword-search" name="keyword" th:value="*{keyword}" type="search" placeholder="검색어를 입력하세요">
+                    </div>
+                </div>
+
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">처리상태</p>
+                        <div class="dropdown" data-name="tpwMemrPrcgStaCd">
+                            <button aria-expanded="false" aria-haspopup="listbox" aria-label="처리상태 드롭다운"
+                                    class="dropdown_button" type="button">
+                                <span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span>
+                            </button>
+                            <ul class="dropdown_list" role="listbox" tabindex="-1">
+                                <li role="option" class="dropdown_option" data-value="01">요청</li>
+                                <li role="option" class="dropdown_option" data-value="02">승인</li>
+                                <li role="option" class="dropdown_option" data-value="03">반려</li>
+                            </ul>
+                            <input type="hidden" name="tpwMemrPrcgStaCd" th:value="*{tpwMemrPrcgStaCd}">
+                        </div>
+                    </div>
+
+                    <div class="box" th:if="${orgCd == '000000'}">
+                        <p class="field-title">기관코드</p>
+                        <input class="text-field" maxlength="7" name="orgCd" th:value="*{orgCd}" placeholder="기관코드 입력" type="search">
+                    </div>
+                    <div class="box">
+                        <p class="field-title">행정동</p>
+                        <input class="text-field" name="addoNm" th:value="*{addoNm}" maxlength="100" placeholder="행정동 입력" type="search">
+                    </div>
+                </div>
+
+                <div class="btn-wrap">
+                    <input type="text"
+                           id="limitAmtInput"
+                           class="text-field"
+                           placeholder="선택한도금액"
+                           style="width: 120px; text-align: right;"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');">
+
+                    <button type="button" id="btnApplyLimit" class="btn btn-secondary">한도적용확인</button>
+                    <button type="button" id="btnApprove" class="btn btn-secondary">선택승인</button>
+
+                    <button type="button" id="import-file-template" class="btn btn-dark-line">업로드 예시</button>
+                    <button type="button" id="btn-import" class="btn btn-dark-line">업로드</button>
+                    <input type="file" name="" id="import-file" style="display: none;">
+
+                    <button type="button" class="btn btn-primary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="수기정산내역조회">
+                        엑셀 다운로드 <i class="icon icon-save"></i>
+                    </button>
+                    <button class="btn btn-primary btn-icon-left" type="submit">검색 <i class="icon icon-search"></i></button>
+                </div>
+            </form>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="section-content mt20">
+                    <div class="flex justify-space-between align-center" id="grid-header" th:object="${pageData}">
+                        <b th:text="'검색 결과 : ' + *{total} + '건'"></b>
+                        <div>
+                            <button type="button" class="btn btn-blue" id="btnAddRow">행추가</button>
+                            <button type="button" class="btn btn-red" id="btnDel">행삭제</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap mt20">
+                        <table class="table" id="data-table">
+                            <caption class="blind">수기정산내역 조회 테이블</caption>
+                            <thead id="grid-head">
+                            <tr>
+                                <th scope="col" style="width:50px;">
+                                    <div class="control checkbox">
+                                        <input type="checkbox" id="chkAll">
+                                        <label for="chkAll"></label>
+                                    </div>
+                                </th>
+                                <th scope="col">순번</th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="mbrs_id">회원ID</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="mbrs_nm">회원명</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="tpw_mbrs_svc_sta_cd">회원상태</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="tpw_svc_nm">서비스명</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="tpw_svc_typ_nm">서비스유형명</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="tpw_svc_typ_sno">서비스일련번호</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="addo_nm">행정동명</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="req_dtm">요청일자</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="prcg_dt">처리일자</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="tpw_memr_prcg_sta_cd">처리상태</a></th>
+                                <th class="sort-header" scope="col"><a href="#" data-sort="apl_amt">요청금액</a></th>
+                            </tr>
+                            </thead>
+                            <tbody id="grid-tbody">
+                            <th:block th:each="u, stat : ${pageData.content}" th:object="${u}">
+                                <tr>
+                                    <input type="hidden" name="grid_mbrsId" th:value="*{mbrsId}" />
+                                    <input type="hidden" name="grid_mbrsNm" th:value="*{mbrsNm}" />
+                                    <input type="hidden" name="grid_tpwSvcId" th:value="*{tpwSvcId}" />
+                                    <input type="hidden" name="grid_tpwSvcTypId" th:value="*{tpwSvcTypId}" />
+                                    <input type="hidden" name="grid_tpwSvcTypSno" th:value="*{tpwSvcTypSno}" />
+
+                                    <input type="hidden" name="grid_tpwSvcNm" th:value="*{tpwSvcNm}" />
+                                    <input type="hidden" name="grid_tpwSvcTypNm" th:value="*{tpwSvcTypNm}" />
+
+                                    <input type="hidden" name="grid_reqDtm" th:value="*{reqDtm}" />
+                                    <input type="hidden" name="grid_reqDtmRaw" th:value="*{reqDtmRaw}" />
+
+                                    <input type="hidden" name="grid_prcgDt" th:value="*{prcgDt}" />
+                                    <input type="hidden" name="grid_payPrcgYn" th:value="*{payPrcgYn}" />
+                                    <input type="hidden" name="grid_aplAmt" th:value="*{aplAmt}" />
+                                    <input type="hidden" name="grid_payAmt" th:value="*{payAmt}" />
+
+                                    <input type="hidden" name="grid_manualPrcgSta" th:value="*{manualPrcgSta}" />
+
+                                    <input type="hidden" name="grid_tpwMbrsSvcStaCd" th:value="*{tpwMbrsSvcStaCd}" />
+                                    <input type="hidden" name="grid_addoNm" th:value="*{addoNm}" />
+                                    <input type="hidden" name="grid_acctNo" th:value="*{acctNo}" />
+
+                                    <td>
+                                        <div class="control checkbox"
+                                             th:classappend="*{manualPrcgSta == '02'} ? 'disabled' : ''">
+                                            <input type="checkbox" name="chk" th:id="|chk_${stat.index}|" th:value="*{mbrsId}"
+                                                   th:disabled="*{manualPrcgSta == '02'}">
+                                            <label th:for="|chk_${stat.index}|"></label>
+                                        </div>
+                                    </td>
+
+                                    <!-- 0-based 페이징 순번: (page * size) + count -->
+                                    <td th:text="${(pageData.page * pageData.size) + stat.count}"></td>
+                                    <td th:text="*{mbrsId}"></td>
+                                    <td th:text="*{mbrsNm}"></td>
+                                    <td th:text="*{tpwMbrsSvcStaCd}"></td>
+                                    <td th:text="*{tpwSvcNm}"></td>
+                                    <td th:text="*{tpwSvcTypNm}"></td>
+                                    <td th:text="*{tpwSvcTypSno}"></td>
+                                    <td th:text="*{addoNm}"></td>
+                                    <td th:text="*{reqDtm}"></td>
+                                    <td th:text="*{prcgDt}"></td>
+                                    <td th:text="*{manualPrcgSta == '01' ? '요청' : (manualPrcgSta == '02' ? '승인' : (manualPrcgSta == '03' ? '반려' : manualPrcgSta))}"></td>
+                                    <td th:text="*{aplAmt}"></td>
+                                </tr>
+                            </th:block>
+                            <th:block th:if="${pageData.total == 0}">
+                                <tr><td colspan="13" style="text-align:center;">조회 결과가 없습니다.</td></tr>
+                            </th:block>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt20" id="grid-pager">
+                        <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"/>
+                    </div>
+                </div>
+
+                <div class="section-content mt40" id="rowAddForm" style="display:none;">
+                    <form id="detailForm">
+                        <input type="hidden" id="mode" value="INSERT">
+                        <input type="hidden" name="reqDtmRaw" /> <input type="hidden" name="reqDtm" />    <input type="hidden" name="tpwSvcTypSno" />
+
+                        <div class="table-wrap">
+                            <table class="table table-vertical">
+                                <caption class="blind">수기정산 상세 등록</caption>
+                                <colgroup>
+                                    <col style="width: 150px;">
+                                    <col>
+                                </colgroup>
+                                <tbody>
+                                <tr><th scope="row">회원ID</th><td><input type="text" name="mbrsId" class="text-field" placeholder="회원ID 입력" /></td></tr>
+                                <tr><th scope="row">회원명</th><td><input type="text" name="mbrsNm" class="text-field disabled" readonly /></td></tr>
+                                <tr><th scope="row">서비스 선택</th><td><th:block th:replace="~{common/fragment/dropdowns ::cascadingDropdown('svcPair2', 'tpwSvcId', 'tpwSvcTypId', true)}"></th:block></td></tr>
+                                <tr><th scope="row">요청일자</th><td><div class="date-field-wrap" style="width: 150px;"><input type="text" name="reqDtm" class="text-field disabled" readonly placeholder="YYYYMMDD"></div></td></tr>
+                                <tr>
+                                    <th scope="row">지급처리여부</th>
+                                    <td>
+                                        <div style="width:240px">
+                                            <div class="dropdown" data-name="payPrcgYn">
+                                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"><span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span></button>
+                                                <ul class="dropdown_list" role="listbox" tabindex="-1"><li role="option" class="dropdown_option" data-value="Y">지급</li><li role="option" class="dropdown_option" data-value="N">미지급</li></ul>
+                                                <input type="hidden" name="payPrcgYn" value="">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><th scope="row">처리일자</th><td><div class="date-field-wrap" style="width: 150px;"><input type="text" name="prcgDt" class="text-field" placeholder="YYYYMMDD"></div></td></tr>
+                                <tr><th scope="row">지급금액</th><td><input type="text" name="payAmt" class="text-field" placeholder="금액 입력" /></td></tr>
+                                <tr><th scope="row">신청금액</th><td><input type="text" name="aplAmt" class="text-field" placeholder="신청금액 입력" /></td></tr>
+                                <tr>
+                                    <th scope="row">수기처리상태</th>
+                                    <td>
+                                        <div style="width:240px">
+                                            <div class="dropdown" data-name="manualPrcgSta">
+                                                <button type="button" class="dropdown_button" aria-haspopup="listbox" aria-expanded="false"><span class="dropdown_value" data-placeholder="선택하세요">선택하세요</span></button>
+                                                <ul class="dropdown_list" role="listbox" tabindex="-1"><li role="option" class="dropdown_option" data-value="01">요청</li><li role="option" class="dropdown_option" data-value="02">승인</li><li role="option" class="dropdown_option" data-value="03">반려</li></ul>
+                                                <input type="hidden" name="manualPrcgSta" value="">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr><th scope="row">행정동</th><td><input type="text" name="addoNm" class="text-field disabled" readonly /></td></tr>
+                                <tr><th scope="row">계좌번호</th><td><input type="text" name="acctNo" class="text-field disabled" readonly /></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex justify-end col- mt40">
+                            <button type="button" id="btnNew" class="btn btn-dark-line">초기화</button>
+                            <button type="button" id="btnSave" class="btn btn-blue">저장</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+
+        <script data-page="memrStlmPt" th:inline="javascript" type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function () {
+                const baseUrl = 'spfnsprtmng/payinf/memrStlmPt.do';
+                const searchForm = document.getElementById('searchForm');
+                const hiddenSize = document.getElementById('size');
+                const loading = document.getElementById('mini-sp-loading');
+
+                const realSearchType = document.getElementById('realSearchType');
+                const dateTypeInput = document.getElementById('dateType');
+                const textTypeInput = document.getElementById('textType');
+                const keywordInput = searchForm.querySelector('input[name="keyword"]');
+
+                const rowAddForm = document.getElementById('rowAddForm');
+                const detailForm = document.getElementById('detailForm');
+                const modeInput = document.getElementById('mode');
+
+                const btnAddRow = document.getElementById('btnAddRow');
+                const btnSave = document.getElementById('btnSave');
+                const btnDel = document.getElementById('btnDel');
+                const btnNew = document.getElementById('btnNew');
+                const btnApprove = document.getElementById('btnApprove');
+
+                const limitAmtInput = document.getElementById('limitAmtInput');
+                const btnApplyLimit = document.getElementById('btnApplyLimit');
+
+                const btnExport = document.querySelector('button[data-export="xlsx"]');
+                const btnImport = document.getElementById('btn-import');
+                const fileImport = document.getElementById('import-file');
+                const btnImportTmpl = document.getElementById('import-file-template');
+
+                // 1. 초기 날짜
+                const pad = n => String(n).padStart(2, '0');
+                const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+                const today = fmt(new Date());
+                const thirtyDaysAgo = fmt(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+
+                const startDateInput = searchForm.querySelector('input[data-role="start"]');
+                const endDateInput = searchForm.querySelector('input[data-role="end"]');
+                if (startDateInput && !startDateInput.value) startDateInput.value = thirtyDaysAgo;
+                if (endDateInput && !endDateInput.value) endDateInput.value = today;
+
+                // 2. 검색조건 UI 동기화
+                const currentType = realSearchType.value;
+                if(currentType === 'mbrsId' || currentType === 'mbrsNm') updateDropdownUI('textType', currentType);
+                else updateDropdownUI('dateType', currentType || 'reqDtm');
+
+                function updateDropdownUI(name, value) {
+                    const dd = document.querySelector(`.dropdown[data-name="${name}"]`);
+                    if(!dd) return;
+                    const option = dd.querySelector(`.dropdown_option[data-value="${value}"]`);
+                    const valSpan = dd.querySelector('.dropdown_value');
+                    const hidden = document.getElementById(name);
+                    if(option && valSpan) valSpan.textContent = option.textContent;
+                    if(hidden) hidden.value = value;
+                }
+
+                // 3. 드롭다운 이벤트
+                document.body.addEventListener('click', (e) => {
+                    const option = e.target.closest('.dropdown_option');
+                    if (!option) return;
+                    const dropdown = option.closest('.dropdown');
+                    if (!dropdown) return;
+
+                    const name = dropdown.dataset.name;
+                    const value = option.dataset.value;
+                    const valSpan = dropdown.querySelector('.dropdown_value');
+
+                    if(valSpan) valSpan.textContent = option.textContent;
+
+                    let hiddenInput;
+                    if (name === 'dateType' || name === 'textType') {
+                        hiddenInput = document.getElementById(name);
+                    } else {
+                        hiddenInput = dropdown.querySelector(`input[name="${name}"]`);
+                    }
+                    if(hiddenInput) hiddenInput.value = value;
+                });
+
+                // 4. 페이징 (0-based)
+                if (typeof bindPagination === 'function') {
+                        bindPagination(baseUrl, {
+                        page: 0,
+                        size: parseInt(hiddenSize?.value || '10', 10),
+                        dir: document.getElementById('dir')?.value || 'asc',
+                        sort: document.getElementById('sort')?.value || 'mbrs_id',
+                    });
+                }
+
+                // 5. 검색 Submit
+                searchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+
+                    // 날짜 필드 name 보정
+                    if(startDateInput && !startDateInput.name) startDateInput.name = 'sttDt';
+                    if(endDateInput && !endDateInput.name) endDateInput.name = 'endDt';
+
+                    // [핵심] 검색어 입력 여부에 따라 searchType과 keyword input name 변경
+                    if (keywordInput && keywordInput.value.trim() !== '') {
+                        // 텍스트 검색 시: searchType = mbrsId or mbrsNm
+                        realSearchType.value = textTypeInput.value;
+                        // keyword input의 name을 mbrsId 또는 mbrsNm으로 변경하여 전송
+                        keywordInput.name = textTypeInput.value;
+                    } else {
+                        // 날짜 검색 시: searchType = reqDtm or prcgDt
+                        realSearchType.value = dateTypeInput.value;
+                        // keyword가 비어있으면 name을 keyword로 되돌림 (혹시 모를 오동작 방지)
+                        if(keywordInput) keywordInput.name = 'keyword';
+                    }
+
+                    if(rowAddForm) rowAddForm.style.display = 'none';
+
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
+                        selectSize: hiddenSize,
+                        baseUrl: baseUrl,
+                        inputSort: document.getElementById('sort'),
+                        inputDir: document.getElementById('dir'),
+                        applied: applied
+                    });
+                });
+
+                // 6. 상세 폼 ReadOnly 토글
+                function setFormReadOnly(isReadOnly) {
+                    const formInputs = detailForm.querySelectorAll('input, select, button.dropdown_button');
+                    if (isReadOnly) {
+                        btnSave.style.display = 'none';
+                        formInputs.forEach(el => {
+                            el.disabled = true;
+                            el.classList.add('disabled');
+                        });
+                    } else {
+                        btnSave.style.display = 'inline-block';
+                        formInputs.forEach(el => {
+                            el.disabled = false;
+                            el.classList.remove('disabled');
+                        });
+                        detailForm.querySelector('input[name="mbrsNm"]').readOnly = true;
+                        detailForm.querySelector('input[name="mbrsNm"]').classList.add('disabled');
+                    }
+                }
+
+                // 7. 상세 폼 초기화
+                function resetDetailForm(mode) {
+                    detailForm.reset();
+                    modeInput.value = mode;
+
+                    detailForm.querySelectorAll('.dropdown').forEach(dd => {
+                        const valSpan = dd.querySelector('.dropdown_value');
+                        const hidden = dd.querySelector('input[type="hidden"]');
+                        if(valSpan) valSpan.textContent = valSpan.dataset.placeholder || '선택하세요';
+                        if(hidden) hidden.value = '';
+                    });
+
+                    if (mode === 'INSERT') {
+                        setFormReadOnly(false);
+                        const idInput = detailForm.querySelector('input[name="mbrsId"]');
+                        idInput.readOnly = false;
+                        idInput.classList.remove('disabled');
+                        rowAddForm.style.display = 'block';
+                        rowAddForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        rowAddForm.style.display = 'block';
+                    }
+                }
+
+                if(btnAddRow) btnAddRow.addEventListener('click', () => resetDetailForm('INSERT'));
+                if(btnNew) btnNew.addEventListener('click', () => resetDetailForm('INSERT'));
+
+                // 8. 그리드 클릭 (상세보기 + 수정불가 체크)
+                const tableBody = document.getElementById('grid-tbody');
+                tableBody.addEventListener('click', (e) => {
+                    if (e.target.closest('.control.checkbox') || e.target.type === 'checkbox') return;
+
+                    const tr = e.target.closest('tr');
+                    if(!tr || tr.querySelector('td[colspan]')) return;
+
+                    const manualSta = tr.querySelector('input[name="grid_manualPrcgSta"]').value;
+                    const isLocked = (manualSta === '02');
+
+                    resetDetailForm('UPDATE');
+
+                    setFormReadOnly(isLocked);
+
+                    const hiddens = tr.querySelectorAll('input[type="hidden"][name^="grid_"]');
+                    hiddens.forEach(h => {
+                        const key = h.name.replace('grid_', '');
+                        const val = h.value;
+
+                        const targetInput = detailForm.querySelector(`input[name="${key}"]:not([type="hidden"])`);
+                        if(targetInput) targetInput.value = val;
+
+                        const targetHidden = detailForm.querySelector(`input[type="hidden"][name="${key}"]`);
+                        if(targetHidden && targetHidden.id !== 'mode') targetHidden.value = val;
+
+                        const dropdown = detailForm.querySelector(`.dropdown[data-name="${key}"]`);
+                        if(dropdown) {
+                            dropdown.querySelector(`input[name="${key}"]`).value = val;
+                            let displayText = val;
+                            const option = dropdown.querySelector(`.dropdown_option[data-value="${val}"]`);
+                            if(option) displayText = option.textContent;
+
+                            if(key === 'tpwSvcId') {
+                                const svcNm = tr.querySelector('input[name="grid_tpwSvcNm"]').value;
+                                if(svcNm) displayText = svcNm;
+                            } else if(key === 'tpwSvcTypId') {
+                                const typNm = tr.querySelector('input[name="grid_tpwSvcTypNm"]').value;
+                                if(typNm) displayText = typNm;
+                            }
+                            dropdown.querySelector('.dropdown_value').textContent = displayText;
+                        }
+                    });
+
+                    const reqDtmRawVal = tr.querySelector('input[name="grid_reqDtmRaw"]').value;
+                    const detailRawInput = detailForm.querySelector('input[name="reqDtmRaw"]');
+                    if(detailRawInput) detailRawInput.value = reqDtmRawVal;
+                });
+
+                // 9. 저장
+                if(btnSave) {
+                    btnSave.addEventListener('click', async () => {
+                        const mode = modeInput.value;
+                        const url = (mode === 'INSERT') ? '/spfnsprtmng/payinf/memrStlmPt/add.do' : '/spfnsprtmng/payinf/memrStlmPt/edit.do';
+                        const method = (mode === 'INSERT') ? 'POST' : 'PUT';
+                        const msg = (mode === 'INSERT') ? '등록하시겠습니까?' : '수정하시겠습니까?';
+
+                        if(!confirm(msg)) return;
+
+                        const data = Common.collectFromForm(detailForm);
+                        if (data.trdDt) data.trdDt = data.trdDt.replace(/-/g, '');
+                        if (data.prcgDt) data.prcgDt = data.prcgDt.replace(/-/g, '');
+                        if (!data.tpwSvcTypSno) data.tpwSvcTypSno = '1';
+
+                        const res = await Common.sendSafe(url, { method: method, data: data });
+                        if (res && (res.ok || res.status === 200)) {
+                            alert('저장되었습니다.');
+                            rowAddForm.style.display = 'none';
+                            searchForm.dispatchEvent(new Event('submit'));
+                        }
+                    });
+                }
+
+                // 10. 삭제
+                if(btnDel) {
+                    btnDel.addEventListener('click', async () => {
+                        const checkboxes = document.querySelectorAll('input[name="chk"]:checked:not(:disabled)');
+                        if(checkboxes.length === 0) {
+                            alert('삭제할 항목을 선택해주세요.');
+                            return;
+                        }
+                        if(!confirm(`선택한 ${checkboxes.length}건을 삭제하시겠습니까?`)) return;
+
+                        const dataList = [];
+                        checkboxes.forEach(chk => {
+                            const tr = chk.closest('tr');
+                            const manualSta = tr.querySelector('input[name="grid_manualPrcgSta"]').value;
+                            if(manualSta === '02') return;
+
+                            const reqDtmRawVal = tr.querySelector('input[name="grid_reqDtmRaw"]').value;
+                            const payYn = tr.querySelector('input[name="grid_payPrcgYn"]').value;
+
+                            const data = {
+                                mbrsId: tr.querySelector('input[name="grid_mbrsId"]').value,
+                                tpwSvcId: tr.querySelector('input[name="grid_tpwSvcId"]').value,
+                                tpwSvcTypId: tr.querySelector('input[name="grid_tpwSvcTypId"]').value,
+                                tpwSvcTypSno: tr.querySelector('input[name="grid_tpwSvcTypSno"]').value || '1',
+                                reqDtmRaw: reqDtmRawVal,
+                                payPrcgYn: payYn
+                            };
+                            dataList.push(data);
+                        });
+
+                        const res = await Common.sendSafe('/spfnsprtmng/payinf/memrStlmPt/delete.do', { method: 'POST', data: dataList });
+                        if(res && (res.ok || res.status === 200)) {
+                            alert('삭제되었습니다.');
+                            searchForm.dispatchEvent(new Event('submit'));
+                        } else alert('삭제 처리에 실패했습니다.');
+                    });
+                }
+
+                // 11. 승인
+                if(btnApprove) {
+                    btnApprove.addEventListener('click', async () => {
+                        const checkboxes = document.querySelectorAll('input[name="chk"]:checked:not(:disabled)');
+                        if(checkboxes.length === 0) {
+                            alert('승인할 항목을 선택해주세요.');
+                            return;
+                        }
+                        if(!confirm(`선택한 ${checkboxes.length}건을 승인 처리하시겠습니까?`)) return;
+
+                        const dataList = [];
+                        checkboxes.forEach(chk => {
+                            const tr = chk.closest('tr');
+                            const reqDtmRawVal = tr.querySelector('input[name="grid_reqDtmRaw"]').value;
+                            const data = {
+                                mbrsId: tr.querySelector('input[name="grid_mbrsId"]').value,
+                                tpwSvcId: tr.querySelector('input[name="grid_tpwSvcId"]').value,
+                                tpwSvcTypId: tr.querySelector('input[name="grid_tpwSvcTypId"]').value,
+                                tpwSvcTypSno: tr.querySelector('input[name="grid_tpwSvcTypSno"]').value || '1',
+                                reqDtmRaw: reqDtmRawVal,
+                                manualPrcgSta: '02',
+                                payPrcgYn: 'Y'
+                            };
+                            dataList.push(data);
+                        });
+
+                        const res = await Common.sendSafe('/spfnsprtmng/payinf/memrStlmPt/approve.do', { method: 'POST', data: dataList });
+                        if(res && (res.ok || res.status === 200)) {
+                            alert('승인되었습니다.');
+                            searchForm.dispatchEvent(new Event('submit'));
+                        } else alert('승인 처리에 실패했습니다.');
+                    });
+                }
+
+                // 12. 한도 체크 및 기타 로직
+                const parseAmt = (val) => val ? (parseInt(val.replace(/[^0-9-]/g, ''), 10) || 0) : 0;
+
+                document.getElementById('data-table').addEventListener('change', (e) => {
+                    if (e.target.name !== 'chk' || !e.target.checked) return;
+                    const limitValStr = limitAmtInput.value;
+                    const limitAmt = parseAmt(limitValStr);
+                    if(limitAmt <= 0) return;
+
+                    let currentSum = 0;
+                    document.querySelectorAll('input[name="chk"]:checked').forEach(chk => {
+                        const tr = chk.closest('tr');
+                        currentSum += parseAmt(tr.querySelector('input[name="grid_payAmt"]').value);
+                    });
+
+                    if (currentSum > limitAmt) {
+                        e.target.checked = false;
+                        const thisAmt = parseAmt(e.target.closest('tr').querySelector('input[name="grid_payAmt"]').value);
+                        const prevSum = currentSum - thisAmt;
+                        alert(`[선택 불가] 한도 금액을 초과합니다.\n\n한도: ${limitAmt.toLocaleString()}원\n합계: ${prevSum.toLocaleString()}원\n추가: ${thisAmt.toLocaleString()}원`);
+                    }
+                });
+
+                if (btnApplyLimit) {
+                    btnApplyLimit.addEventListener('click', () => {
+                        const limitAmt = parseAmt(limitAmtInput.value);
+                        if(limitAmt <= 0) {
+                            alert('한도 금액을 입력해주세요.');
+                            return;
+                        }
+                        let currentSum = 0;
+                        document.querySelectorAll('input[name="chk"]:checked').forEach(chk => {
+                            const tr = chk.closest('tr');
+                            currentSum += parseAmt(tr.querySelector('input[name="grid_payAmt"]').value);
+                        });
+                        if(currentSum > limitAmt) alert('현재 선택된 금액이 한도를 초과했습니다.');
+                        else alert(`한도 적용 중입니다. (합계: ${currentSum.toLocaleString()}원 / 한도: ${limitAmt.toLocaleString()}원)`);
+                    });
+                }
+
+                const chkAll = document.getElementById('chkAll');
+                if (chkAll) {
+                    chkAll.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const wantToCheck = !chkAll.checked;
+                        chkAll.checked = wantToCheck;
+
+                        const checkboxes = document.querySelectorAll('input[name="chk"]:not(:disabled)');
+                        if (!wantToCheck) {
+                            checkboxes.forEach(cb => cb.checked = false);
+                            return;
+                        }
+
+                        const limitAmt = parseAmt(limitAmtInput.value);
+                        let currentSum = 0;
+
+                        if (limitAmt <= 0) {
+                            checkboxes.forEach(cb => cb.checked = true);
+                            return;
+                        }
+
+                        let stopSelection = false;
+                        checkboxes.forEach(cb => {
+                            if (stopSelection) {
+                                cb.checked = false;
+                                return;
+                            }
+                            const tr = cb.closest('tr');
+                            const payAmt = parseAmt(tr.querySelector('input[name="grid_payAmt"]').value);
+
+                            if (currentSum + payAmt <= limitAmt) {
+                                cb.checked = true;
+                                currentSum += payAmt;
+                            } else {
+                                cb.checked = false;
+                                stopSelection = true;
+                            }
+                        });
+                        if (stopSelection) alert(`설정된 한도(${limitAmt.toLocaleString()}원) 내에서 가능한 항목까지만 선택되었습니다.`);
+                    });
+                }
+
+                if (btnImport && fileImport) {
+                    btnImport.addEventListener('click', function () {
+                        fileImport.click();
+                    });
+                }
+
+                if (btnImportTmpl) {
+                    btnImportTmpl.addEventListener('click', function () {
+                        const url = '/import/template/xlsx?provider=수기정산내역조회';
+                        window.location.href = url;
+                    });
+                }
+
+                Common.bindExcelImport(
+                    fileImport,
+                    '수기정산내역조회',
+                    function (rows) {
+                        Common.sendSafe('/spfnsprtmng/payinf/memrStlmPt/import.do', {
+                            method: 'POST',
+                            data: rows,
+                            clientErrorMsg: '요청이 올바르지 않습니다.',
+                            otherErrorMsg: '일시적인 오류가 발생했습니다.'
+                        });
+                    },
+                    function (errors) {
+                        if (errors.length == 0) return;
+                        Common.modalShow({
+                            title: '오류',
+                            message: '업로드중 오류가 발생했습니다.',
+                            buttons: 'close'
+                        });
+                    },
+                    {}
+                );
+
+                btnExport.addEventListener('click', (e) => {
+                    const inputSort = searchForm.querySelector('[name=sort]');
+                    const inputDir = searchForm.querySelector('[name=dir]');
+                    Common.bindExcelExport(searchForm, btnExport, inputSort.value, inputDir.value, 'mbrs_id', {});
+                    setTimeout(() => { loading.style.display = 'none'; }, 1000);
+                });
+
+            }); // End DOMContentLoaded
+        </script>
+    </th:block>
+</th:block>
+
+</body>
+</html>

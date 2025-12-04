@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.penstlmng.aplinf.mapper.PenAplPtInfMapper">
+
+
+
+
+
+<!--    &lt;!&ndash; ===========================================-->
+<!--           월별 신청 건수 조회-->
+<!--           =========================================== &ndash;&gt;-->
+<!--    <select id="selectAplCntByMonth" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.pen.PenAplPtInfRspVO">-->
+<!--        select *-->
+<!--            from (-->
+<!--                select-->
+<!--                    substr(m203.apl_dt,1,4)||'-'||substr(m203.apl_dt,5,2) as aplYm,-->
+<!--                    count(1) as aplCnt-->
+<!--                    from tbhxzm203 m203-->
+<!--                    join tbhxzm202 m202-->
+<!--                    on m202.tpw_svc_id = m203.tpw_svc_id-->
+<!--                    and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id-->
+<!--                    and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno-->
+<!--                    join tbhxzm201 m201-->
+<!--                    on m201.tpw_svc_id = m202.tpw_svc_id-->
+<!--                    and m201.org_cd like #{orgCd}||'%'-->
+<!--                    and m201.tpw_svc_nm like #{tpwSvcNm}||'%'-->
+<!--                    where m203.aprv_sta_cd = '02'-->
+<!--                    and m203.stlm_dt-->
+<!--                    between to_char(statement_timestamp()::date - interval '1 years','YYYYMM')-->
+<!--                    and to_char(statement_timestamp(),'YYYYMM')-->
+<!--                    group by m203.tpw_svc_id, substr(m203.apl_dt,1,6)-->
+<!--        ) t-->
+<!--    </select>-->
+
+
+
+<!--    &lt;!&ndash; ===========================================-->
+<!--         일별 신청 건수 조회-->
+<!--         =========================================== &ndash;&gt;-->
+<!--    <select id="selectAplCntByDay" resultType="tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.pen.PenAplPtInfRspVO">-->
+<!--        select *-->
+<!--        from (-->
+<!--            select-->
+<!--            substr(m203.apl_dt,7,2) as aplDay,-->
+<!--            count(1) as aplCntDay-->
+<!--            from tbhxzm203 m203-->
+<!--                join tbhxzm202 m202-->
+<!--                on m202.tpw_svc_id = m203.tpw_svc_id-->
+<!--                and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id-->
+<!--                and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno-->
+<!--                join tbhxzm201 m201-->
+<!--                on m201.tpw_svc_id = m202.tpw_svc_id-->
+<!--                and m201.org_cd like #{orgCd}||'%'-->
+<!--                and m201.tpw_svc_nm like #{tpwSvcNm}||'%'-->
+<!--            where m203.aprv_sta_cd = '02'-->
+<!--                and m203.stlm_dt = substr(#{stlmDt},1,6)-->
+<!--                group by m203.tpw_svc_id, substr(m203.apl_dt,7,2)-->
+<!--        ) t-->
+<!--    </select>-->
+
+
+
+    <!-- ===========================================
+       월별 신청 건수 조회
+       =========================================== -->
+    <select id="readPenAplCntByMonth"
+            parameterType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfRspVO">
+        select
+            aplYm,
+            count(1) as aplCnt
+        from (
+                select
+                substr(m203.apl_dt,1,4) || '-' || substr(m203.apl_dt,5,2) as aplYm
+                from tbhxzm203 m203
+                join tbhxzm202 m202
+                on m202.tpw_svc_id = m203.tpw_svc_id
+                and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+                join tbhxzm201 m201
+                on m201.tpw_svc_id = m202.tpw_svc_id
+        where 1=1
+
+            and m203.aprv_sta_cd != '02' -- 승인
+
+            <if test="req.orgCd != null and req.orgCd != '' and req.orgCd != '000000'">
+                and m201.org_cd LIKE CONCAT('%', LOWER(#{req.orgCd}), '%')
+            </if>
+
+
+            <!--지자체관리자인경우 -->
+            <if test="req.orgCd != '000000'">
+                and m201.org_cd = #{req.orgCd}
+            </if>
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                and m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        and m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+
+            <!-- TODO: 리스트 검색 조건과는 다른 날짜범위 필요함 -->
+            <!-- <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and m203.stlm_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </if> -->
+
+            <if test="req.mbrsId != null and req.mbrsId != ''">
+                and m203.mbrs_id like concat('%', #{req.mbrsId}, '%')
+            </if>
+
+            <if test="req.aprvStaCd != null and req.aprvStaCd != ''">
+                and m203.aprv_sta_cd = #{req.aprvStaCd}
+            </if>
+        ) month
+        group by aplYm
+        order by aplYm
+    </select>
+
+
+    <!-- ===========================================
+         일별 신청 건수 조회
+         =========================================== -->
+    <select id="readPenAplCntByDay"
+            parameterType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfRspVO">
+
+        select
+            aplDay,
+            count(1) as aplCnt
+        from
+            (
+                select
+                    substr(m203.apl_dt,7,2) as aplDay
+                from tbhxzm203 m203
+                    join tbhxzm202 m202
+                    on m202.tpw_svc_id = m203.tpw_svc_id
+                    and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                    and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+                    join tbhxzm201 m201
+                    on m201.tpw_svc_id = m202.tpw_svc_id
+            where 1=1
+                and m203.aprv_sta_cd != '02' -- 승인
+
+            <if test="req.orgCd != null and req.orgCd != '' and req.orgCd != '000000'">
+                and m201.org_cd LIKE CONCAT('%', LOWER(#{req.orgCd}), '%')
+            </if>
+
+
+            <!--지자체관리자인경우 -->
+            <if test="req.orgCd != '000000'">
+                and m201.org_cd = #{req.orgCd}
+            </if>
+
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                and m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        and m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+
+            <!-- TODO: 리스트 검색 조건과는 다른 날짜범위 필요함 -->
+            <!-- <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and m203.stlm_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </if> -->
+
+            <if test="req.mbrsId != null and req.mbrsId != ''">
+                and m203.mbrs_id like concat('%', #{req.mbrsId}, '%')
+            </if>
+
+            <if test="req.aprvStaCd != null and req.aprvStaCd != ''">
+                and m203.aprv_sta_cd = #{req.aprvStaCd}
+            </if>
+            ) daily
+            group by aplDay
+            order by aplDay
+    </select>
+
+
+
+    <!-- ===========================================
+         상세 지원금 신청 리스트 조회
+         =========================================== -->
+    <select id="readPenAplPtInfList"
+            parameterType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfRspVO">
+        select
+                penApl.tpw_svc_id as tpwSvcId,
+                penApl.tpw_svc_typ_nm as tpwSvcTypNm,
+                penApl.tpw_svc_typ_id as tpwSvcTypId,
+                penApl.tpw_svc_typ_sno as tpwSvcTypSno,
+                penApl.stlm_dt as stlmDt,
+                penApl.mbrs_id as mbrsId,
+                penApl.apl_dt as aplDt,
+                penApl.card_no as cardNo,
+                penApl.bnk_cd as bnkCd,
+                penApl.acnt_no as acntNo,
+                penApl.ooa_nm as ooaNm,
+                penApl.apro_id as aproId,
+                penApl.aprv_dtm as aprvDtm,
+                penApl.aprv_sta_cd as aprvStaCd,
+                penApl.tpw_mbrs_typ_cd as tpwMbrsTypCd,
+                penApl.tpw_mbrs_typ_cd_nm as tpwMbrsTypCdNm,
+                penApl.atfl_mng_no as atflMngNo,
+                penApl.tpw_apl_prgs_sta_cd as tpwAplPrgsStaCd
+            from (
+                select
+                    m202.tpw_svc_id,
+                    m202.tpw_svc_typ_nm ,
+                    m202.tpw_svc_typ_id,
+                    m202.tpw_svc_typ_sno,
+                    m203.stlm_dt  ,
+                    m203.mbrs_id  ,
+                    m203.apl_dt  ,
+                    m204.card_no  ,
+                    m203.bnk_cd  ,
+                    m203.acnt_no  ,
+                    m203.ooa_nm  ,
+                    m203.apro_id  ,
+                    m203.aprv_dtm  ,
+                    m203.aprv_sta_cd ,
+                    m103.tpw_mbrs_typ_cd ,
+                    m103.tpw_mbrs_typ_cd_nm ,
+                    m115.atfl_mng_no ,
+                    m203.tpw_apl_prgs_sta_cd
+            from tbhxzm203 m203
+                join tbhxzm204 m204
+                    on m204.tpw_svc_id = m203.tpw_svc_id
+                    and m204.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                    and m204.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+                    and m204.stlm_dt = m203.stlm_dt
+                    and m204.mbrs_id = m203.mbrs_id
+                join tbhxzm202 m202
+                    on m202.tpw_svc_id = m203.tpw_svc_id
+                    and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                    and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+                join tbhxzm201 m201
+                    on m201.tpw_svc_id = m202.tpw_svc_id
+                left join tbhxzm103 m103
+                on m202.tpw_mbrs_typ_cd = m103.tpw_mbrs_typ_cd
+                left join tbhxzm115 m115
+                    on m203.atfl_mng_no = m115.atfl_mng_no
+            where 1=1
+
+
+            <!-- 지자체 관리자인경우 -->
+            <if test="orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
+
+            <!-- 기관코드 -->
+            <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
+
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                AND m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        AND m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+
+
+
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and m203.stlm_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </if>
+
+            <if test="req.mbrsId != null and req.mbrsId != ''">
+                and m203.mbrs_id like concat('%', #{req.mbrsId}, '%')
+            </if>
+
+            <if test="req.aprvStaCd != null and req.aprvStaCd != ''">
+               and m203.aprv_sta_cd = #{req.aprvStaCd}
+            </if>
+        ) penApl
+            order by ${req.sort} ${req.dir}
+            limit #{req.size} offset #{req.page} * #{req.size}
+    </select>
+
+
+
+
+
+
+
+
+    <!-- ===========================================
+         상세 지원금 신청 리스트 개수 조회
+         =========================================== -->
+    <select id="readPenAplPtInfListCnt" parameterType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfReqVO"  resultType="long">
+
+        select count(1)
+
+        from tbhxzm203 m203
+            join tbhxzm204 m204
+                on m204.tpw_svc_id = m203.tpw_svc_id
+                and m204.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                and m204.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+            join tbhxzm202 m202
+                on m202.tpw_svc_id = m203.tpw_svc_id
+                and m202.tpw_svc_typ_id = m203.tpw_svc_typ_id
+                and m202.tpw_svc_typ_sno = m203.tpw_svc_typ_sno
+            join tbhxzm201 m201
+                on m201.tpw_svc_id = m202.tpw_svc_id
+            left join tbhxzm115 m115
+                on m203.atfl_mng_no = m115.atfl_mng_no
+            where 1=1
+
+            <!-- 지자체 관리자인경우 -->
+            <if test="orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
+
+            <!-- 기관코드 -->
+            <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+                and m201.org_cd = #{orgCd}
+            </if>
+
+            <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+                AND m201.tpw_svc_id = #{req.tpwSvcId}
+                <choose>
+                    <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                        AND m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                    </when>
+                    <when test="req.tpwSvcTypId == null or req.tpwSvcTypId == ''">
+                        AND m201.tpw_svc_id = m202.tpw_svc_id
+                    </when>
+                </choose>
+            </if>
+
+            <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+                and m203.stlm_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+            </if>
+
+            <if test="req.mbrsId != null and req.mbrsId != ''">
+                and m203.mbrs_id like concat('%', #{req.mbrsId}, '%')
+            </if>
+
+            <if test="req.aprvStaCd != null and req.aprvStaCd != ''">
+                and m203.aprv_sta_cd = #{req.aprvStaCd}
+            </if>
+    </select>
+
+
+    <update id="updateApprove" parameterType="tmoney.co.kr.hxz.penstlmng.aplinf.vo.PenAplPtInfRspVO">
+        update tbhxzm203
+        set aprv_sta_cd = #{aprvStaCd}
+        where tpw_svc_id = #{tpwSvcId}
+            and tpw_svc_typ_sno = #{tpwSvcTypSno}
+            and stlm_dt = #{stlmDt}
+            and mbrs_id = #{mbrsId}
+            and tpw_svc_typ_id = #{tpwSvcTypId}
+        </update>
+
+
+
+
+
+</mapper>
