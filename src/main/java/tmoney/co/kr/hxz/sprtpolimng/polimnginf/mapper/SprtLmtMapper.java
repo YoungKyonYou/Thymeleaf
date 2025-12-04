@@ -123,6 +123,14 @@ public interface SprtLmtMapper {
     );
 
     /**
+     * 서비스유형별 거래 건수 한도 적용 여부 조회.
+     *
+     * @param tpwSvcTypId 서비스유형ID
+     * @return 'Y' 또는 'N'(또는 null) - 없으면 null
+     */
+    String readTrdNcntAdptYn(String tpwSvcTypId);
+
+    /**
      * 서비스/유형별 활성 한도 카운트 조회
      *
      * @param tpwSvcId    서비스 ID

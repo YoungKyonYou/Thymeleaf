@@ -594,15 +594,18 @@
                     }
 
                     clearFooterError();
+
                 }
 
                 // ★ 탭 활성화: 이제 Q/M만 풀고 C는 기본 disabled 유지
                 function enableAllTabs(container) {
-                    ['#tab-q', '#tab-m'].forEach(sel => {
-                        const el = container.querySelector(sel);
-                        if (el) el.removeAttribute('disabled');
+                    const tabQ = container.querySelector('#tab-q');
+                    const tabM = container.querySelector('#tab-m');
+                    const tabC = container.querySelector('#tab-c');
+
+                    [tabQ, tabM, tabC].forEach(t => {
+                        if (t) t.removeAttribute('disabled');
                     });
-                    // tab-c 는 HTML 기본 disabled 상태에서 시작
                 }
 
                 function bindTabs(container) {
@@ -610,6 +613,9 @@
                     tabs.forEach((tab, idx) => {
                         tab.addEventListener('click', () => {
                             if (tab.disabled) return;
+
+
+
                             activateTabByIndex(container, idx);
                         });
                     });
@@ -626,47 +632,36 @@
                         el.style.display = isEdit ? '' : 'none';
                     });
                 }
-                // ===== 편집 모드: dvsCd / typCd 로 탭 잠금 =====
+                // ===== 편집 모드: dvsCd / typCd 로 "기본 탭만" 잡고, 나머지는 그대로 두기 =====
                 function applyTabsForEditByDvsTyp(container, dvs, typ) {
-                    const tabQ = container.querySelector('#tab-q');
-                    const tabM = container.querySelector('#tab-m');
-                    const tabC = container.querySelector('#tab-c');
+                    const tabQ = container.querySelector('#tab-q'); // 분기
+                    const tabM = container.querySelector('#tab-m'); // 월
+                    const tabC = container.querySelector('#tab-c'); // 건수
 
-                    // 일단 모두 disabled 해제
-                    if (tabQ) tabQ.removeAttribute('disabled');
-                    if (tabM) tabM.removeAttribute('disabled');
-                    if (tabC) tabC.removeAttribute('disabled');
+                    // 편집 모드에서도 세 탭 모두 "볼 수" 있어야 하므로
+                    // disable / enable 조작은 하지 않고 전부 enabled 로 맞춰둔다.
+                    [tabQ, tabM, tabC].forEach(t => {
+                        if (t) {
+                            t.removeAttribute('disabled');
+                        }
+                    });
 
+                    // dvs/typ 기준으로 "어느 탭을 기본으로 활성화할지"만 결정
                     if (dvs === '02') {
-                        // ✅ 건수형: 건수만 가능
-                        if (tabQ) tabQ.setAttribute('disabled', 'disabled');
-                        if (tabM) tabM.setAttribute('disabled', 'disabled');
-                        if (tabC) tabC.removeAttribute('disabled');
-
-                        activateTabByIndex(container, 2); // 건수 탭
+                        // 건수 한도 → 건수 탭을 기본 활성
+                        activateTabByIndex(container, 2); // tab-c
                         __state.dvs = '02';
                         __state.typ = '02';
+                    } else if (typ === '01') {
+                        // 금액-월 → 월 탭 기본
+                        activateTabByIndex(container, 1); // tab-m
+                        __state.dvs = '01';
+                        __state.typ = '01';
                     } else {
-                        //  금액형: typCd 로 월/분기 중 하나만 허용
-                        if (typ === '01') {
-                            // 월 설정: 월 탭만 활성
-                            if (tabQ) tabQ.setAttribute('disabled', 'disabled');
-                            if (tabC) tabC.setAttribute('disabled', 'disabled');
-                            if (tabM) tabM.removeAttribute('disabled');
-
-                            activateTabByIndex(container, 1); // 월 탭
-                            __state.dvs = '01';
-                            __state.typ = '01';
-                        } else {
-                            // 분기 설정(typ='02' 또는 그 외): 분기 탭만 활성
-                            if (tabM) tabM.setAttribute('disabled', 'disabled');
-                            if (tabC) tabC.setAttribute('disabled', 'disabled');
-                            if (tabQ) tabQ.removeAttribute('disabled');
-
-                            activateTabByIndex(container, 0); // 분기 탭
-                            __state.dvs = '01';
-                            __state.typ = '02';
-                        }
+                        // 그 외(금액-분기) → 분기 탭 기본
+                        activateTabByIndex(container, 0); // tab-q
+                        __state.dvs = '01';
+                        __state.typ = '02';
                     }
 
                     clearFooterError();
@@ -1100,27 +1095,30 @@
                         '<input type="hidden" name="' + namePrefix + '.spfnLmtMngNo"/>' +
                         '<input type="hidden" name="' + namePrefix + '.spfnLmtSno"/>' +
 
-                        '<td>' + (index + 1) + '</td>' +
+                        //  연월(월) 컬럼
+                        '<td>' +
+                        '  <div class="text-field datepicker" style="width:200px">' +
+                        '    <input class="dp-input" type="text" placeholder="YYYY-MM" ' +
+                        '           data-dp-type="month" autocomplete="off" ' +
+                        '           name="' + namePrefix + '.lmtSttYm" />' +
+                        '    <button type="button" class="dp-btn" data-dp-toggle aria-label="년 월 선택 열기"></button>' +
+                        '  </div>' +
+                        '</td>' +
 
                         '<td><input type="text" class="text-field js-count" ' +
-                        'inputmode="numeric" autocomplete="off" data-maxlen="10" ' +
-                        'name="' + namePrefix + '.minCndtVal"/></td>' +
-
+                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.minCndtVal"/></td>' +
                         '<td><input type="text" class="text-field js-count" ' +
-                        'inputmode="numeric" autocomplete="off" data-maxlen="10" ' +
-                        'name="' + namePrefix + '.maxCndtVal"/></td>' +
-
+                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.maxCndtVal"/></td>' +
                         '<td><input type="text" class="text-field js-percent" ' +
-                        'inputmode="numeric" autocomplete="off" ' +
-                        'name="' + namePrefix + '.tgtAdptVal"/></td>';
+                        'inputmode="numeric" autocomplete="off" name="' + namePrefix + '.tgtAdptVal"/></td>';
 
                     tbody.appendChild(row);
 
                     const sc = document.getElementById('newNcntTableScroll');
                     if (sc) sc.scrollTop = sc.scrollHeight;
 
-                    // 숫자 마스크 적용
-                    bindNumericMasks(row);
+                    bindNumericMasks(tbody);
+                    normalizeMonthInputs(tbody);   //  YYYYMM → YYYY-MM 자동 정규화
                     clearFooterError();
                 }
 
@@ -1136,71 +1134,85 @@
                     clearFooterError();
                 }
 
-                /* ===== 신규/편집 공통: 적합 탭 활성 ===== */
-
-                // 신규: 서비스의 건수적용 여부(adptYn)에 따라 탭 enable/disable
+                // 신규등록: 거래건수제한적용여부(adptYn)에 따라
+                //  - Y  : 건수형 → 기본 탭만 건수로
+                //  - N  : 금액형 → 기본 탭만 분기로
+                //  (저장 제한은 아래 '저장' 핸들러에서 처리)
                 function applyTabsForNewByAdpt(container, adptYn) {
+                    __state.adptYn = (adptYn || '').toUpperCase();
+
                     const tabQ = container.querySelector('#tab-q');
                     const tabM = container.querySelector('#tab-m');
                     const tabC = container.querySelector('#tab-c');
 
-                    ['#tab-q', '#tab-m'].forEach(sel => {
-                        const el = container.querySelector(sel);
-                        if (el) el.removeAttribute('disabled');
+                    // 세 탭 전부 활성화
+                    [tabQ, tabM, tabC].forEach(t => {
+                        if (t) t.removeAttribute('disabled');
                     });
-                    // tab-c 는 HTML 기본 disabled 상태에서 시작
 
-                    if (adptYn === 'Y') {
-                        // 건수만 가능 → C만 enable, Q/M disable
-                        if (tabQ) tabQ.setAttribute('disabled', 'disabled');
-                        if (tabM) tabM.setAttribute('disabled', 'disabled');
-                        if (tabC) tabC.removeAttribute('disabled');
-                        activateTabByIndex(container, 2);
+                    if (__state.adptYn === 'Y') {
+                        // 건수형 → 건수 탭을 기본으로만 열어줌
+                        activateTabByIndex(container, 2); // tab-c
                         __state.dvs = '02';
                         __state.typ = '02';
                     } else {
-                        // 금액만 가능 → Q/M enable, C는 그대로 disabled 유지
-                        if (tabC) tabC.setAttribute('disabled', 'disabled');
-                        if (tabQ) tabQ.removeAttribute('disabled');
-                        if (tabM) tabM.removeAttribute('disabled');
-                        activateTabByIndex(container, 0);
+                        // 금액형 → 분기 탭을 기본으로만 열어줌
+                        activateTabByIndex(container, 0); // tab-q
                         __state.dvs = '01';
                         __state.typ = '02';
                     }
+
                     clearFooterError();
                 }
 
-                // 설정하기: dvsCd / lmtTypCd 기준으로 탭 enable/disable
                 function applyTabsForEditByDvs(container, dvs, typ) {
                     const tabQ = container.querySelector('#tab-q');
                     const tabM = container.querySelector('#tab-m');
                     const tabC = container.querySelector('#tab-c');
 
-                    // 일단 모두 enable
                     if (tabQ) tabQ.removeAttribute('disabled');
                     if (tabM) tabM.removeAttribute('disabled');
                     if (tabC) tabC.removeAttribute('disabled');
 
                     if (dvs === '02') {
-                        // 건수 한도: 건수 탭만
-                        if (tabQ) tabQ.setAttribute('disabled', 'disabled');
-                        if (tabM) tabM.setAttribute('disabled', 'disabled');
-                        if (tabC) tabC.removeAttribute('disabled');
+                        //  건수 한도형: 건수 탭만
+                        if (tabQ) {
+                            tabQ.setAttribute('disabled', 'disabled');
+                            tabQ.classList.remove('is-active');
+                        }
+                        if (tabM) {
+                            tabM.setAttribute('disabled', 'disabled');
+                            tabM.classList.remove('is-active');
+                        }
+                        if (tabC) {
+                            tabC.removeAttribute('disabled');
+                        }
+
                         activateTabByIndex(container, 2);  // tab-c
+                        __state.dvs = '02';
+                        __state.typ = '02'; // 건수
                     } else {
-                        // 금액 한도: 월/분기 탭만
-                        if (tabC) tabC.setAttribute('disabled', 'disabled');
+                        //  금액 한도형: 분기/월만
+                        if (tabC) {
+                            tabC.setAttribute('disabled', 'disabled');
+                            tabC.classList.remove('is-active');
+                        }
                         if (tabQ) tabQ.removeAttribute('disabled');
                         if (tabM) tabM.removeAttribute('disabled');
 
                         if (typ === '01') {
                             // 월
                             activateTabByIndex(container, 1);  // tab-m
+                            __state.dvs = '01';
+                            __state.typ = '01';
                         } else {
                             // 분기(기본)
                             activateTabByIndex(container, 0);  // tab-q
+                            __state.dvs = '01';
+                            __state.typ = '02';
                         }
                     }
+
                     clearFooterError();
                 }
 
@@ -1366,13 +1378,13 @@
                     const info = await checkExistingLimit(cas.child.tpwSvcId, cas.child.tpwSvcTypId);
                     const exists = info && info.exists;
 
-                    //  기존 분기 리스트는 전역에 저장 (신규 저장 시 겹침 체크용)
+                    // 기존 분기 리스트는 전역에 저장 (신규 저장 시 겹침 체크용)
                     __prevQuarterRanges = (info && Array.isArray(info.qtRanges)) ? info.qtRanges : [];
 
                     if (exists) {
                         const ok = window.confirm(
                             '선택한 서비스/서비스유형에 대해 기존 한도 설정이 존재합니다.\n' +
-                            '기존 한도는 종료 처리(useYn=N)하고, 새 한도를 이어서 등록하시겠습니까?'
+                            '새 한도를 이어서 등록하시겠습니까?'
                         );
                         if (!ok) {
                             // 취소하면 그냥 선택 모달에 머무름
@@ -1408,7 +1420,7 @@
                         bindQuarterSearch(container);
                         bindMonthSearch(container);
                         bindQuarterAutoCalc(container);
-
+                        bindCountSearch(container);
 
                         const modeInput = container.querySelector('#mode');
                         if (modeInput) modeInput.value = 'new-3in1';
@@ -1505,6 +1517,10 @@
                     const dvs = (container.querySelector('#dvsCd') || {}).value || '01';
                     const typ = (container.querySelector('#lmtTypCd') || {}).value || '02';
 
+                    // 편집 모드에서의 adptYn은 현재 한도구분으로 추정 (02=건수형 → Y, 그 외 → N)
+                    __state.adptYn = (dvs === '02' ? 'Y' : 'N');
+
+                    // 편집 모드: 세 탭 다 열어두고 기본 탭만 선택
                     applyTabsForEditByDvsTyp(container, dvs, typ);
 
                     const today = new Date();
@@ -1536,7 +1552,7 @@
                     bindQuarterSearch(container);
                     bindMonthSearch(container);
                     bindQuarterAutoCalc(container);
-
+                    bindCountSearch(container);
 
                     const modeInput = container.querySelector('#mode');
                     if (modeInput) modeInput.value = 'edit-3in1';
@@ -1611,68 +1627,144 @@
                     }
                 }
 
+                function bindCountSearch(container) {
+                    const ymInput = container.querySelector('#cnt-search-ym');
+                    const btn = container.querySelector('#btn-cnt-search');
+                    const tbody = container.querySelector('#newNcntTable tbody');
+                    if (!ymInput || !btn || !tbody) return;
 
+                    function normalizeYm(v) {
+                        v = (v || '').trim();
+                        if (/^\d{6}$/.test(v)) return v.slice(0, 4) + '-' + v.slice(4, 6); // YYYYMM → YYYY-MM
+                        return v;
+                    }
 
+                    function filter() {
+                        const target = normalizeYm(ymInput.value);
+                        const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
+
+                        if (!target) {
+                            rows.forEach(tr => { tr.style.display = ''; });
+                            clearFooterError();
+                            return;
+                        }
+
+                        rows.forEach(tr => {
+                            const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
+                            const v = normalizeYm(inp && inp.value);
+                            tr.style.display = (v === target ? '' : 'none');
+                        });
+                        clearFooterError();
+                    }
+
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        filter();
+                    });
+
+                    // 처음 열릴 때 기본값(현재 연월)이 들어가 있으면 바로 필터
+                    filter();
+                }
+
+                /**
+                * 분기(Quarter) 행 유효성 검증
+                *
+                * - container 안의 분기 행(예: [data-row-type="quarter"]) 기준
+                * - 각 행의 시작/종료 YYYYMM이 유효한 분기(3개월)인지 확인
+                * - 신규 행들끼리 서로 겹치지 않는지 확인
+                * - prevRanges(DB 기존 분기)와도 겹치지 않는지 확인
+                *
+                * @param {HTMLElement} container - 분기 행들을 담고 있는 루트 요소
+                * @param {Array<{ lmtSttYm: string, lmtEndYm: string }>} prevRanges - 기존 DB 분기 목록(선택)
+                * @returns {boolean} - 유효하면 true, 아니면 false
+                */
                 function validateQuarterRows(container, prevRanges) {
-                    const tbody = container.querySelector('#panel-q tbody');
-                    if (!tbody) return true;
+                    if (!container) return true;
 
-                    const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
-                    if (rows.length === 0) return true;
+                    // 1) 화면에 렌더된 분기 행들 수집
+                    const rows = Array.from(
+                        container.querySelectorAll('[data-row-type="quarter"]')
+                    );
+                    if (!rows.length) {
+                        return true;
+                    }
 
-                    const ranges = [];
+                    // 화면 신규/수정 분기 리스트 (숫자 비교용)
+                    const newRanges = [];
 
-                    for (const tr of rows) {
-                        const mm = tr.querySelectorAll('.dp-input[data-dp-type="month"]');
-                        const startVal = (mm[0] && mm[0].value || '').trim();
-                        const endVal = (mm[1] && mm[1].value || '').trim();
+                    for (const row of rows) {
+                        // 네가 실제 쓰는 name / selector 로 맞춰줘
+                        const sttInput = row.querySelector('input[name="lmtSttYm"]');
+                        const endInput = row.querySelector('input[name="lmtEndYm"]');
 
-                        const s = parseYm(startVal);
-                        const e = parseYm(endVal);
+                        const rawStt = sttInput?.value ?? '';
+                        const rawEnd = endInput?.value ?? '';
+
+                        const s = parseYm(rawStt); // 'YYYYMM' → { y, m } or null
+                        const e = parseYm(rawEnd);
 
                         if (!s || !e) {
-                            showFooterError('분기: 시작/종료 월 형식이 잘못되었습니다.');
-                            if (mm[0]) mm[0].focus();
+                            alert('분기 한도 행의 시작/종료 년월을 모두 입력해 주세요.');
+                            sttInput && sttInput.focus();
                             return false;
                         }
 
-                        const sNum = ymToNum(s);
+                        const sNum = ymToNum(s); // 예: 202401 -> 202401
                         const eNum = ymToNum(e);
 
                         if (sNum > eNum) {
-                            showFooterError('분기: 시작월이 종료월보다 클 수 없습니다.');
-                            if (mm[0]) mm[0].focus();
+                            alert(`분기 한도 시작 년월이 종료 년월보다 클 수 없습니다. (${rawStt} ~ ${rawEnd})`);
+                            sttInput && sttInput.focus();
                             return false;
                         }
 
-                        //  과거(기준 월 이전) 금지
-                        if (sNum < MIN_YM.num) {
-                            showFooterError('분기: ' + MIN_YM.label + ' 이전 분기는 등록할 수 없습니다.');
-                            if (mm[0]) mm[0].focus();
+                        // 분기 경계 체크: 시작월 01/04/07/10 + 정확히 3개월
+                        const validStart = (s.m === 1 || s.m === 4 || s.m === 7 || s.m === 10);
+                        if (!validStart) {
+                            alert(`분기 한도의 시작 월은 01, 04, 07, 10 중 하나여야 합니다. (${rawStt})`);
+                            sttInput && sttInput.focus();
                             return false;
                         }
 
-                        ranges.push({ sNum, eNum, row: tr, startInput: mm[0] });
+                        const expectedEndMonth = s.m + 2;
+                        const expectedEndYear = s.y + (expectedEndMonth > 12 ? 1 : 0);
+                        const normalizedEndMonth = ((expectedEndMonth - 1) % 12) + 1;
+
+                        if (e.y !== expectedEndYear || e.m !== normalizedEndMonth) {
+                            alert(`분기 한도는 정확히 3개월 범위(예: 01~03, 04~06, 07~09, 10~12)여야 합니다. (${rawStt} ~ ${rawEnd})`);
+                            endInput && endInput.focus();
+                            return false;
+                        }
+
+                        newRanges.push({
+                            sNum,
+                            eNum,
+                            rawStt,
+                            rawEnd,
+                            rowEl: row
+                        });
                     }
 
-                    // 1) 현재 화면 안의 행끼리 겹침 체크
-                    ranges.sort((a, b) => a.sNum - b.sNum);
+                    // 2) 신규 분기들끼리 서로 겹치는지 체크
+                    newRanges.sort((a, b) => a.sNum - b.sNum);
 
-                    for (let i = 1; i < ranges.length; i++) {
-                        const prev = ranges[i - 1];
-                        const curr = ranges[i];
+                    for (let i = 1; i < newRanges.length; i++) {
+                        const prev = newRanges[i - 1];
+                        const cur = newRanges[i];
 
-                        if (curr.sNum <= prev.eNum) {
-                            showFooterError(
-                                '분기: 같은 화면에 입력한 기간끼리는 서로 겹치지 않도록 설정해주세요.\n' +
-                                '예) 1~3월, 4~6월, 7~9월 처럼 연속 구간으로 설정'
+                        // 서로 겹치면(현재 시작 <= 이전 종료) 에러
+                        if (cur.sNum <= prev.eNum) {
+                            alert(
+                                `분기 한도 기간이 서로 겹칩니다.\n` +
+                                `이전: ${prev.rawStt} ~ ${prev.rawEnd}\n` +
+                                `현재: ${cur.rawStt} ~ ${cur.rawEnd}`
                             );
-                            if (curr.startInput) curr.startInput.focus();
+                            cur.rowEl.querySelector('input[name="lmtSttYm"]')?.focus();
                             return false;
                         }
                     }
 
-                    // 2) 기존 DB에 저장되어 있던 분기와도 겹치는지 체크 (신규 3in1 에서만 사용)
+                    // 3) 기존 DB에 저장되어 있던 분기와도 겹치는지 체크 (신규 3in1 에서만 사용)
                     if (Array.isArray(prevRanges) && prevRanges.length > 0) {
                         const prevNorm = prevRanges
                             .map(r => {
@@ -1682,27 +1774,25 @@
                                 return {
                                     sNum: ymToNum(s),
                                     eNum: ymToNum(e),
-                                    label: fmtYm(s.y, s.m) + ' ~ ' + fmtYm(e.y, e.m)
+                                    rawStt: r.lmtSttYm,
+                                    rawEnd: r.lmtEndYm
                                 };
                             })
                             .filter(Boolean);
 
                         if (prevNorm.length > 0) {
-                            for (const curr of ranges) {
-                                for (const p of prevNorm) {
-                                    const isSamePeriod =
-                                        curr.sNum === p.sNum && curr.eNum === p.eNum;   //  완전 동일 기간
-                                    const isOverlap =
-                                        curr.sNum <= p.eNum && p.sNum <= curr.eNum;     // 구간 겹침 여부
-
-                                    //  "겹치면서, 완전 동일 기간이 아닌 경우"만 에러
-                                    if (isOverlap && !isSamePeriod) {
-                                        showFooterError(
-                                            '분기: 기존에 이미 등록된 분기(' + p.label +
-                                            ')와 기간이 일부 겹칩니다.\n' +
-                                            '기존 분기와 동일한 기간(시작/종료년월이 모두 일치)만 다시 등록할 수 있습니다.'
+                            // 신규 각 분기에 대해, 기존 분기와 겹치는지 확인
+                            for (const nr of newRanges) {
+                                for (const pr of prevNorm) {
+                                    // 기간 겹침 조건: (start1 <= end2 && start2 <= end1)
+                                    const overlap = (nr.sNum <= pr.eNum) && (pr.sNum <= nr.eNum);
+                                    if (overlap) {
+                                        alert(
+                                            `기존에 등록된 분기 한도와 기간이 겹칩니다.\n` +
+                                            `기존: ${pr.rawStt} ~ ${pr.rawEnd}\n` +
+                                            `신규: ${nr.rawStt} ~ ${nr.rawEnd}`
                                         );
-                                        if (curr.startInput) curr.startInput.focus();
+                                        nr.rowEl.querySelector('input[name="lmtSttYm"]')?.focus();
                                         return false;
                                     }
                                 }
@@ -1712,53 +1802,9 @@
 
                     return true;
                 }
-                function validateCountRows(container) {
-                    const tbody = container.querySelector('#newNcntTable tbody');
-                    if (!tbody) return true;
 
-                    const rows = Array.from(tbody.querySelectorAll('tr:not(.empty-row)'));
-                    if (rows.length === 0) return true;
 
-                    for (const tr of rows) {
-                        const minInput = tr.querySelector('input[name$=".minCndtVal"]');
-                        const maxInput = tr.querySelector('input[name$=".maxCndtVal"]');
-
-                        if (!minInput || !maxInput) continue;
-
-                        const minVal = onlyDigits(minInput.value);
-                        const maxVal = onlyDigits(maxInput.value);
-
-                        if (!minVal || !maxVal) {
-                            showFooterError('건수 한도: 최소/최대 건수를 모두 입력해주세요.');
-                            (minVal ? maxInput : minInput).focus();
-                            return false;
-                        }
-
-                        const min = parseInt(minVal, 10);
-                        const max = parseInt(maxVal, 10);
-
-                        if (isNaN(min) || isNaN(max)) {
-                            showFooterError('건수 한도: 최소/최대 건수는 숫자만 입력 가능합니다.');
-                            (isNaN(min) ? minInput : maxInput).focus();
-                            return false;
-                        }
-
-                        if (min < 0 || max < 0) {
-                            showFooterError('건수 한도: 최소/최대 건수는 0 이상이어야 합니다.');
-                            (min < 0 ? minInput : maxInput).focus();
-                            return false;
-                        }
-
-                        if (min > max) {
-                            showFooterError('건수 한도: 최소 건수가 최대 건수보다 클 수 없습니다.');
-                            minInput.focus();
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
-                function validateMonthRows(container, panelSelector, label) {
+                function validateMonthRows(container, panelSelector, label, prevRanges) {
                     const tbody = container.querySelector(panelSelector + ' tbody');
                     if (!tbody) return true;
 
@@ -1767,6 +1813,7 @@
 
                     const seen = new Set();
 
+                    // 1) 같은 화면 안 중복 월 체크 (기존 로직)
                     for (const tr of rows) {
                         const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
                         const raw = (inp && inp.value || '').trim();
@@ -1774,15 +1821,6 @@
 
                         if (!ym) {
                             showFooterError(label + ': 적용 월 형식이 잘못되었습니다.');
-                            if (inp) inp.focus();
-                            return false;
-                        }
-
-                        const num = ymToNum(ym);
-
-                        /* 🔹 과거(기준 월 이전) 금지 */
-                        if (num < MIN_YM.num) {
-                            showFooterError(label + ': ' + MIN_YM.label + ' 이전 월은 등록할 수 없습니다.');
                             if (inp) inp.focus();
                             return false;
                         }
@@ -1795,6 +1833,36 @@
                         }
                         seen.add(key);
                     }
+
+                    // 2) 기존 기간(prevRanges = 월+분기 전체)과도 겹치는지 체크 (월 ↔ 분기 cross-type 포함)
+                    if (Array.isArray(prevRanges) && prevRanges.length > 0) {
+                        // prevRanges: { lmtSttYm, lmtEndYm } 형태라고 가정
+                        const prevNorm = prevRanges
+                            .map(r => {
+                                const s = parseYm(r.lmtSttYm);
+                                const e = parseYm(r.lmtEndYm);
+                                if (!s || !e) return null;
+                                return { sNum: ymToNum(s), eNum: ymToNum(e) };
+                            })
+                            .filter(Boolean);
+
+                        for (const tr of rows) {
+                            const inp = tr.querySelector('.dp-input[data-dp-type="month"]');
+                            const raw = (inp && inp.value || '').trim();
+                            const ym = parseYm(raw);
+                            if (!ym) continue;
+                            const num = ymToNum(ym);
+
+                            const overlap = prevNorm.some(p => num >= p.sNum && num <= p.eNum);
+                            if (overlap) {
+                                const key = ym.y + '-' + (ym.m < 10 ? '0' + ym.m : ym.m);
+                                showFooterError(label + ': 기존 다른 유형 한도와 기간이 겹칩니다. (' + key + ')');
+                                if (inp) inp.focus();
+                                return false;
+                            }
+                        }
+                    }
+
                     return true;
                 }
 
@@ -1893,6 +1961,57 @@
                                     container.querySelector('#tab-m.is-active') ? 'm' :
                                         container.querySelector('#tab-c.is-active') ? 'c' : 'q';
 
+                            // === 신규/설정하기 공통: trd_ncnt_ltn_adpt_yn 기준 저장 제한 ===
+                            // __state.adptYn : trd_ncnt_ltn_adpt_yn (Y/N) 를 의미하도록 사용
+                            const adpt = (__state.adptYn || '').toUpperCase();
+
+                            if (adpt) {
+                                // 1) 건수 탭 저장하려면 trd_ncnt_ltn_adpt_yn == 'Y' 이어야 함
+                                if (adpt !== 'Y' && activeTab === 'c') {
+                                    showFooterError(
+                                        '현재 서비스유형의 trd_ncnt_ltn_adpt_yn 값이 \'Y\'가 아닙니다.\n' +
+                                        '건수 한도를 저장하려면 서비스유형 관리 화면에서\n' +
+                                        'trd_ncnt_ltn_adpt_yn 값을 \'Y\'로 변경한 후 다시 시도해주세요.'
+                                    );
+                                    return;
+                                }
+
+                                // 2) trd_ncnt_ltn_adpt_yn == 'Y' 인데 분기/월 한도 저장 시도
+                                if (adpt === 'Y' && activeTab !== 'c') {
+                                    showFooterError(
+                                        '현재 서비스유형의 trd_ncnt_ltn_adpt_yn 값이 \'Y\'(건수 한도형)입니다.\n' +
+                                        '분기/월 한도를 저장하려면 서비스유형 관리 화면에서\n' +
+                                        'trd_ncnt_ltn_adpt_yn 값을 \'N\'으로 변경한 후 다시 시도해주세요.'
+                                    );
+                                    return;
+                                }
+                            }
+
+
+                            // 저장 버튼 클릭 핸들러 내부, activeTab 계산한 뒤에 넣어줘
+                            if (__state.mode === 'new-3in1') {
+                                const adpt = (__state.adptYn || '').toUpperCase();
+
+                                // 금액형인데 건수 탭에서 저장 시도
+                                if (adpt === 'N' && activeTab === 'c') {
+                                    showFooterError(
+                                        '이 서비스/서비스유형은 "거래건수제한적용여부"가 N으로 설정되어 있습니다.\n' +
+                                        '건수 한도는 설정할 수 없습니다. 건수 한도를 사용하려면,\n' +
+                                        '거래건수제한적용여부를 Y로 변경한 후 다시 시도해주세요.'
+                                    );
+                                    return;
+                                }
+
+                                // 건수형인데 금액 탭에서 저장 시도
+                                if (adpt === 'Y' && activeTab !== 'c') {
+                                    showFooterError(
+                                        '이 서비스/서비스유형은 건수 한도형입니다.\n' +
+                                        '분기/월 한도는 설정할 수 없습니다.'
+                                    );
+                                    return;
+                                }
+                            }
+
                             const selected = (__newFlowSelected && __newFlowSelected.child) || {};
                             const tpwSvcId = selected.tpwSvcId
                                 || modal.dataset.tpwSvcId
@@ -1918,38 +2037,36 @@
                             }
 
                             const raw = collectWithoutMutating(formEl); // { list: [...] }
+                            const modeInput = container.querySelector('#mode');
+                            const mode = modeInput ? modeInput.value : 'new-3in1';
+
+                            let tpwLmtDvsCd;
+                            let tpwLmtTypCd;
+
+                            if (activeTab === 'q') {
+                                // 분기(금액)
+                                tpwLmtDvsCd = '01';
+                                tpwLmtTypCd = '02';
+                            } else if (activeTab === 'm') {
+                                // 월(금액)
+                                tpwLmtDvsCd = '01';
+                                tpwLmtTypCd = '01';
+                            } else if (activeTab === 'c') {
+                                // 건수 유형
+                                tpwLmtDvsCd = '02';
+                                tpwLmtTypCd = '01';
+                            }
+
                             const body = {
                                 tpwSvcId,
                                 tpwSvcTypId,
-                                tpwLmtDvsCd: (activeTab === 'c') ? '02' : '01', // 금액=01, 건수=02
-                                tpwLmtTypCd: (activeTab === 'm') ? '01' : '02', // 월=01, 분기/건수=02
+                                tpwLmtDvsCd,
+                                tpwLmtTypCd,
+                                mode,
                                 amtList: [],
                                 ncntList: []
                             };
 
-                            // === 서비스 단위 한도유형(분기/월/건수) 강제 일치 검증 ===
-                            if (__svcLimitKind && __svcLimitKind.dvs && __svcLimitKind.typ) {
-                                const sameDvs = (__svcLimitKind.dvs === body.tpwLmtDvsCd);
-                                const sameTyp = (__svcLimitKind.typ === body.tpwLmtTypCd);
-
-                                if (!sameDvs || !sameTyp) {
-                                    const kindLabel = (dvs, typ) => {
-                                        if (dvs === '01' && typ === '02') return '금액-분기';
-                                        if (dvs === '01' && typ === '01') return '금액-월';
-                                        if (dvs === '02') return '건수';
-                                        return '알 수 없는 유형';
-                                    };
-
-                                    showFooterError(
-                                        '해당 서비스는 이미 [' +
-                                        kindLabel(__svcLimitKind.dvs, __svcLimitKind.typ) +
-                                        '] 한도로 설정되어 있습니다.\n' +
-                                        '기존 서비스유형들의 한도유형을 모두 동일하게 맞춘 뒤에만 ' +
-                                        '새 한도를 등록할 수 있습니다.'
-                                    );
-                                    return; // 저장 요청 보내지 않음
-                                }
-                            }
 
                             if (activeTab === 'c') body.ncntList = raw.list || [];
                             else body.amtList = raw.list || [];
@@ -1985,8 +2102,6 @@
                                 if (!validateQuarterRows(container, __prevQuarterRanges)) return;
                             } else if (activeTab === 'm') {
                                 if (!validateMonthRows(container, '#panel-m', '월 한도')) return;
-                            } else if (activeTab === 'c') {
-                                if (!validateCountRows(container)) return;
                             }
 
                             const res = await Common.sendSafe('/sprtpolimng/polimnginf/sprtLmt/edit.do', {
@@ -2018,6 +2133,14 @@
 
                     const inputSort = getSortInput();
                     const inputDir = getDirInput();
+                    // 기본 정렬: 한도시작년월(lmt_stt_ym) 오름차순
+                    if (inputSort && !inputSort.value) {
+                        inputSort.value = 'lmt_stt_ym';
+                    }
+                    if (inputDir && !inputDir.value) {
+                        inputDir.value = 'asc';
+                    }
+
                     const selectSize = searchForm && searchForm.querySelector('select[name="size"]');
                     const baseUrl =
                         (searchForm && searchForm.getAttribute('action'))
@@ -2376,9 +2499,18 @@
                     <div class="tab-panel" id="panel-c" role="tabpanel" aria-labelledby="tab-c">
                         <div class="table-wrap mt20">
                             <form id="ncnt" th:object="${ncnt}">
-                                <!-- 상단: 건수 한도 라벨 + 수정 버튼 / 우측: 행추가/행삭제 -->
+                                <!-- 상단: 검색조건(연월) + 건수 한도 / 우측: 행추가/행삭제 -->
                                 <div class="flex align-center justify-space-between mb12">
                                     <div class="flex align-center gap8 js-search-cond">
+                                        <span class="search-label">검색조건(적용 연월)</span>
+                                        <div class="text-field datepicker" style="width:160px">
+                                            <input id="cnt-search-ym" type="text" class="dp-input" placeholder="YYYY-MM"
+                                                data-dp-type="month" autocomplete="off" />
+                                            <button type="button" class="dp-btn" data-dp-toggle
+                                                aria-label="적용 연월 선택 열기"></button>
+                                        </div>
+                                        <button class="btn btn-dark-line" id="btn-cnt-search" type="button">검색</button>
+
                                         <span class="search-label">건수 한도</span>
                                         <!-- 설정하기에서 readOnly 풀기용 -->
                                         <button class="btn btn-dark-line js-edit-toggle" type="button">수정</button>
@@ -2395,7 +2527,7 @@
                                         <caption class="blind">건수 한도</caption>
                                         <thead>
                                             <tr>
-                                                <th>순번</th>
+                                                <th>적용 연월</th>
                                                 <th>최소한도건</th>
                                                 <th>최대한도건</th>
                                                 <th>지급률(%)</th>
@@ -2411,7 +2543,17 @@
                                                     type="hidden" />
                                                 <input th:field="*{list[__${stat.index}__].spfnLmtSno}" type="hidden" />
 
-                                                <td th:text="${stat.count}"></td>
+                                                <!--  신규: 연월(월) 컬럼 -->
+                                                <td>
+                                                    <div class="text-field datepicker" style="width:200px">
+                                                        <input class="dp-input" type="text" placeholder="YYYY-MM"
+                                                            data-dp-type="month" autocomplete="off"
+                                                            th:field="*{list[__${stat.index}__].lmtSttYm}" />
+                                                        <button type="button" class="dp-btn" data-dp-toggle
+                                                            aria-label="년 월 선택 열기"></button>
+                                                    </div>
+                                                </td>
+
                                                 <td>
                                                     <input class="text-field js-count" inputmode="numeric"
                                                         autocomplete="off" data-maxlen="10"

@@ -23,6 +23,10 @@ public class NcntReqVO {
     @Size(max = 10, message = "지원금한도일련번호의 길이는 10보다 작아야 합니다.")
     private String spfnLmtSno;
 
+    /** 한도적용시작년월 */
+    private String lmtSttYm;
+    private String lmtEndYm;
+
     /** 최소조건값 */
     @PositiveOrZero(message = "양수만 입력 가능합니다.")
     private int minCndtVal;
