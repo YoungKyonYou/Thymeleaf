@@ -16,40 +16,41 @@
         */
 
         select
-        sprt.tpw_svc_id      as tpwSvcId      /* 서비스ID */
-        , sprt.tpw_svc_nm      as tpwSvcNm      /* 서비스명 */
-        , sprt.tpw_svc_typ_id  as tpwSvcTypId   /* 서비스유형ID */
-        , sprt.tpw_svc_typ_nm  as tpwSvcTypNm   /* 서비스유형명 */
-        , sprt.spfn_lmt_mng_no as spfnLmtMngNo  /* 지원금한도관리번호 */
-        , sprt.spfn_lmt_sno    as spfnLmtSno    /* 지원금한도일련번호 */
-        , sprt.tpw_lmt_dvs_cd  as tpwLmtDvsCd   /* 교통복지한도구분코드 */
-        , sprt.tpw_lmt_typ_cd  as tpwLmtTypCd   /* 교통복지한도유형코드 */
-        , sprt.lmt_stt_ym      as lmtSttYm      /* 한도시작년월 */
-        , sprt.lmt_end_ym      as lmtEndYm      /* 한도종료년월 */
-        , sprt.min_cndt_val    as minCndtVal    /* 최소조건값 */
-        , sprt.max_cndt_val    as maxCndtVal    /* 최대조건값 */
-        , sprt.use_yn          as useYn         /* 이용여부 */
+        sprt.tpw_svc_id       as tpwSvcId      /* 서비스ID */
+        , sprt.tpw_svc_nm       as tpwSvcNm      /* 서비스명 */
+        , sprt.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
+        , sprt.tpw_svc_typ_nm   as tpwSvcTypNm   /* 서비스유형명 */
+        , sprt.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */
+        , sprt.spfn_lmt_sno     as spfnLmtSno    /* 지원금한도일련번호 */
+        , sprt.tpw_lmt_dvs_cd   as tpwLmtDvsCd   /* 교통복지한도구분코드 */
+        , sprt.tpw_lmt_typ_cd   as tpwLmtTypCd   /* 교통복지한도유형코드 */
+        , sprt.lmt_stt_ym       as lmtSttYm      /* 한도시작년월 */
+        , sprt.lmt_end_ym       as lmtEndYm      /* 한도종료년월 */
+        , sprt.min_cndt_val     as minCndtVal    /* 최소조건값 */
+        , sprt.max_cndt_val     as maxCndtVal    /* 최대조건값 */
+        , sprt.use_yn           as useYn         /* 이용여부 */
         from (
         select
-        d208.tpw_svc_id          as tpw_svc_id      /* 서비스ID */
-        , max(m201.tpw_svc_nm)     as tpw_svc_nm      /* 서비스명 */
-        , d208.tpw_svc_typ_id      as tpw_svc_typ_id  /* 서비스유형ID */
-        , max(m202.tpw_svc_typ_nm) as tpw_svc_typ_nm  /* 서비스유형명 */
-        , max(d208.spfn_lmt_mng_no) as spfn_lmt_mng_no/* 지원금한도관리번호 */
-        , max(d208.spfn_lmt_sno)    as spfn_lmt_sno   /* 지원금한도일련번호 */
-        , max(d208.tpw_lmt_dvs_cd)  as tpw_lmt_dvs_cd /* 교통복지한도구분코드 */
-        , max(d208.tpw_lmt_typ_cd)  as tpw_lmt_typ_cd /* 교통복지한도유형코드 */
-        , min(d208.lmt_stt_ym)      as lmt_stt_ym     /* 한도시작년월 */
-        , max(d208.lmt_end_ym)      as lmt_end_ym     /* 한도종료년월 */
-        , min(d208.min_cndt_val)    as min_cndt_val   /* 최소조건값 */
-        , max(d208.max_cndt_val)    as max_cndt_val   /* 최대조건값 */
-        , max(d208.tgt_adpt_val)    as tgt_adpt_val   /* 대상조건값 */
-        , max(d208.use_yn)          as use_yn         /* 이용여부 */
+        d208.tpw_svc_id            as tpw_svc_id       /* 서비스ID */
+        , max(m201.tpw_svc_nm)       as tpw_svc_nm       /* 서비스명 */
+        , d208.tpw_svc_typ_id        as tpw_svc_typ_id   /* 서비스유형ID */
+        , max(m202.tpw_svc_typ_nm)   as tpw_svc_typ_nm   /* 서비스유형명 */
+        , max(d208.spfn_lmt_mng_no)  as spfn_lmt_mng_no  /* 지원금한도관리번호 */
+        , max(d208.spfn_lmt_sno)     as spfn_lmt_sno     /* 지원금한도일련번호 */
+        , max(d208.tpw_lmt_dvs_cd)   as tpw_lmt_dvs_cd   /* 교통복지한도구분코드 */
+        , max(d208.tpw_lmt_typ_cd)   as tpw_lmt_typ_cd   /* 교통복지한도유형코드 */
+        , min(d208.lmt_stt_ym)       as lmt_stt_ym       /* 한도시작년월 */
+        , max(d208.lmt_end_ym)       as lmt_end_ym       /* 한도종료년월 */
+        , min(d208.min_cndt_val)     as min_cndt_val     /* 최소조건값 */
+        , max(d208.max_cndt_val)     as max_cndt_val     /* 최대조건값 */
+        , max(d208.tgt_adpt_val)     as tgt_adpt_val     /* 대상조건값 */
+        , max(d208.use_yn)           as use_yn           /* 이용여부 */
         from tbhxzd208 d208
         join tbhxzm201 m201
         on d208.tpw_svc_id = m201.tpw_svc_id
         join tbhxzm202 m202
         on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
+        and m202.use_yn         = 'Y'
         where 1 = 1
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
@@ -90,6 +91,7 @@
         on d208.tpw_svc_id = m201.tpw_svc_id
         join tbhxzm202 m202
         on d208.tpw_svc_typ_id = m202.tpw_svc_typ_id
+        and m202.use_yn         = 'Y'
         where 1 = 1
         <if test="req.useYn != null and req.useYn != ''">
             and lower(d208.use_yn) = lower(#{req.useYn})
@@ -142,18 +144,18 @@
         */
 
         select
-        d208.tpw_svc_id      as tpwSvcId      /* 서비스ID */
-        , d208.tpw_svc_typ_id  as tpwSvcTypId   /* 서비스유형ID */
-        , d208.spfn_lmt_mng_no as spfnLmtMngNo  /* 지원금한도관리번호 */
-        , d208.spfn_lmt_sno    as spfnLmtSno    /* 지원금한도일련번호 */
-        , d208.tpw_lmt_dvs_cd  as tpwLmtDvsCd   /* 교통복지한도구분코드 */
-        , d208.tpw_lmt_typ_cd  as tpwLmtTypCd   /* 교통복지한도유형코드 */
-        , d208.lmt_stt_ym      as lmtSttYm      /* 한도시작년월 */
-        , d208.lmt_end_ym      as lmtEndYm      /* 한도종료년월 */
-        , d208.min_cndt_val    as minCndtVal    /* 최소조건값 */
-        , d208.max_cndt_val    as maxCndtVal    /* 최대조건값 */
-        , d208.tgt_adpt_val    as tgtAdptVal    /* 대상조건값 */
-        , d208.use_yn          as useYn         /* 사용여부 */
+        d208.tpw_svc_id       as tpwSvcId      /* 서비스ID */
+        , d208.tpw_svc_typ_id   as tpwSvcTypId   /* 서비스유형ID */
+        , d208.spfn_lmt_mng_no  as spfnLmtMngNo  /* 지원금한도관리번호 */
+        , d208.spfn_lmt_sno     as spfnLmtSno    /* 지원금한도일련번호 */
+        , d208.tpw_lmt_dvs_cd   as tpwLmtDvsCd   /* 교통복지한도구분코드 */
+        , d208.tpw_lmt_typ_cd   as tpwLmtTypCd   /* 교통복지한도유형코드 */
+        , d208.lmt_stt_ym       as lmtSttYm      /* 한도시작년월 */
+        , d208.lmt_end_ym       as lmtEndYm      /* 한도종료년월 */
+        , d208.min_cndt_val     as minCndtVal    /* 최소조건값 */
+        , d208.max_cndt_val     as maxCndtVal    /* 최대조건값 */
+        , d208.tgt_adpt_val     as tgtAdptVal    /* 대상조건값 */
+        , d208.use_yn           as useYn         /* 사용여부 */
         from tbhxzd208 d208
         where 1 = 1
         <if test="tpwSvcTypId != null and tpwSvcTypId != ''">
@@ -250,7 +252,7 @@
 
         update tbhxzd208
         set trd_ncnt_adpt_yn = upper(#{adptYn})
-        where tpw_svc_typ_id   = #{tpwSvcTypId}
+        where tpw_svc_typ_id = #{tpwSvcTypId}
     </update>
 
     <update id="updateSprtLmtUseYnAllForCount">
@@ -265,10 +267,10 @@
 
         update ohxzown.tbhxzd208
         set use_yn = 'N'
-        where tpw_svc_id     = #{tpwSvcId}
-        and tpw_svc_typ_id   = #{tpwSvcTypId}
-        and tpw_lmt_dvs_cd   = #{tpwLmtDvsCd}
-        and use_yn           = 'Y'
+        where tpw_svc_id   = #{tpwSvcId}
+        and tpw_svc_typ_id = #{tpwSvcTypId}
+        and tpw_lmt_dvs_cd = #{tpwLmtDvsCd}
+        and use_yn         = 'Y'
         <!--'입력시작년월' 기준으로 N 대상 선정 -->
         and (
         #{lmtSttYm} &lt;= lmt_stt_ym
@@ -333,7 +335,7 @@
 
         select count(1)
         from ohxzown.tbhxzd208 d208
-        where d208.tpw_svc_id     = #{tpwSvcId}
+        where d208.tpw_svc_id   = #{tpwSvcId}
         and d208.tpw_svc_typ_id = #{tpwSvcTypId}
         and d208.use_yn         = 'Y'
     </select>
@@ -432,7 +434,7 @@
         min(d208.lmt_stt_ym) as lmtSttYm
         , max(d208.lmt_end_ym) as lmtEndYm
         from ohxzown.tbhxzd208 d208
-        where d208.tpw_svc_id     = #{tpwSvcId}
+        where d208.tpw_svc_id   = #{tpwSvcId}
         and d208.tpw_svc_typ_id = #{tpwSvcTypId}
         and d208.tpw_lmt_dvs_cd = '01'   -- 금액
         and d208.tpw_lmt_typ_cd = '02'   -- 분기

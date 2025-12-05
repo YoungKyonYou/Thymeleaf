@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tmoney.co.kr.hxz.mypage.mapper.MyPageMapper">
+
+    <!-- 관리자 조회 (마이페이지에서 쓰는 컬럼만) -->
+    <select id="readMngrMyPage"
+            parameterType="string"
+            resultType="tmoney.co.kr.hxz.mypage.vo.MngrVO">
+        /* sql_id: selectManager
+        * 관리자 정보 조회 (마이페이지 전용)
+        */
+        SELECT
+        mngr_id       AS mngrId,
+        mngr_name     AS mngrName,
+        mail_addr     AS mailAddr,
+        mngr_tel_no   AS mngrTelNo,
+        mngr_mbph_no  AS mngrMbphNo,
+        org_cd        AS orgCd
+        FROM ohxzown.tbhxzm106
+        WHERE mngr_id = #{mngrId}
+    </select>
+
+    <!-- 마이페이지 정보 수정 -->
+    <update id="updateMngrMyPage"
+            parameterType="tmoney.co.kr.hxz.mypage.vo.UpdateMngrVO">
+        /* sql_id: updateManager
+        * 마이페이지 기본정보 수정 (이메일/전화/휴대전화/이름)
+        */
+        UPDATE ohxzown.tbhxzm106
+        SET
+        mngr_name    = #{mngrName},
+        mail_addr    = #{mailAddr},
+        mngr_tel_no  = #{mngrTelNo},
+        mngr_mbph_no = #{mngrMbphNo},
+        updr_id      = #{updrId},
+        upd_dtm      = to_char(now(), 'YYYYMMDDHH24MISS')
+        WHERE mngr_id = #{mngrId}
+    </update>
+
+    <!-- 현재 비밀번호 조회 -->
+    <select id="readMngrPwd"
+            parameterType="string"
+            resultType="string">
+        /* sql_id: selectPassword
+        * 현재 비밀번호 조회
+        */
+        SELECT pwd
+        FROM ohxzown.tbhxzm106
+        WHERE mngr_id = #{mngrId}
+    </select>
+
+    <!-- 비밀번호 변경 -->
+    <update id="updateMngrPwd">
+        /* sql_id: updatePassword
+        * 비밀번호 변경
+        */
+        UPDATE ohxzown.tbhxzm106
+        SET
+        pwd          = #{encodedPassword},
+        pwd_err_ncnt = 0,
+        pwd_intz_yn  = 'Y',
+        updr_id      = #{updrId},
+        upd_dtm      = to_char(now(), 'YYYYMMDDHH24MISS')
+        WHERE mngr_id = #{mngrId}
+    </update>
+
+</mapper>
