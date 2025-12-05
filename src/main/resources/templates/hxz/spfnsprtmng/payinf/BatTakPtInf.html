@@ -9,11 +9,13 @@
             <form class="section-header" id="searchForm" th:object="${req}">
                 <input type="hidden" th:field="*{sort}">
                 <input type="hidden" th:field="*{dir}">
+
+                <input type="hidden" name="page" id="page" th:value="${pageData.page}">
+
                 <div class="title-wrap">
                     <h3 class="section-title">배치작업내역조회</h3>
                 </div>
 
-                <!-- 검색폼: 날짜 검색만 -->
                 <div class="box-wrap">
                     <div class="box">
                         <p class="field-title">작업기간</p>
@@ -36,14 +38,13 @@
                 </div>
             </form>
 
-            <!-- 검색결과 -->
             <div class="section-content">
                 <div class="flex justify-space-between">
                     <b>검색결과: <span id="search-count" th:text="${pageData.total}">0</span>건</b>
                     <div class="flex col-">
                         <button type="button" class="btn btn-secondary btn-icon-left"
-                            data-export="xlsx"
-                            data-provider="배치작업내역조회"
+                                data-export="xlsx"
+                                data-provider="배치작업내역조회"
                         >
                             엑셀 다운로드
                             <i class="icon icon-save"></i>
@@ -52,7 +53,6 @@
                     </div>
                 </div>
 
-                <!-- 테이블 -->
                 <div class="table-wrap mt20">
                     <table class="table" id="grid">
                         <caption class="blind">배치작업내역조회 테이블</caption>
@@ -73,7 +73,7 @@
                                 <td th:text="${base + stat.index + 1}"></td>
                                 <td th:text="${u.batTakDt}"></td>
                                 <td th:text="${u.batTakId}"></td>
-                                <td th:text="${u.batTakName}"></td>
+                                <td th:text="${u.batTakNm}"></td>
                                 <td th:text="${u.batTakSttDtm}"></td>
                                 <td th:text="${u.batTakEndDtm}"></td>
                                 <td th:text="${u.batPrcgStaCd == '01' ? '처리중' : (u.batPrcgStaCd == '02' ? '처리완료' : (u.batPrcgStaCd == '03' ? '처리오류' : '알수없음'))}"></td>
@@ -87,7 +87,6 @@
                     </table>
                 </div>
 
-                <!-- 페이징 -->
                 <div class="mt20" id="grid-pager">
                     <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
                 </div>
@@ -95,89 +94,147 @@
         </section>
 
         <script th:inline="javascript">
-
             (function () {
+                // =========================================================================
+                // 1. 기본 설정 및 엘리먼트
+                // =========================================================================
                 const baseUrl = '/spfnsprtmng/payinf/batTakPtInf.do';
-                const grid = document.getElementById('grid');
-                const head = document.getElementById('grid-header');
                 const searchForm = document.getElementById('searchForm');
                 const selectSize = searchForm.querySelector('select[name="size"]');
+
                 const inputSort = document.getElementById('sort');
                 const inputDir = document.getElementById('dir');
+                const inputPage = document.getElementById('page');
+
+                // [중요] 화면 상단의 'mini-sp-loading' 요소를 가져옵니다.
                 const loading = document.getElementById('mini-sp-loading');
 
-                // 페이로드 (엑셀 다운로드 등)
-                const payload = { dnRsn: '' };
+                // 날짜 입력 필드 엘리먼트 확보
+                const inputSttDt = document.getElementById('startDate');
+                const inputEndDt = document.getElementById('endDate');
 
-                const exportHandler = (e) => {
-                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
-                    setTimeout(() => {
-                        loading.style.display = 'none';
-                    }, 1000);
-                };
-                document.body.addEventListener('click', exportHandler);
+                // 문자열에서 숫자만 추출하는 유틸 함수 (예: 2025-12-05 -> 20251205)
+                const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
 
+                // =========================================================================
+                // 2. 그리드 리로드 함수 (AJAX 요청)
+                // =========================================================================
+                const reloadGrid = (targetPage) => {
+                    // 페이지 번호를 정수로 변환하며, 유효하지 않을 경우 0(1페이지)으로 설정
+                    targetPage = parseInt(targetPage, 10) || 0;
 
-                document.querySelector('#export-excel').addEventListener('click', function(e){
-                    e.preventDefault();
-                    const param = serializeForm(searchForm);
-                    location.href = e.target.getAttribute('href') + `?${param}`;
-                });
+                    // 폼 내부의 페이지 번호 Hidden 필드 동기화
+                    if(inputPage) inputPage.value = targetPage;
 
-                // bindPagination event 등록
-                bindPagination(baseUrl, {
-                    page: 0,
-                    size: parseInt(selectSize?.value || '10', 10),
-                    dir: inputDir?.value || 'asc',
-                    sort: inputSort?.value || 'batTakDt'
-                });
-
-                // 테이블 헤더 클릭 정렬
-                head.addEventListener('click', (e) => {
-                    const a = e.target.closest('[data-sort]');
-                    if (!a) return;
-
-                    e.preventDefault();
-                    const next = a.dataset.sort;
-                    const curr = inputSort?.value || 'batTakDt';
-                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
-
-                    if (inputSort) inputSort.value = next;
-                    if (inputDir) inputDir.value = dir;
-
+                    // 검색 폼의 모든 입력값을 객체 형태로 수집
                     const applied = Common.collectFromForm(searchForm);
-                    Common.reloadList({
-                        page: 0,
-                        defaultSortColumn: 'batTakDt',
-                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
-                        selectSize,
-                        baseUrl,
-                        inputSort,
-                        inputDir,
-                        applied
-                    });
-                });
 
-                // 검색폼 submit 이벤트
-                searchForm?.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const applied = Common.collectFromForm(searchForm);
+                    // 날짜 필드의 현재 입력값을 가져와 특수문자(-, .) 제거 후 파라미터 덮어쓰기
+                    // 서버가 YYYYMMDD 형식을 기대하므로 포맷을 통일하여 전송
+                    if (inputSttDt) applied.sttDt = onlyDigits(inputSttDt.value);
+                    if (inputEndDt) applied.endDt = onlyDigits(inputEndDt.value);
+
+                    // 요청 파라미터에 대상 페이지 번호 설정
+                    applied.page = targetPage;
+
+                    // 공통 함수를 통해 서버 요청 및 화면(그리드, 페이징, 카운트) 갱신
                     Common.reloadList({
-                        page: 0,
+                        page: targetPage,
                         defaultSortColumn: 'batTakDt',
                         swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#search-count'],
                         selectSize,
                         baseUrl,
                         inputSort,
                         inputDir,
-                        applied
+                        applied: applied
                     });
+                };
+
+                // =========================================================================
+                // 3. 이벤트 리스너 (body 위임 방식)
+                // =========================================================================
+                document.body.addEventListener('click', function(e) {
+
+                    // A. 페이징 버튼(숫자, 이전/다음) 클릭 처리
+                    const pagerItem = e.target.closest('#grid-pager a, #grid-pager li, #grid-pager button');
+
+                    if (pagerItem) {
+                        e.preventDefault();
+                        let pageNum = null;
+
+                        // data-page 속성에서 페이지 번호 추출 (우선)
+                        if (pagerItem.dataset.page !== undefined && pagerItem.dataset.page !== '') {
+                            pageNum = pagerItem.dataset.page;
+                        }
+                        // href 속성에서 페이지 번호 추출 (차선)
+                        else if (pagerItem.getAttribute('href')) {
+                            const href = pagerItem.getAttribute('href');
+                            const match = href.match(/[?&]page=(\d+)/);
+                            if (match) pageNum = match[1];
+                        }
+
+                        // 유효한 페이지 번호가 확인되면 목록 재조회
+                        if (pageNum !== null) {
+                            reloadGrid(pageNum);
+                            return;
+                        }
+                    }
+
+                    // B. [수정됨] 엑셀 다운로드 버튼 클릭 처리
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    if (exportBtn) {
+                        const payload = { dnRsn: '' };
+
+                        // 1. 엑셀 다운로드 요청 (Common.js 내부에서 폼 submit 등으로 동작 추정)
+                        Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+
+                        // 2. [수정] 스피너 강제 종료 로직 강화
+                        // 파일 다운로드는 AJAX 콜백이 없으므로, 일정 시간 후 강제로 꺼야 합니다.
+                        setTimeout(() => {
+                            // (1) 상단에서 정의한 loading 요소 숨기기
+                            if(loading) loading.style.display = 'none';
+
+                            // (2) 혹시 모를 전역 스피너(id="loading" 등)도 찾아서 숨기기 (안전장치)
+                            const globalSpinner = document.getElementById('loading') || document.querySelector('.loading-mask');
+                            if (globalSpinner) globalSpinner.style.display = 'none';
+
+                        }, 3000); // 기존 1000ms -> 3000ms (3초)로 늘려서 충분히 기다림
+
+                        return;
+                    }
+
+                    // C. 테이블 헤더 정렬 클릭 처리
+                    const sortLink = e.target.closest('#grid-header [data-sort]');
+                    if (sortLink) {
+                        e.preventDefault();
+                        const next = sortLink.dataset.sort;
+                        const curr = inputSort?.value || 'batTakDt';
+
+                        // 현재 컬럼과 같으면 정렬 순서 반전(asc <-> desc), 다르면 asc 시작
+                        const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+
+                        if (inputSort) inputSort.value = next;
+                        if (inputDir) inputDir.value = dir;
+
+                        // 정렬 조건 변경 시 데이터 일관성을 위해 1페이지(0)부터 다시 조회
+                        reloadGrid(0);
+                        return;
+                    }
                 });
+
+                // =========================================================================
+                // 4. 검색 폼 제출 이벤트
+                // =========================================================================
+                if(searchForm) {
+                    searchForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        // 검색 버튼 클릭 시 검색 조건을 반영하여 1페이지(0)부터 조회
+                        reloadGrid(0);
+                    });
+                }
             })();
         </script>
 
-        <!-- Footer -->
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
 
     </th:block>

@@ -39,7 +39,7 @@ public class BatTakPtInfServiceImpl implements BatTakPtInfService {
                 req.getBatTakDt(),
                 req.getSttDt(),
                 req.getEndDt(),
-                offset,
+                req.getPage(),
                 req.getSize(),
                 req.getSort(),
                 req.getDir()

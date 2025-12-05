@@ -188,9 +188,19 @@
 
 
         <script>
-
             // 숫자 유틸
             const onlyDigits = (s) => (s || '').replace(/\D+/g, '');
+
+            // 날짜 포맷팅 유틸 (YYYYMMDD_HHmm)
+            const getTimestamp = () => {
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mi = String(now.getMinutes()).padStart(2, '0');
+                return `${yyyy}${mm}${dd}_${hh}${mi}`;
+            };
 
             // 실행구분에 따른 신규등록 페이지 이동
             function moveToNewForm() {
@@ -204,7 +214,6 @@
                 }
             }
 
-            // DOMContentLoaded 안으로 모든 초기화 로직 통합
             document.addEventListener('DOMContentLoaded', function () {
 
                 // 1. 날짜 필드 초기화
@@ -214,9 +223,7 @@
                     if (el) el.type = 'date';
                 }
 
-                // =========================================================================
-                // 2. [수정됨] 상세 이동 로직 (파라미터 이름에 'target' 추가)
-                // =========================================================================
+                // 2. 상세 이동 로직
                 document.addEventListener('click', function(e) {
                     const currentTr = e.target.closest('#grid-tbody .clickable-row');
                     if (!currentTr) return;
@@ -240,26 +247,25 @@
                         return;
                     }
 
-                    // [핵심 수정] 검색조건 직렬화
                     const searchForm = document.getElementById('searchForm');
                     const formData = new FormData(searchForm);
+
+                    // 상세 이동 시에도 날짜 포맷 맞춤 (선택사항)
+                    if(formData.has('sttDt')) formData.set('sttDt', onlyDigits(formData.get('sttDt')));
+                    if(formData.has('endDt')) formData.set('endDt', onlyDigits(formData.get('endDt')));
+
                     const searchParams = new URLSearchParams(formData).toString();
 
-                    // [핵심 수정] 상세 조회용 ID 파라미터 이름 변경 (target...)
-                    // Controller에서 @RequestParam("targetTpwSvcTypId") 로 받도록 수정했으므로 맞춰줌
                     let url = `/spfnsprtmng/payinf/${exeDiv.toLowerCase()}/edit?targetTpwSvcTypId=${tpwSvcTypId}&targetTpwSvcTypSno=${tpwSvcTypSno}&targetTpwSvcId=${tpwSvcId}&exeDiv=${exeDiv}`;
 
                     if (exeDiv === 'SIM') {
-                        url += `&targetAplDt=${aplDt}`; // aplDt -> targetAplDt
+                        url += `&targetAplDt=${aplDt}`;
                     } else {
-                        url += `&targetStlmDt=${stlmDt}`; // stlmDt -> targetStlmDt
+                        url += `&targetStlmDt=${stlmDt}`;
                     }
 
-                    // 이동 (상세조회 ID + 검색조건 파라미터)
                     location.href = url + '&' + searchParams;
                 });
-                // =========================================================================
-
 
                 // 3. 검색 및 페이징 초기화
                 const baseUrl = '/spfnsprtmng/payinf/stlmTakPtInf.do';
@@ -272,19 +278,67 @@
                     const inputDir = document.getElementById('dir');
                     const loading = document.getElementById('mini-sp-loading');
 
-                    // 엑셀 다운로드 핸들러
-                    const exportHandler = (e) => {
+                    // 날짜 입력 필드 참조
+                    const inputSttDt = document.getElementById('startDate');
+                    const inputEndDt = document.getElementById('endDate');
+
+                    //  엑셀 다운로드 핸들러
+                  const exportHandler = (e) => {
                         const exportBtn = e.target.closest('button[data-export="xlsx"]');
                         if(exportBtn && Common && Common.bindExcelExport) {
-                            Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', { dnRsn: '' });
+
+                            // 1. 파일명 생성 (예: 정산작업내역조회_20251205_1430)
+                            const baseName = "정산작업내역조회";
+                            const fileName = `${baseName}_${getTimestamp()}`;
+
+                            // 2. [중요] 폼에 'orgCd'와 'fileName'이 없으면 만들어서 넣기
+                            // (이게 없어서 에러가 나고, 파일명이 export로 나왔던 것임)
+
+                            // (A) fileName 처리
+                            let fileNameInput = searchForm.querySelector('input[name="fileName"]');
+                            if (!fileNameInput) {
+                                fileNameInput = document.createElement('input');
+                                fileNameInput.type = 'hidden';
+                                fileNameInput.name = 'fileName';
+                                searchForm.appendChild(fileNameInput);
+                            }
+                            fileNameInput.value = fileName;
+
+                            // (B) orgCd 처리 (기존 model에 orgCd가 있었다면 th:value로 박혀있어야 함)
+                            // 만약 HTML 어딘가에 이미 있다면 그걸 쓰겠지만, 없다면 강제로라도 넣어야 함
+                            let orgCdInput = searchForm.querySelector('input[name="orgCd"]');
+                            if (!orgCdInput) {
+                                orgCdInput = document.createElement('input');
+                                orgCdInput.type = 'hidden';
+                                orgCdInput.name = 'orgCd';
+                                // 주의: 실제 조직 코드가 동적으로 바뀐다면 서버에서 받은 값을 써야 함.
+                                // 일단 기본값 '0000000' 세팅 (필요시 수정)
+                                orgCdInput.value = '0000000';
+                                searchForm.appendChild(orgCdInput);
+                            }
+
+                            // 3. 엑셀 다운로드 요청
+                            // 정렬 컬럼은 'stlm_dt' 사용 (빈 값 '' 보다는 안전)
+                            Common.bindExcelExport(
+                                searchForm,
+                                exportBtn,
+                                inputSort.value,
+                                inputDir.value,
+                                'stlm_dt',
+                                { dnRsn: '', fileName: fileName }
+                            );
+
+                            // 4. 스피너 종료
                             setTimeout(() => {
                                 if(loading) loading.style.display = 'none';
-                            }, 1000);
+                                const globalLoading = document.getElementById('loading');
+                                if(globalLoading) globalLoading.style.display = 'none';
+                            }, 3000);
                         }
                     };
                     document.body.addEventListener('click', exportHandler);
 
-                    // bindPagination 안전 호출
+                    // bindPagination 호출
                     const pageOptions = {
                         page: 0,
                         size: parseInt((selectSize && selectSize.value) || '10', 10),
@@ -296,8 +350,6 @@
                         bindPagination(baseUrl, pageOptions);
                     } else if (typeof Common !== 'undefined' && typeof Common.bindPagination === 'function') {
                         Common.bindPagination(baseUrl, pageOptions);
-                    } else {
-                        console.warn('Paging function (bindPagination) not found.');
                     }
 
                     // 테이블 헤더 정렬 클릭
@@ -315,11 +367,11 @@
                             if (inputDir) inputDir.value = dir;
 
                             const applied = Common.collectFromForm(searchForm);
-                            const dateColumn = ['endDt','sttDt'];
-                            for (const k in applied) {
-                                if ( dateColumn.includes(k) )
-                                    applied[k] = onlyDigits(applied[k]);
-                            }
+
+                            // 날짜 하이픈 제거
+                            if (applied.sttDt) applied.sttDt = onlyDigits(applied.sttDt);
+                            if (applied.endDt) applied.endDt = onlyDigits(applied.endDt);
+
                             Common.reloadList({
                                 page: 0,
                                 defaultSortColumn: 'batTakDt',
@@ -338,11 +390,9 @@
                         e.preventDefault();
                         const applied = Common.collectFromForm(searchForm);
 
-                        const dateColumn = ['endDt','sttDt'];
-                        for (const k in applied) {
-                            if ( dateColumn.includes(k) )
-                                applied[k] = onlyDigits(applied[k]);
-                        }
+                        // 날짜 하이픈 제거
+                        if (applied.sttDt) applied.sttDt = onlyDigits(applied.sttDt);
+                        if (applied.endDt) applied.endDt = onlyDigits(applied.endDt);
 
                         Common.reloadList({
                             page: 0,
@@ -357,7 +407,6 @@
                     });
                 }
             });
-
         </script>
 
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
