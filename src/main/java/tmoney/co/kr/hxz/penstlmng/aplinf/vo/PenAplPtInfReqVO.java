@@ -64,11 +64,15 @@ public class PenAplPtInfReqVO {
     private int tpwSvcTypSno;
 
     // 시작기간
+    // * 기본값 빼야함
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식은 YYYY-MM-DD 형식이어야 합니다.") // 검색시작일
-    private String sttDt = LocalDate.now(ZoneId.of("Asia/Seoul")).minusMonths(1).toString();
+    private String sttDt;
+    // private String sttDt = LocalDate.now(ZoneId.of("Asia/Seoul")).minusMonths(1).toString();
 
+    // * 기본값 빼야함
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "날짜 형식은 YYYY-MM-DD 형식이어야 합니다.") // 검색종료일
-    private String endDt = LocalDate.now(ZoneId.of("Asia/Seoul")).toString();
+    private String endDt;
+    // private String endDt = LocalDate.now(ZoneId.of("Asia/Seoul")).toString();
 
     @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.")
     private int page = 0;
@@ -87,9 +91,12 @@ public class PenAplPtInfReqVO {
     }
 
 
+    // 값이 없을때만 채우게
     public void updateDefaultDate(String startDate, String endDate) {
-        this.sttDt = startDate;
-        this.endDt = endDate;
+        if (this.sttDt == null || this.sttDt.trim().isEmpty())
+            this.sttDt = startDate;
+        if (this.endDt == null || this.endDt.trim().isEmpty())
+            this.endDt = endDate;
     }
 
 

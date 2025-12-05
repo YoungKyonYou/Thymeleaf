@@ -55,8 +55,8 @@ public class BatTakPtInfExportService implements ExportProvider<BatTakPtInfRspVO
         final int pageSize = parseIntOrDefault(params.get("size"), QUERY_LIMIT);
 
         final String orgCd    = params.get("orgCd");
-        final String batTakDt = params.get("batTakDt");
-        final String batTakId = params.get("batTakId");
+        // final String batTakDt = params.get("batTakDt");
+        // final String batTakId = params.get("batTakId");
         final String sttDt    = params.get("sttDt");
         final String endDt    = params.get("endDt");
 

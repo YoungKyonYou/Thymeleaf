@@ -1,16 +1,16 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import lombok.*;
+//import org.hibernate.validator.constraints.time.Pattern; // javax.validation.constraints.Pattern으로 대체될 수 있음
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -37,6 +37,14 @@ public class MemrStlmPtReqVO {
     @Size(max = 100, message = "행정동명은 100 이하의 길이여야 합니다.")
     private String addoNm;
 
+    // TODO: 행정동코드
+    private String addoCd;
+
+    // TODO: 가입유형
+    private String tpwJoinTypCd;
+    // TODO: 카드번호
+    private String cardNo;
+
     // 처리상태 코드
     @Size(max = 2, message = "처리상태코드는 2 이하의 길이여야 합니다.")
     private String tpwMemrPrcgStaCd;
@@ -44,6 +52,11 @@ public class MemrStlmPtReqVO {
     // 회원id
     @Size(max = 20, message = "회원id는 20 이하의 길이여야 합니다.")
     private String mbrsId;
+
+
+    // TODO: 회원상태
+    @Size(max = 2, message = "회원상태 코드는 2 이하의 길이여야 합니다.")
+    private String mbrsStaCd;
 
     // 기관코드
     @Size(max = 7, message = "기관코드는 7 이하의 길이여야 합니다.")
@@ -96,4 +109,80 @@ public class MemrStlmPtReqVO {
         this.sttDt = startDate;
         this.endDt = endDate;
     }
+
+      /** Map으로 생성자 */
+    public MemrStlmPtReqVO(Map<String, Object> map) {
+        if ( map == null ) return;
+
+        this.reqDtm = (String) map.get("reqDtm");
+        this.prcgDt = (String) map.get("prcgDt");
+        this.searchType = (String) map.get("searchType");
+        this.keyword = (String) map.get("keyword");
+        this.addoNm = (String) map.get("addoNm");
+        this.tpwMemrPrcgStaCd = (String) map.get("tpwMemrPrcgStaCd");
+        this.mbrsId = (String) map.get("mbrsId");
+        this.orgCd = (String) map.get("orgCd");
+        this.mbrsNm = (String) map.get("mbrsNm");
+        this.tpwSvcNm = (String) map.get("tpwSvcNm");
+        this.tpwSvcId = (String) map.get("tpwSvcId");
+        this.tpwSvcTypNm = (String) map.get("tpwSvcTypNm");
+        this.tpwSvcTypId = (String) map.get("tpwSvcTypId");
+
+        Object sno = map.get("tpwSvcTypSno");
+        if ( sno instanceof Number ) {
+            this.tpwSvcTypSno = ((Number) sno).intValue();
+        } else if ( sno instanceof String ) {
+            this.tpwSvcTypSno = Integer.parseInt((String) sno);
+        }
+
+        this.sttDt = (String) map.getOrDefault("sttDt", this.sttDt);
+        this.endDt = (String) map.getOrDefault("endDt", this.endDt);
+
+        Object pageObj = map.get("page");
+        if ( pageObj instanceof Number ) {
+            this.page = ((Number) pageObj).intValue();
+        }
+
+        Object sizeObj = map.get("size");
+        if ( sizeObj instanceof Number ) {
+            this.size = ((Number) sizeObj).intValue();
+        }
+
+        this.sort = (String) map.getOrDefault("sort", this.sort);
+        this.dir = (String) map.getOrDefault("dir", this.dir);
+        Object offsetObj = map.get("offset");
+        if ( offsetObj instanceof Number ) {
+            this.offset = ((Number) offsetObj).intValue();
+        }
+    }
+
+
+    /** VO를 Map<String, String>으로 변환 */
+    public Map<String, String> toMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("reqDtm", this.reqDtm);
+        map.put("prcgDt", this.prcgDt);
+        map.put("searchType", this.searchType);
+        map.put("keyword", this.keyword);
+        map.put("addoNm", this.addoNm);
+        map.put("tpwMemrPrcgStaCd", this.tpwMemrPrcgStaCd);
+        map.put("mbrsId", this.mbrsId);
+        map.put("orgCd", this.orgCd);
+        map.put("mbrsNm", this.mbrsNm);
+        map.put("tpwSvcNm", this.tpwSvcNm);
+        map.put("tpwSvcId", this.tpwSvcId);
+        map.put("tpwSvcTypNm", this.tpwSvcTypNm);
+        map.put("tpwSvcTypId", this.tpwSvcTypId);
+        map.put("tpwSvcTypSno", String.valueOf(this.tpwSvcTypSno));
+        map.put("sttDt", this.sttDt);
+        map.put("endDt", this.endDt);
+        map.put("page", String.valueOf(this.page));
+        map.put("size", String.valueOf(this.size));
+        map.put("sort", this.sort);
+        map.put("dir", this.dir);
+        map.put("offset", String.valueOf(this.offset));
+
+        return map;
+    }
+
 }

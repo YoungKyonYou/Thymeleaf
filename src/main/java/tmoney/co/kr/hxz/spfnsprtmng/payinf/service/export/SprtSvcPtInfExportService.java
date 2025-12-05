@@ -27,7 +27,7 @@ public class SprtSvcPtInfExportService implements ExportProvider<SprtSvcDtlRspVO
 
     @Override
     public String name() {
-        return "지원 서비스 내역조회";
+        return "지원서비스내역조회";
     }
 
     // 순번	기관	지원서비스내용	서비스시작일자	서비스종료일자	서비스유형

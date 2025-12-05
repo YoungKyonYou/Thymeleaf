@@ -31,6 +31,7 @@ public class SprtSvcPtInfRspVO {
     private String krnChecYn;         // 주민등록번호체크여부
     private String acngTrdpNo;         // 회계 거래처번호
     private String bnkTrnCtt;         // 은행 계좌/거래
+    private String tpwSvcScrnPathNm; //화면경로
 
     private List<SprtSvcTypRspVO> svcTypList;
 

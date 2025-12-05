@@ -1,6 +1,8 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -9,10 +11,15 @@ import java.math.BigDecimal;
  * ============================================
  * SprtSvcTypRspVO
  * - TBHXZM202 (202 서비스 유형 단건 VO)
+ * - Y/N 값 자동 처리 (Null -> N) 로직 추가됨
  * ============================================
  */
-@Data
+@Getter
+@Setter
+@ToString
 public class SprtSvcTypRspVO {
+
+    private String orgCd;
 
     // -------------------------------
     // PK (NOT NULL)
@@ -33,19 +40,24 @@ public class SprtSvcTypRspVO {
     // -------------------------------
     // 일반 정보
     // -------------------------------
+    @NotBlank(message = "서비스 유형명은 필수 입력 항목입니다.") // [추가] NOT NULL
     @Size(max = 100, message = "서비스 유형명은 최대 100자입니다.")
     private String tpwSvcTypNm;             // VARCHAR(100)
 
+    @NotBlank(message = "시작일자는 필수 입력 항목입니다.") // [추가] NOT NULL
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "시작일자는 yyyy-MM-dd 형식이어야 합니다.")
     private String tpwSvcTypSttDt;          // VARCHAR(8)
 
+    @NotBlank(message = "종료일자는 필수 입력 항목입니다.") // [추가] NOT NULL
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "종료일자는 yyyy-MM-dd 형식이어야 합니다.")
     private String tpwSvcTypEndDt ="9999-12-31";          // VARCHAR(8)
 
+    @NotBlank(message = "서비스 유형 내용은 필수 입력 항목입니다.") // [추가] NOT NULL (이전 에러 원인)
     @Size(max = 2000, message = "서비스 유형 내용은 최대 2000자입니다.")
     private String tpwSvcTypCtt;            // VARCHAR(2000)
 
     /** HXZ 회원유형코드 (HXZM00007 코드 테이블 참조) */
+    @NotBlank(message = "회원유형코드는 필수 입력 항목입니다.") // [추가] NOT NULL
     @Size(max = 3, message = "회원유형코드는 최대 3자입니다.")
     private String tpwMbrsTypCd;            // VARCHAR(3)
 
@@ -60,8 +72,8 @@ public class SprtSvcTypRspVO {
       102:일반좌석버스
      */
     /** HXZ_교통정산관리 코드 (HXZM00002 코드 테이블 참조) */
-    @Size(max = 10, message = "지원교통수단코드는 최대 10자입니다.")
     @NotBlank(message = "지원교통수단코드는 필수 입력 항목입니다.")
+    @Size(max = 10, message = "지원교통수단코드는 최대 10자입니다.")
     private String tpwMntnCd;               // VARCHAR(10)
 
     /**
@@ -69,6 +81,7 @@ public class SprtSvcTypRspVO {
      * 01: 월정산 (기본값)
      * 02: 분기
      */
+    @NotBlank(message = "정산주기구분코드는 필수 입력 항목입니다.") // [추가] NOT NULL
     @Size(max = 2, message = "정산주기구분코드는 최대 2자입니다.")
     private String tpwStlmCycDvsCd;         // VARCHAR(2)
 
@@ -116,8 +129,8 @@ public class SprtSvcTypRspVO {
      * 03: 정산내역
      * 04: 지급실행
      */
-    @Size(max = 1, message = "정산실행단계 코드는 1자입니다.")
     @NotBlank(message = "정산실행단계 코드는 필수 입력 항목입니다.")
+    @Size(max = 1, message = "정산실행단계 코드는 1자입니다.")
     private String tpwStlmActDvsCd = "01";   // VARCHAR(1) NOT NULL
 
     /**
@@ -125,6 +138,7 @@ public class SprtSvcTypRspVO {
      * 비고: 거주지인증주기 분기기반기관 (코드 테이블 확인 필요)
      * 월 01, 분기02, 반기03 cmn_grp_cd_id :0003
      */
+    // [NULL 허용] - Validation 없음
     @Size(max = 2, message = "거주지인증주기 코드는 최대 2자입니다.")
     private String tpwRsdcAuthCycCd;         // VARCHAR(2)
 
@@ -132,6 +146,7 @@ public class SprtSvcTypRspVO {
      * 이월 구분 코드
      * 비고: 없음, 분기내, 연환 이월 (코드 테이블 확인 필요)
      */
+    // [NULL 허용] - Validation 없음
     @Size(max = 2, message = "이월구분 코드는 최대 2자입니다.")
     private String tpwCrovDvsCd;             // VARCHAR(2)
 
@@ -140,6 +155,7 @@ public class SprtSvcTypRspVO {
     private String sprtDplcYn = "N";         // VARCHAR(1) NOT NULL
 
     /** 거래 기관 코드 (교통거래정보 요청 기관코드) */
+    // [NULL 허용] - Validation 없음
     @Size(max = 7, message = "거래기관코드는 최대 7자입니다.")
     private String tpwTrdOrgCd;              // VARCHAR(7)
 
@@ -179,20 +195,67 @@ public class SprtSvcTypRspVO {
     private String useYn = "Y";              // VARCHAR(1) NOT NULL
 
 
+    /** 화면경로 */
+    @Size(max = 500, message = "화면경로는 최대 500자까지 입력 가능합니다.")
+    private String tpwSvcScrnPathNm;
+
+
     // -------------------------------
     // 등록/수정 정보
     // -------------------------------
     @Size(max = 20, message = "등록자 ID는 최대 20자입니다.")
-    @NotBlank(message = "등록자 ID는 필수 입력 항목입니다.")
+    // Service에서 처리하므로 주석 처리하거나 NotBlank 제거 가능 (여기선 유지)
     private String rgsrId;                   // VARCHAR(20) NOT NULL
 
     @Pattern(regexp = "\\d{14}", message = "등록일시는 YYYYMMDDHHMMSS 14자리여야 합니다.")
     private String rgtDtm;
 
     @Size(max = 20, message = "수정자 ID는 최대 20자입니다.")
-    @NotBlank(message = "수정자 ID는 필수 입력 항목입니다.")
     private String updrId;                   // VARCHAR(20) NOT NULL
 
     @Pattern(regexp = "\\d{14}", message = "수정일시는 YYYYMMDDHHMMSS 14자리여야 합니다.")
     private String updDtm;
+
+
+    // ==========================================
+    // [중요] Y/N 필드 전용 Setter (자동 N 처리)
+    // ==========================================
+
+    public void setTrnsTrdReqYn(String val) { this.trnsTrdReqYn = safeYn(val); }
+    public void setLdgrTrdReqYn(String val) { this.ldgrTrdReqYn = safeYn(val); }
+    public void setTaxiTrdReqYn(String val) { this.taxiTrdReqYn = safeYn(val); }
+    public void setAreaTrdReqYn(String val) { this.areaTrdReqYn = safeYn(val); }
+    public void setSprtDplcYn(String val)   { this.sprtDplcYn = safeYn(val); }
+
+    // [기본값 Y] 다인승제외여부
+    public void setTrnsTrdMlprExYn(String val) { this.trnsTrdMlprExYn = safeYnWithDefaultY(val); }
+
+    public void setAutAplYn(String val)     { this.autAplYn = safeYn(val); }
+    public void setEvdnYn(String val)       { this.evdnYn = safeYn(val); }
+    public void setFrgnSprtYn(String val)   { this.frgnSprtYn = safeYn(val); }
+    public void setTrdNcntLtnAdptYn(String val) { this.trdNcntLtnAdptYn = safeYn(val); }
+
+    // [기본값 Y] 사용여부
+    public void setUseYn(String val)        { this.useYn = safeYnWithDefaultY(val); }
+
+
+    // ==========================================
+    // 유틸 메서드 (Y/N 변환기)
+    // ==========================================
+
+    // 기본값이 N인 경우
+    private String safeYn(String val) {
+        if (val == null || val.trim().isEmpty()) {
+            return "N";
+        }
+        return val.toUpperCase();
+    }
+
+    // 기본값이 Y인 경우 (사용여부, 다인승제외여부)
+    private String safeYnWithDefaultY(String val) {
+        if (val == null || val.trim().isEmpty()) {
+            return "Y"; // 값이 없으면 Y로 설정 (원하시는 요구사항)
+        }
+        return val.toUpperCase();
+    }
 }

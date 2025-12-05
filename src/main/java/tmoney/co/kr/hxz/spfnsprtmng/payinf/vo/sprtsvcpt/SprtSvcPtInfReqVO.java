@@ -3,13 +3,13 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.sprtsvcpt;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * ============================================
@@ -38,16 +38,16 @@ public class SprtSvcPtInfReqVO {
 
     // 서비스기간
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "서비스기간은 yyyy-MM-dd 형식이어야 합니다.")
-    private String svcSttDt  =  LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(1).toString(); // 기본값: 오늘날짜;
+    private String sttDt; // 기본값: 오늘날짜;
 
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "서비스기간은 yyyy-MM-dd 형식이어야 합니다.")
-    private String svcEndDt = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString(); // 기본값: 오늘날
+    private String endDt;
 
     @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.")
-    private String sttDt;  // 신청기간 시작일자 (YYYYMMDD)
+    private String tpwSvcSttDt;  // 신청기간 시작일자 (YYYYMMDD)
 
     @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.")
-    private String endDt;  // 신청기간 종료일자 (YYYYMMDD)
+    private String tpwSvcEndDt;  // 신청기간 종료일자 (YYYYMMDD)
 
     @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.")
     private int page = 0;
@@ -55,7 +55,7 @@ public class SprtSvcPtInfReqVO {
     @Positive(message =  "페이지 값은 0보다 커야 합니다.")
     private int size = 10;
 
-    @Size(max = 10, message = "정랼값의 문자열 길이는  500자리 이하의 길이어야 합니다.")
+    @Size(max = 100, message = "정랼값의 문자열 길이는 500자리 이하의 길이어야 합니다.")
     private String sort = "tpw_svc_id";
     private String dir = "asc";
 
@@ -81,12 +81,13 @@ public class SprtSvcPtInfReqVO {
         this.tpwSvcTypId = map.get("tpwSvcTypId");
 
         // 서비스 기간
-        this.svcSttDt = map.getOrDefault("svcSttDt", this.svcSttDt);
-        this.svcEndDt = map.getOrDefault("svcEndDt", this.svcEndDt);
+        this.tpwSvcSttDt = map.getOrDefault("tpwSvcSttDt", this.tpwSvcSttDt);
+        this.tpwSvcEndDt = map.getOrDefault("tpwSvcEndDt", this.tpwSvcEndDt);
 
-        // 신청기간
+        // 신청기간 (HTML에서 들어온 값이 우선)
         this.sttDt = map.get("sttDt");
         this.endDt = map.get("endDt");
+
 
         // 페이징
         try
@@ -159,14 +160,14 @@ public class SprtSvcPtInfReqVO {
         }
 
         // 서비스 기간
-        if (this.svcSttDt != null)
+        if (this.tpwSvcSttDt != null)
         {
-            map.put("svcSttDt", this.svcSttDt);
+            map.put("tpwSvcSttDt", this.tpwSvcSttDt);
         }
 
-        if (this.svcEndDt != null)
+        if (this.tpwSvcEndDt != null)
         {
-            map.put("svcEndDt", this.svcEndDt);
+            map.put("tpwSvcEndDt", this.tpwSvcEndDt);
         }
 
         // 신청기간

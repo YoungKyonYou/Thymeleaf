@@ -3,185 +3,182 @@
 <th:block th:replace="~{component/commonHead :: layout(~{::content})}">
     <th:block th:fragment="content">
 
+        <script th:src="@{/js/datepicker.js}"></script>
 
-    <script th:src="@{/js/datepicker.js}"></script>
+        <section class="section">
+            <form class="section-header" id="searchForm" th:object="${req}">
+                <input type="hidden" th:field="*{sort}">
+                <input type="hidden" th:field="*{dir}">
+                <div class="title-wrap">
+                    <h3 class="section-title">배치작업내역조회</h3>
+                </div>
 
-    <section class="section">
-        <form class="section-header">
-            <div class="title-wrap">
-                <h3 class="section-title">배치작업내역조회</h3>
-            </div>
-
-            <!-- 검색폼: 날짜 검색만 -->
-            <div class="box-wrap">
-                <div class="box">
-                    <p class="field-title">작업기간</p>
-                    <div class="text-field datepicker">
-                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="startDate" th:value="${req.sttDt}">
-                        <button type="button" class="dp-btn" data-dp-toggle></button>
+                <!-- 검색폼: 날짜 검색만 -->
+                <div class="box-wrap">
+                    <div class="box">
+                        <p class="field-title">작업기간</p>
+                        <div class="text-field datepicker">
+                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="startDate" name="sttDt" th:value="*{sttDt}">
+                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                        </div>
+                    </div>
+                    <div class="box">
+                        <p class="field-title">&nbsp;</p>
+                        <div class="text-field datepicker">
+                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="endDate" name="endDt" th:value="*{endDt}">
+                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                        </div>
                     </div>
                 </div>
-                <div class="box">
-                    <p class="field-title">&nbsp;</p>
-                    <div class="text-field datepicker">
-                        <input type="text" class="dp-input" placeholder="YYYY-MM-DD" id="endDate" th:value="${req.endDt}">
-                        <button type="button" class="dp-btn" data-dp-toggle></button>
+
+                <div class="btn-wrap">
+                    <button type="submit" class="btn btn-primary">검색</button>
+                </div>
+            </form>
+
+            <!-- 검색결과 -->
+            <div class="section-content">
+                <div class="flex justify-space-between">
+                    <b>검색결과: <span id="search-count" th:text="${pageData.total}">0</span>건</b>
+                    <div class="flex col-">
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="배치작업내역조회"
+                        >
+                            엑셀 다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
+                        <button type="button" class="btn btn-dark-line">목록</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="btn-wrap">
-                <button type="submit" class="btn btn-primary">검색</button>
-            </div>
-        </form>
-
-        <!-- 검색결과 -->
-        <div class="section-content">
-            <div class="flex justify-space-between">
-                <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
-                <div class="flex col-">
-                    <!-- <button type="button" class="btn btn-primary btn-icon-left" data-export="xlsx">엑셀 다운로드 <i class="icon icon-save"></i></button> -->
-                    <a class="btn btn-primary btn-icon-left" href="/spfnsprtmng/payinf/exportBatTakPtInf">
-                        엑셀 다운로드 <i class="icon icon-save"></i>
-                    </a>
-                    <button type="button" class="btn btn-dark-line">목록</button>
-                </div>
-            </div>
-
-            <!-- 테이블 -->
-            <div class="table-wrap mt20">
-                <table class="table" id="grid">
-                    <caption class="blind">배치작업내역조회 테이블</caption>
-                    <thead id="grid-head">
-                    <tr>
-                        <th scope="col">순번</th>
-                        <th scope="col" data-sort="bat_tak_dt">작업일자</th>
-                        <th scope="col" data-sort="bat_tak_id">배치작업ID</th>
-                        <th scope="col" data-sort="bat_tak_name">배치작업명</th>
-                        <th scope="col" data-sort="bat_tak_stt_dtm">시작일시</th>
-                        <th scope="col" data-sort="bat_tak_end_dtm">종료일시</th>
-                        <th scope="col" data-sort="bat_prcg_sta_cd">상태</th>
-                    </tr>
-                    </thead>
-                    <tbody id="grid-body">
-                    <th:block th:each="u, stat : ${pageData.content}"
-                              th:with="base=${pageData.page} * ${pageData.size}">
+                <!-- 테이블 -->
+                <div class="table-wrap mt20">
+                    <table class="table" id="grid">
+                        <caption class="blind">배치작업내역조회 테이블</caption>
+                        <thead id="grid-header">
                         <tr>
-                            <td th:text="${base + stat.index + 1}"></td>
-                            <td th:text="${u.batTakDt}"></td>
-                            <td th:text="${u.batTakId}"></td>
-                            <td th:text="${u.batTakName}"></td>
-                            <td th:text="${u.batTakSttDtm}"></td>
-                            <td th:text="${u.batTakEndDtm}"></td>
-                            <td th:text="${u.batPrcgStaCd == '01' ? '처리중' : (u.batPrcgStaCd == '02' ? '처리완료' : (u.batPrcgStaCd == '03' ? '처리오류' : '알수없음'))}"></td>
+                            <th scope="col">순번</th>
+                            <th scope="col" data-sort="bat_tak_dt">작업일자</th>
+                            <th scope="col" data-sort="bat_tak_id">배치작업ID</th>
+                            <th scope="col" data-sort="bat_tak_nm">배치작업명</th>
+                            <th scope="col" data-sort="bat_tak_stt_dtm">시작일시</th>
+                            <th scope="col" data-sort="bat_tak_end_dtm">종료일시</th>
+                            <th scope="col" data-sort="bat_prcg_sta_cd">상태</th>
                         </tr>
-                    </th:block>
+                        </thead>
+                        <tbody id="grid-tbody">
+                        <th:block th:each="u, stat : ${pageData.content}" th:with="base=${pageData.page} * ${pageData.size}">
+                            <tr>
+                                <td th:text="${base + stat.index + 1}"></td>
+                                <td th:text="${u.batTakDt}"></td>
+                                <td th:text="${u.batTakId}"></td>
+                                <td th:text="${u.batTakName}"></td>
+                                <td th:text="${u.batTakSttDtm}"></td>
+                                <td th:text="${u.batTakEndDtm}"></td>
+                                <td th:text="${u.batPrcgStaCd == '01' ? '처리중' : (u.batPrcgStaCd == '02' ? '처리완료' : (u.batPrcgStaCd == '03' ? '처리오류' : '알수없음'))}"></td>
+                            </tr>
+                        </th:block>
 
-                    <tr th:if="${pageData.total == 0}">
-                        <td colspan="7">조회 결과가 없습니다.</td>
-                    </tr>
-                    </tbody>
-                </table>
+                        <tr th:if="${pageData.total == 0}">
+                            <td colspan="7">조회 결과가 없습니다.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 페이징 -->
+                <div class="mt20" id="grid-pager">
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
+                </div>
             </div>
+        </section>
 
-            <!-- 페이징 -->
-            <div class="mt20" id="grid-pager">
-                <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
-            </div>
-        </div>
-    </section>
+        <script th:inline="javascript">
+
+            (function () {
+                const baseUrl = '/spfnsprtmng/payinf/batTakPtInf.do';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-header');
+                const searchForm = document.getElementById('searchForm');
+                const selectSize = searchForm.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const loading = document.getElementById('mini-sp-loading');
+
+                // 페이로드 (엑셀 다운로드 등)
+                const payload = { dnRsn: '' };
+
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                };
+                document.body.addEventListener('click', exportHandler);
 
 
-    <script data-page="memrStlmPt" th:inline="javascript" type="text/javascript">
-        (function () {
-            const baseUrl = '/spfnsprtmng/payinf/batTakPtInf.do';
-            const grid = document.getElementById('grid');
-            const head = document.getElementById('grid-head');
-            const searchForm = grid.querySelector('form');
-            const selectSize = searchForm.querySelector('select[name="size"]') ?? {};
-            const inputSort = document.getElementById('sort');
-            const inputDir = document.getElementById('dir');
-            
-            // excel export payload 설정
-            const payload = {
-                // orgCd,
-                dnRsn: ''
-            }
-
-            // excel export 대상 이벤트 등록
-            const exportHandler = (e) => {
-                const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                Common.bindExcelExport(
-                    searchForm,
-                    exportBtn,
-                    inputSort.value,
-                    inputDir.value,
-                    'mbrs_id',
-                    payload
-                );
-            };
-            grid.addEventListener('click', exportHandler);
-
-            // bindPagination event 등록(초기 화면에서 페이징 되도록 하기 위함)
-            bindPagination(baseUrl, {
-                page: 0,
-                size: parseInt(selectSize?.value || '10', 10),
-                dir: inputDir?.value || 'asc',
-                sort: inputSort?.value || 'mbrs_id',
-            });
-
-            // 헤더 컬럼 클릭 시 정렬
-            head.addEventListener('click', (e) => {
-                const a = e.target.closest('a[data-sort]');
-                if (!a) return;
-                e.preventDefault();
-                
-                const next = a.dataset.sort;
-                const curr = inputSort?.value || 'mbrs_id';
-                let dir = inputDir?.value || 'asc';
-                
-                // 현재 정렬 기준과 다음 정렬 기준이 같으면 dir을 토글, 아니면 'asc'로 설정
-                dir = next === curr ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
-
-                if (inputSort) inputSort.value = next;
-                if (inputDir) inputDir.value = dir;
-                
-                // 폼 데이터 수집 및 목록 리로드
-                applied = Common.collectFromForm(searchForm);
-                Common.reloadList({
-                    page: 0,
-                    defaultSortColumn: 'mbrs_id',
-                    swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
-                    selectSize: selectSize,
-                    baseUrl: baseUrl,
-                    inputSort: inputSort,
-                    inputDir: inputDir,
-                    applied: applied
+                document.querySelector('#export-excel').addEventListener('click', function(e){
+                    e.preventDefault();
+                    const param = serializeForm(searchForm);
+                    location.href = e.target.getAttribute('href') + `?${param}`;
                 });
-            });
 
-            // 폼 submit 시 이벤트 적용
-            searchForm?.addEventListener('submit', (e) => {
-                e.preventDefault();
-                applied = Common.collectFromForm(searchForm);
-                Common.reloadList({
+                // bindPagination event 등록
+                bindPagination(baseUrl, {
                     page: 0,
-                    defaultSortColumn: 'mbrs_id',
-                    swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header'],
-                    selectSize: selectSize,
-                    baseUrl: baseUrl,
-                    inputSort: inputSort,
-                    inputDir: inputDir,
-                    applied: applied
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir?.value || 'asc',
+                    sort: inputSort?.value || 'batTakDt'
                 });
-            });
-        })();
-    </script>
 
+                // 테이블 헤더 클릭 정렬
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('[data-sort]');
+                    if (!a) return;
 
-    <!-- Footer -->
-    <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort?.value || 'batTakDt';
+                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
 
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'batTakDt',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+
+                // 검색폼 submit 이벤트
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
+                        defaultSortColumn: 'batTakDt',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
+                    });
+                });
+            })();
+        </script>
+
+        <!-- Footer -->
+        <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
 
     </th:block>
 </th:block>

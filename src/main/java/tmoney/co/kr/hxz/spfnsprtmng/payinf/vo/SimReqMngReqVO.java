@@ -8,6 +8,8 @@ import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 시뮬레이션 마감확정내역 검색 VO
@@ -96,9 +98,64 @@ public class SimReqMngReqVO {
     /** -------------------------
      *  날짜 기본값 초기화
      *  ------------------------- */
-    public void updateDefaultDate(String startDate, String endDate) {
-        this.sttDt = startDate;
-        this.endDt = endDate;
+    public void updateDefaultDate(String defaultStart, String defaultEnd) {
+        // 기존 값이 없을 때만 들어온 기본값으로 채움
+        if (this.sttDt == null || this.sttDt.isEmpty()) {
+            this.sttDt = defaultStart;
+        }
+        if (this.endDt == null || this.endDt.isEmpty()) {
+            this.endDt = defaultEnd;
+        }
     }
 
+
+    /** -------------------------
+     * Map 기반 생성자
+     * ------------------------- */
+    public SimReqMngReqVO(Map<String, Object> map) {
+        this.aplDt = map.get("aplDt") != null ? map.get("aplDt").toString() : null;
+        this.sttDt = map.get("sttDt") != null ? map.get("sttDt").toString() : this.sttDt;
+        this.endDt = map.get("endDt") != null ? map.get("endDt").toString() : this.endDt;
+
+        this.tpwSvcId = map.get("tpwSvcId") != null ? map.get("tpwSvcId").toString() : null;
+        this.tpwSvcNm = map.get("tpwSvcNm") != null ? map.get("tpwSvcNm").toString() : null;
+        this.tpwSvcTypId = map.get("tpwSvcTypId") != null ? map.get("tpwSvcTypId").toString() : null;
+        this.tpwSvcTypSno = map.get("tpwSvcTypSno") != null ? Integer.parseInt(map.get("tpwSvcTypSno").toString()) : null;
+        this.tpwSvcTypNm = map.get("tpwSvcTypNm") != null ? map.get("tpwSvcTypNm").toString() : null;
+
+        this.mbrsId = map.get("mbrsId") != null ? map.get("mbrsId").toString() : null;
+        this.cardNo = map.get("cardNo") != null ? map.get("cardNo").toString() : null;
+
+        this.page = map.get("page") != null ? Integer.parseInt(map.get("page").toString()) : this.page;
+        this.size = map.get("size") != null ? Integer.parseInt(map.get("size").toString()) : this.size;
+        this.sort = map.get("sort") != null ? map.get("sort").toString() : this.sort;
+        this.dir = map.get("dir") != null ? map.get("dir").toString() : this.dir;
+        this.offset = map.get("offset") != null ? Integer.parseInt(map.get("offset").toString()) : this.offset;
+    }
+
+    /** -------------------------
+     * VO -> Map 변환
+     * ------------------------- */
+    public Map<String, String> toMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("aplDt", this.aplDt);
+        map.put("sttDt", this.sttDt);
+        map.put("endDt", this.endDt);
+
+        map.put("tpwSvcId", this.tpwSvcId);
+        map.put("tpwSvcNm", this.tpwSvcNm);
+        map.put("tpwSvcTypId", this.tpwSvcTypId);
+        map.put("tpwSvcTypSno", this.tpwSvcTypSno != null ? String.valueOf(this.tpwSvcTypSno) : null);
+        map.put("tpwSvcTypNm", this.tpwSvcTypNm);
+
+        map.put("mbrsId", this.mbrsId);
+        map.put("cardNo", this.cardNo);
+
+        map.put("page", String.valueOf(this.page));
+        map.put("size", String.valueOf(this.size));
+        map.put("sort", this.sort);
+        map.put("dir", this.dir);
+        map.put("offset", String.valueOf(this.offset));
+        return map;
+    }
 }

@@ -2,10 +2,9 @@ package tmoney.co.kr.hxz.spfnsprtmng.payinf.vo;
 
 import lombok.*;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.PositiveOrZero;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 /**
  * 시뮬레이션 마감확정내역 검색 VO
@@ -17,6 +16,7 @@ import javax.validation.constraints.Size;
 @AllArgsConstructor
 public class SimReqMngRspVO {
 
+    private String orgCd;
 
     /** tpw_svc_id (교통복지서비스ID) */
     @NotNull(message = "tpw_svc_id(교통복지서비스ID)는 필수값입니다.")
@@ -42,6 +42,9 @@ public class SimReqMngRspVO {
     @NotNull(message = "mbrs_id(회원ID)는 필수값입니다.")
     @Size(max = 20, message = "mbrs_id는 20자리 이하입니다.")
     private String mbrsId;
+
+    /** mbrs_nm (회원명) */
+    private String mbrsNm;
 
     /** apl_card_sno (카드일련번호) */
     @PositiveOrZero(message = "apl_card_sno는 음수일 수 없습니다.")
@@ -75,5 +78,21 @@ public class SimReqMngRspVO {
     /** message (추가 응답 메시지 필드) */
     @Size(max = 1000, message = "message는 1000자 이하입니다.")
     private String message;
+    
+    /** 요청일자*/
+    private String takReqDt;
+
+
+    private String tpwTrdSttDt;
+    private String tpwTrdEndDt;
+
+
+    // [수정용] 변경 전 원본 데이터 (WHERE 절 탐색용)
+    private String origCardNo;       // 기존 카드번호
+    private String origTpwSvcId;     // 기존 서비스ID
+    private String origTpwSvcTypId;  // 기존 서비스유형ID
+    private String origTpwSvcTypSno; // 기존 서비스유형일련번호
+    private String origAplDt; // 기존 신청일자
+    private String origMbrsId; // 기존 회원id
 
 }

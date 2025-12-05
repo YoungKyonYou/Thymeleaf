@@ -16,9 +16,14 @@ public interface SimReqMngService {
     List<SimReqMngRspVO> readSimReqMngList(SimReqMngReqVO reqVO , String orgCd);
 
     // 총 건수 조회
-    //    @Transactional(readOnly = true)
     long readSimReqMngListCnt(SimReqMngReqVO req, String orgCd);
-    
-    // 시뮬레이션요청등록
+
+    // [등록] 통합
     void saveSimReqMng(SimReqMngRspVO form);
+
+    // [수정] 통합
+    void updateSimReqMng(SimReqMngRspVO form);
+
+    // [삭제] 통합
+    void deleteSimReqMng(SimReqMngRspVO form);
 }

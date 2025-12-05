@@ -7,7 +7,11 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
+
 import java.math.BigDecimal;
+import java.util.Map;
+
+import javax.validation.constraints.Digits;
 
 @Getter
 @Setter
@@ -16,15 +20,15 @@ public class SimPtInfReqVO {
     @Size(max = 7, message = "기관코드는 7 이하의 값이어야 합니다.")
     private String orgCd; //  기관코드
 
-    @Size(max = 8, message = "신청기간은 8자리 이하의 길이어야 합니다.")
+    @Size(max = 10, message = "신청기간은 10자리 이하의 길이어야 합니다.")
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "신청기간은 yyyy-MM-dd 형식이어야 합니다.")
     private String aplDt;
 
-    @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.")
+    @Size(max = 10, message = "신청기간 시작일자는 10자리 이하의 길이어야 합니다.")
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "시작일자는 yyyy-MM-dd 형식이어야 합니다.")
     private String sttDt = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString(); // 기본값: 오늘날짜         // 신청기간 시작일자 (YYYYMMDD)
 
-    @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.")
+    @Size(max = 10, message = "신청기간 종료일자는 10자리 이하의 길이어야 합니다.")
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "종료일자는 yyyy-MM-dd 형식이어야 합니다.")
     private String endDt = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).toString();          // 신청기간 종료일자 (YYYYMMDD)
 
@@ -43,7 +47,8 @@ public class SimPtInfReqVO {
     @Size(max = 10, message = "서비스유형ID는 10자리 이하의 길이어야 합니다.")
     private String tpwSvcTypId;        // 서비스유형ID
 
-    @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.")
+    // @Size(max = 10, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.")
+    @Digits(integer = 8, fraction = 2, message = "서비스유형일련번호는 10자리 이하의 길이어야 합니다.")
     private BigDecimal tpwSvcTypSno;       // 서비스유형일련번호
 
     @PositiveOrZero(message = "페이지 값은 음수가 될 수 없습니다.")
@@ -59,8 +64,8 @@ public class SimPtInfReqVO {
 
     public SimPtInfReqVO(
             String orgCd,
-            @Size(max = 8, message = "신청기간 시작일자는 8자리 이하의 길이어야 합니다.") String sttDt,
-            @Size(max = 8, message = "신청기간 종료일자는 8자리 이하의 길이어야 합니다.") String endDt,
+            @Size(max = 10, message = "신청기간 시작일자는 10자리 이하의 길이어야 합니다.") String sttDt,
+            @Size(max = 10, message = "신청기간 종료일자는 10자리 이하의 길이어야 합니다.") String endDt,
             @Size(max = 100, message = "카드번호는 100자리 이하의 길이어야 합니다.") String cardNo,
             @Size(max = 500, message = "서비스명은 500자리 이하의 길이어야 합니다.") String svcNm,
             @Size(max = 100, message = "서비스유형은 100자리 이하의 길이어야 합니다.") String svcTypNm,
@@ -89,6 +94,80 @@ public class SimPtInfReqVO {
         this.sort = sort;
         this.dir = dir;
     }
+
+    // 맵 받고 생성
+    public SimPtInfReqVO(Map<String, String> map)
+    {
+        if (map == null)
+        {
+            return;
+        }
+
+        this.orgCd = map.getOrDefault("orgCd", this.orgCd);
+        this.aplDt = map.getOrDefault("aplDt", this.aplDt);
+        this.sttDt = map.getOrDefault("sttDt", this.sttDt);
+        this.endDt = map.getOrDefault("endDt", this.endDt);
+        this.cardNo = map.getOrDefault("cardNo", this.cardNo);
+        this.svcNm = map.getOrDefault("svcNm", this.svcNm);
+        this.svcTypNm = map.getOrDefault("svcTypNm", this.svcTypNm);
+        this.tpwSvcId = map.getOrDefault("tpwSvcId", this.tpwSvcId);
+        this.tpwSvcTypId = map.getOrDefault("tpwSvcTypId", this.tpwSvcTypId);
+
+        if (map.get("tpwSvcTypSno") != null)
+        {
+            try
+            {
+                this.tpwSvcTypSno = new BigDecimal(map.get("tpwSvcTypSno"));
+            }
+            catch (NumberFormatException ignore) {}
+        }
+
+        if (map.get("page") != null)
+        {
+            try
+            {
+                this.page = Integer.parseInt(map.get("page"));
+            }
+            catch (NumberFormatException ignore) {}
+        }
+
+        if (map.get("size") != null)
+        {
+            try
+            {
+                this.size = Integer.parseInt(map.get("size"));
+            }
+            catch (NumberFormatException ignore) {}
+        }
+
+        this.sort = map.getOrDefault("sort", this.sort);
+        this.dir = map.getOrDefault("dir", this.dir);
+    }
+
+
+    // 맵 반환
+    public Map<String, String> toMap()
+    {
+        Map<String, String> map = new java.util.HashMap<>();
+
+        map.put("orgCd", orgCd);
+        map.put("aplDt", aplDt);
+        map.put("sttDt", sttDt);
+        map.put("endDt", endDt);
+        map.put("cardNo", cardNo);
+        map.put("svcNm", svcNm);
+        map.put("svcTypNm", svcTypNm);
+        map.put("tpwSvcId", tpwSvcId);
+        map.put("tpwSvcTypId", tpwSvcTypId);
+        map.put("tpwSvcTypSno", tpwSvcTypSno != null ? tpwSvcTypSno.toString() : null);
+        map.put("page", String.valueOf(page));
+        map.put("size", String.valueOf(size));
+        map.put("sort", sort);
+        map.put("dir", dir);
+
+        return map;
+    }
+
 
     public SimPtInfReqVO(){}
 

@@ -1,6 +1,7 @@
 package tmoney.co.kr.hxz.spfnsprtmng.payinf.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,55 +12,106 @@ import tmoney.co.kr.hxz.spfnsprtmng.payinf.service.SimReqMngService;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngReqVO;
 import tmoney.co.kr.hxz.spfnsprtmng.payinf.vo.SimReqMngRspVO;
 
+import java.util.List;
+
 import javax.validation.Valid;
 
 @Controller
 @RequestMapping("/spfnsprtmng/payinf")
-// resources/templates/hxz/spfnsprtmng/payinf/simReqMng.html
 @RequiredArgsConstructor
 public class SimReqMngController {
 
-    private final SimReqMngService simreqmngservice;
+    private final SimReqMngService simReqMngService;
     private final DateUtil dateUtil;
 
     /**
-     * 시뮬레이션요청관리
-     *  - tbhxzm201 : HXZ_교통복지서비스관리
-     *  - tbhxzm202 : HXZ_교통복지서비스유형관리
+     * 시뮬레이션요청관리 조회 화면
      */
-    // @PreAuthorize("hasPermission ('시뮬레이션요청관리', 'READ')")
     @GetMapping(value = "/simReqMng.do")
     public String simReqMngPaging(
-            @Valid @ModelAttribute SimReqMngReqVO req,
+            @Valid @ModelAttribute("req") SimReqMngReqVO req,
             Model model
     ) {
+        if (req.getSttDt() == null || req.getSttDt().isEmpty()) {
+            req.setSttDt(dateUtil.thirtyDaysAgo());
+        }
+        if (req.getEndDt() == null || req.getEndDt().isEmpty()) {
+            req.setEndDt(dateUtil.today());
+        }
 
-        req.updateDefaultDate(dateUtil.thirtyDaysAgo(), dateUtil.today());
-
-        final String orgCd ="0000000";
-        PageDataVO<SimReqMngRspVO> contents = simreqmngservice.readSimReqMngPaging(req , orgCd); // TODO: 추후 로그인 연동(orgCd)
+        final String orgCd = "0000000";
+        PageDataVO<SimReqMngRspVO> contents = simReqMngService.readSimReqMngPaging(req, orgCd);
 
         model.addAttribute("pageData", contents);
         model.addAttribute("req", req);
-
         model.addAttribute("orgCd", orgCd);
-
 
         return "/hxz/spfnsprtmng/payinf/simReqMng";
     }
 
-
-
-    /** -----------------------------------------
-     * 3. 신규 등록
-     * ---------------------------------------- */
-    @PostMapping("/simReqMng/save")  // URL 그대로 유지, POST 방식
+    /**
+     * 1. 신규 등록 (POST)
+     */
+    @PostMapping("/simReqMng/add.do") // JS에서 호출하는 URL과 일치시킴 (/save -> /regist)
     @ResponseBody
-    public ResponseEntity<Void> saveSimReqMng(
-            @RequestBody SimReqMngRspVO form
-    ) {
-        simreqmngservice.saveSimReqMng(form);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> saveSimReqMng(@RequestBody SimReqMngRspVO form) {
+        try {
+            simReqMngService.saveSimReqMng(form);
+            return ResponseEntity.ok("SUCCESS");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("등록 중 오류가 발생했습니다.");
+        }
     }
 
+    /**
+     * 2. 수정 (PUT)
+     */
+    @PutMapping("/simReqMng/update")
+    @ResponseBody
+    public ResponseEntity<?> updateSimReqMng(@RequestBody SimReqMngRspVO form) {
+        try {
+            // 통합 수정 메서드 호출 (내부에서 208->207 순차 실행 및 건수 체크)
+            simReqMngService.updateSimReqMng(form);
+            return ResponseEntity.ok("SUCCESS");
+        } catch (RuntimeException re) {
+            // "조건 불일치" 등의 예외 메시지를 프론트로 전달
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(re.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("시스템 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 3. 삭제 (POST)
+     */
+    @PostMapping("/simReqMng/delete")
+    @ResponseBody
+    public ResponseEntity<?> deleteSimReqMng(@RequestBody SimReqMngRspVO form) {
+        try {
+            // 통합 삭제 메서드 호출 (내부에서 207->208 순차 실행)
+            simReqMngService.deleteSimReqMng(form);
+            return ResponseEntity.ok("SUCCESS");
+        } catch (RuntimeException re) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(re.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 중 오류가 발생했습니다.");
+        }
+    }
+
+
+    /**
+     * 엑셀 업로드 데이터 받기
+     */
+    @PostMapping("/simReqMng/import")
+    @ResponseBody
+    public ResponseEntity<?> importSimReqMng(@RequestBody List<SimReqMngRspVO> list)
+    {
+        for (SimReqMngRspVO form : list) {
+            simReqMngService.saveSimReqMng(form);
+        }
+        return ResponseEntity.ok("SUCCESS");
+    }
 }

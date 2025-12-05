@@ -16,7 +16,7 @@ public interface StlmTakPtInfService {
     PageDataVO<StlmTakPtInfRspVO> readStlmTakPtPaging(StlmTakPtInfReqVO req, String orgCd, String exeDiv);
 
     /** 2. 서비스ID + 서비스번호 기준 단건 조회 (상세보기) */
-    StlmTakPtInfRspVO findTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId);
+//    StlmTakPtInfRspVO readTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId);
 
     /** 3. 등록 */
     void saveStlmTakPtInf(StlmTakPtInfRspVO form);
@@ -25,4 +25,7 @@ public interface StlmTakPtInfService {
     void updateStlmTakPtInfByService(StlmTakPtInfRspVO form);
 
 
+    StlmTakPtInfRspVO readSimTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId, String aplDt);
+
+    StlmTakPtInfRspVO readPerdTakPtInf(String tpwSvcTypId, BigDecimal tpwSvcTypSno, String exeDiv, String tpwSvcId, String stlmDt);
 }

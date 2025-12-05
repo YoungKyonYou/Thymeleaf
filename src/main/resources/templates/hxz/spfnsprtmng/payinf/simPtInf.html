@@ -6,291 +6,209 @@
 
         <section class="section">
             <div class="section-header">
-                <div class="title-wrap">
-                    <h3 class="section-title">시뮬레이션 내역 조회</h3>
-                </div>
+                <form action="/spfnsprtmng/payinf/simPtInf.do" method="GET" th:object="${req}">
+                    <input type="hidden" th:field="*{sort}">
+                    <input type="hidden" th:field="*{dir}">
 
-                <!-- 검색폼 -->
-                <div class="box-wrap">
-                    <div class="box">
-                        <p class="field-title">신청기간</p>
-                        <div class="text-field datepicker">
-                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="sttDt" th:value="${req.sttDt}">
-                            <button type="button" class="dp-btn" data-dp-toggle></button>
+                    <div class="title-wrap">
+                        <h3 class="section-title">시뮬레이션내역조회</h3>
+                    </div>
+    
+                    <!-- 검색폼 -->
+                    <div class="box-wrap">
+                        <div class="box">
+                            <p class="field-title">신청기간</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="sttDt" th:id="sttDt" th:value="${req.sttDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">&nbsp;</p>
+                            <div class="text-field datepicker">
+                                <input type="text" class="dp-input" placeholder="YYYY-MM-DD" name="endDt" th:id="endDt" th:value="${req.endDt}">
+                                <button type="button" class="dp-btn" data-dp-toggle></button>
+                            </div>
+                        </div>
+                        <div class="box">
+                            <p class="field-title">카드번호</p>
+                            <input type="text" class="text-field" name="cardNo" th:id="cardNo" th:value="${req.cardNo}">
                         </div>
                     </div>
-                    <div class="box">
-                        <p class="field-title">&nbsp;</p>
-                        <div class="text-field datepicker">
-                            <input type="text" class="dp-input" placeholder="YYYY-MM-DD" th:id="endDt" th:value="${req.endDt}">
-                            <button type="button" class="dp-btn" data-dp-toggle></button>
-                        </div>
-                    </div>
-                    <div class="box">
-                        <p class="field-title">카드번호</p>
-                        <input type="text" class="text-field" th:id="cardNo" th:value="${req.cardNo}">
-                    </div>
-                </div>
-
-<!--                <div class="box-wrap">-->
-<!--                    <div class="box">-->
-<!--                        <p class="field-title">서비스명</p>-->
-<!--                        <input type="text" class="text-field" th:id="svcNm" th:value="${req.svcNm}">-->
-<!--                    </div>-->
-<!--                </div>-->
-
-
-                <!-- 검색 조건: 기존 유지 (검색용) -->
-                <div class="box-wrap">
-                    <div class="box">
+    
+                    <div class="box-wrap">
+                        <div class="box">
                             <p class="field-title">서비스 선택</p>
                             <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
-                        'svcPair1',
-                        'tpwSvcId',
-                        'tpwSvcTypId'
-                  )}"></th:block>
+                                'svcPair1',
+                                'tpwSvcId',
+                                'tpwSvcTypId',
+                                true
+                            )}"></th:block>
+                        </div>
                     </div>
-                </div>
-
-
-                <div class="btn-wrap">
-                    <button type="button" class="btn btn-primary" onclick="loadPage(0)">검색</button>
-                </div>
+    
+                    <div class="btn-wrap">
+                        <button type="submit" class="btn btn-primary">검색</button>
+                    </div>
+                </form>
             </div>
 
             <!-- 검색결과 -->
             <div class="section-content">
                 <div class="flex justify-space-between">
-                    <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
+                    <b>검색결과: <span id="search-count" th:text="${pageData.total}">0</span>건</b>
                     <div class="flex col-">
-                        <button type="button" class="btn btn-primary btn-icon-left">엑셀 다운로드 <i class="icon icon-save"></i></button>
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="시뮬레이션내역조회"
+                        >
+                            다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
                         <button type="button" class="btn btn-dark-line" onclick="loadPage(0)">목록</button>
                     </div>
                 </div>
 
                 <!-- 테이블 -->
                 <div class="table-wrap mt20">
-                    <table class="table">
-                        <caption class="blind">시뮬레이션 내역 조회 테이블</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col" data-sort="trpr_act_sqno">순번</th>
-                                <th scope="col" data-sort="ride_dtm">승차일시</th>
-                                <th scope="col" data-sort="mbrs_id">회원ID</th>
-                                <th scope="col" data-sort="mbrs_nm">회원명</th>
-                                <th scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '0000000'}"
-                                    data-sort="tpw_svc_nm">서비스명</th>
-                                <th scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '0000000'}"
-                                    data-sort="tpw_svc_typ_nm">서비스유형명</th>
-                                <th scope="col" th:if="${orgCd != null and orgCd != '' and orgCd == '0000000'}"
-                                    data-sort="tpw_svc_typ_sno">서비스유형일련번호</th>
-
-                                <th scope="col" data-sort="card_no">카드번호</th>
-                                <th scope="col" data-sort="trcr_dvs_cd">교통카드구분</th>
-                                <th scope="col" data-sort="trcr_user_dvs_cd">교통카드사용자</th>
-                                <th scope="col" data-sort="ride_dtm">승차일시</th>
-                                <th scope="col" data-sort="ride_amt">승차금액</th>
-                                <th scope="col" data-sort="mntn_cd">교통수단</th>
-                                <th scope="col" data-sort="rot_nm">노선명</th>
-                                <th scope="col" data-sort="ride_stn_nm">승차역</th>
-                                <th scope="col" data-sort="algh_dtm">하차일시</th>
-                                <th scope="col" data-sort="algh_amt">하차금액</th>
-                                <th scope="col" data-sort="algh_stn_nm">하차역</th>
-                                <th scope="col" data-sort="trrd_amt">이용거리</th>
-                                <th scope="col" data-sort="trtr_grp_sno">환승그룹일련번호</th>
-                                <th scope="col" data-sort="fctt">환승횟수</th>
-                                <th scope="col" data-sort="stex_rsn_cd">요금할인제외사유</th>
-
-
-                            </tr>
+                    <table class="table" id="grid">
+                        <caption class="blind">시뮬레이션 요청 내역 테이블</caption>
+                        <thead id="grid-header">
+                        <tr>
+                            <th>
+                                <div class="control checkbox">
+                                    <input type="checkbox" id="cb0">
+                                    <label for="cb0"></label>
+                                </div>
+                            </th>
+                            <th scope="col">순번</th>
+                            <th scope="col">
+                                <a data-sort="tpwSvcNm">서비스</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="tpwSvcTypNm">서비스유형</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="aplDt">신청일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="cardStartDt">카드시작일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="cardEndDt">카드종료일자</a>
+                            </th>
+                            <th scope="col">
+                                <a data-sort="completeYn">처리완료여부</a>
+                            </th>
+                        </tr>
                         </thead>
-                        <tbody id="grid-body">
-                        <th:block th:each="u, stat : ${pageData.content}"
-                                  th:with="base=${(pageData.page)} * ${pageData.size}"
-                                  th:if="${pageData != null and pageData.total > 0}"
-                                  th:object="${u}">
-
+                        <tbody id="grid-tbody">
+                        <th:block th:each="u, stat : ${pageData.content}" th:with="base=${pageData.page} * ${pageData.size}" th:object="${u}">
                             <tr th:if="${u != null}">
+                                <td>
+                                    <div class="control checkbox">
+                                        <input type="checkbox" th:id="'cb_' + ${stat.index}" th:value="${u.id}">
+                                        <label th:for="'cb_' + ${stat.index}"></label>
+                                    </div>
+                                </td>
                                 <td th:text="${base + stat.index + 1}"></td>
-                                <td th:text="${u.rideDtm}"></td>
-                                <td th:text="${u.mbrsId}"></td>
-                                <td th:text="${u.mbrsNm}"></td>
-                                <td th:if="${req.orgCd != null and req.orgCd != '' and req.orgCd == '0000000'}" th:text="${u.tpwSvcNm}"></td>
-                                <td th:if="${req.orgCd != null and req.orgCd != '' and req.orgCd == '0000000'}" th:text="${u.tpwSvcTypNm}"></td>
-                                <td th:if="${req.orgCd != null and req.orgCd != '' and req.orgCd == '0000000'}" th:text="${u.tpwSvcTypSno}"></td>
-                                <td th:text="${u.cardNo}"></td>
-                                <td th:text="${u.trcrDvsCd}"></td>
-                                <td th:text="${u.trcrUserDvsCd}"></td>
-                                <td th:text="${u.rideDtm}"></td>
-                                <td th:text="${u.rideAmt}"></td>
-                                <td th:text="${u.mntnCd}"></td>
-                                <td th:text="${u.rotNm}"></td>
-                                <td th:text="${u.rideStnNm}"></td>
-                                <td th:text="${u.alghDtm}"></td>
-                                <td th:text="${u.alghAmt}"></td>
-                                <td th:text="${u.alghStnNm}"></td>
-                                <td th:text="${u.trrdAmt}"></td>
-                                <td th:text="${u.trtrGrpSno}"></td>
-                                <td th:text="${u.fctt}"></td>
-                                <td th:text="${u.stexRsnCd}"></td>
+                                <td th:text="${u.tpwSvcNm}"></td>
+                                <td th:text="${u.tpwSvcTypNm}"></td>
+                                <td th:text="${u.aplDt}"></td>
+                                <td th:text="${u.cardStartDt}"></td>
+                                <td th:text="${u.cardEndDt}"></td>
+                                <td th:text="${u.completeYn}"></td>
                             </tr>
                         </th:block>
 
-                        <th:block th:unless="pageData != null and pageData.total > 0}">
-                            <tr>
-                                <th:block  th:if="${req.orgCd == '0000000'}">
-                                    <td aria-live="polite" class="empty" colspan="23">
-                                        조회 결과가 없습니다.
-                                    </td>
-                                </th:block>
-
-                            </tr>
-
-                        </th:block>
+                        <tr th:if="${pageData.total == 0}">
+                            <td colspan="8" class="empty" aria-live="polite">조회 결과가 없습니다.</td>
+                        </tr>
+                        </tbody>
                     </table>
                 </div>
 
                 <!-- 페이징 -->
                 <div class="mt20" id="grid-pager">
-                  <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}">
-                  </th:block>
+                    <th:block th:replace="~{component/pagination :: pager(pageData=${pageData})}"></th:block>
                 </div>
             </div>
         </section>
 
-        <script data-page="simPtInf" th:lnline="javascript" type="text/javascript">
+        <script th:inline="javascript">
+
             (function (){
                 const baseUrl = '';
                 const grid = document.getElementById('grid');
-                const head = document.getElementsById('grid-header');
-                const searchForm = grid.guerySelector('form');
-                const selectSize = searchForm?.guerySelector('select['name="size"]');
-                const inputSort = document.getElementsById('sort');
-                const inputDir = document.getElementsById('dir');
-                const orgCd = [[${mngr.orgCd}]];
-                const mngrId = [[${mngr.mngrId}]];
+                const head = document.getElementById('grid-header');
+                const searchForm = document.querySelector('form');
+                const selectSize = searchForm?.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const orgCd = [[${orgCd}]];
+                // const mngrId = [[${mngr?.mngrId}]];
+                const mngrId = '';
+                const loading = document.getElementById('mini-sp-loading');
 
+                const payload = { orgCd, mngrId, dnRsn: '' };
 
-                // excel export 대상 이벤트 등록
-                const payload = {
-                    orgCd,
-                    mngrId,
-                    dnRsn : ''
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                };
+                document.body.addEventListener('click', exportHandler);
 
-                }
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id'
+                });
 
-                // excel export 대상 이벤트 등록
-               const exportHandler = (e) => {
-                const exportBtn = e.target.closest('button[data-export="xlsx"]');
-                common.bindExcelExport(
-
-                    searchForm,
-                    exportBtn,
-                    inputSort.value,
-                    inputDir.value,
-                    'mbrs_id',
-                    payload
-                );
-               }
-               grid.addEventListener('click', exportHandler);
-
-               //bindPagination event 등록(초기 호면에서 페이징 되도록 하기 위함)
-               bindPagination(baseUrl, {
-                   page: 0,
-                   size: parseInt(selectSize?.value || '10', 10),
-                   dir: inputDir.value|| 'asc'
-                   sort: inputSort?.value || 'mbrs_id'
-               });
-
-
-               head.addEventListener('click', (e) => {
+                head.addEventListener('click', (e) => {
                     const a = e.target.closest('a[data-sort]');
-                    if( !a ) return;
+                    if (!a) return;
                     e.preventDefault();
                     const next = a.dataset.sort;
                     const curr = inputSort.value || 'asc';
-                    dir = next === curr ? (dir=== 'asc' ? 'desc' : 'asc') : 'asc';
-
-                    if(inputSort)
-                        inputSort.value = next;
-
-                    if(inputDir)
-                        inputDir.value = dir;
-
-                    e.preventDefault();
-                    applied = Common.collectFromForm(searchForm);
+                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    const applied = Common.collectFromForm(searchForm);
                     Common.reloadList({
-                        page :0,
+                        page: 0,
                         defaultSortColumn: 'mbrs_id',
-                        swapTargets : ['#grid-tbody','#grid-pager' , '#grid-header'],
-                        selectSize : selectSize,
-                        baseUrl : baseUrl,
-                        inputSort : inputSort,
-                        inputDir : inputDir,
-                        applied : applied
-
-
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header','#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
                     });
-                 });
+                });
 
-
-                 searchForm?.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        applied = Common.collectFromForm(searchForm);
-                        Common.reloadList({
-                        page :0,
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
+                    Common.reloadList({
+                        page: 0,
                         defaultSortColumn: 'mbrs_id',
-                        swapTargets : ['#grid-tbody','#grid-pager', '#grid-header'],
-                        selectSize : selectSize,
-                        baseUrl : baseUrl,
-                        inputsSort : inputSort,
-                        inputDir : inputDir,
-                        applied : applied
-
-                        });
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#grid-header','#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
+                        applied
                     });
-            }();
-
-
+                });
+            })();
         </script>
 
         <th:block th:replace="~{component/commonFooter :: commonFooter}"></th:block>
-
     </th:block>
 </th:block>
 </html>
-
-<script>
-
-
-
-</script>
-
-<!-- // 템플릿 렌더링
-async function renderUsers()
-{
-    try
-    {
-        const users = await api('/api/users')
-        const ul = document.getElementById('userList')
-        const tpl = document.getElementById('tplUser')
-
-        ul.innerHTML = ''
-
-        for ( const user of users )
-        {
-            const clone = tpl.content.cloneNode(true)
-            const li = clone.querySelector('li')
-
-            li.textContent = user.name
-            li.dataset.id = user.id
-
-            ul.appendChild(clone)
-        }
-    }
-    catch ( err )
-    {
-        alert(err.message)
-    }
-}
- -->

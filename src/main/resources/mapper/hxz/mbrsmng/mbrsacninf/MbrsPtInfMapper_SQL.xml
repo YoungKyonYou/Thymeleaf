@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="tmoney.co.kr.hxz.mbrsmng.mbrsacninf.mapper.MbrsPtInfMapper">
+
+    <select id="readMbrsPtInfList"
+            parameterType="tmoney.co.kr.hxz.mbrsmng.mbrsacninf.vo.MbrsPtInfReqVO"
+            resultType="tmoney.co.kr.hxz.mbrsmng.mbrsacninf.vo.MbrsPtInfRspVO">
+
+        select
+        sub.mbrs_id              as mbrsId
+        , sub.mbrs_nm              as mbrsNm
+        , sub.mbrs_sta_cd          as mbrsStaCd
+        , sub.addo_cd              as addoCd
+        , sub.mbrs_svc_join_dt     as mbrsSvcJoinDt
+        , sub.tpw_mbrs_svc_sta_cd  as tpwMbrsSvcStaCd
+        , sub.card_no              as cardNo
+        , sub.bnk_cd               as bnkCd
+        , sub.acnt_no              as acntNo
+        , sub.tpw_svc_nm           as tpwSvcNm
+        , sub.tpw_svc_id           as tpwSvcId
+        , sub.tpw_svc_typ_nm       as tpwSvcTypNm
+        , sub.tpw_svc_typ_id       as tpwSvcTypId
+        from (
+        select
+        m101.mbrs_id              as mbrs_id
+        , m101.mbrs_nm              as mbrs_nm
+        , m101.mbrs_sta_cd          as mbrs_sta_cd
+        , m102.addo_cd              as addo_cd
+        , m102.mbrs_svc_join_dt     as mbrs_svc_join_dt
+        , m102.tpw_mbrs_svc_sta_cd  as tpw_mbrs_svc_sta_cd
+        , m102.card_no              as card_no
+        , m102.bnk_cd               as bnk_cd
+        , m102.acnt_no              as acnt_no
+        , m201.tpw_svc_nm           as tpw_svc_nm
+        , m201.tpw_svc_id           as tpw_svc_id
+        , m202.tpw_svc_typ_nm       as tpw_svc_typ_nm
+        , m202.tpw_svc_typ_id       as tpw_svc_typ_id
+
+        from ohxzown.tbhxzm101 m101
+        inner join ohxzown.tbhxzm102 m102 on m101.mbrs_id = m102.mbrs_id
+        inner join ohxzown.tbhxzm201 m201 on m102.tpw_svc_id = m201.tpw_svc_id
+        inner join ohxzown.tbhxzm202 m202 on m102.tpw_svc_id = m202.tpw_svc_id and m102.tpw_svc_typ_id = m202.tpw_svc_typ_id
+
+        where 1=1
+
+        <if test="orgCd != '0000000'">
+            and m201.org_cd = #{orgCd}
+        </if>
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', #{orgCd}, '%')
+        </if>
+        <if test="req.cardNo != null and req.cardNo != ''">
+            and m102.card_no like concat('%', #{req.cardNo}, '%')
+        </if>
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+        </if>
+        <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+            and m102.mbrs_svc_join_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+        </if>
+        <if test="req.mbrsNm != null and req.mbrsNm != ''">
+            and m101.mbrs_nm like concat('%', #{req.mbrsNm}, '%')
+        </if>
+        <if test="req.mbrsId != null and req.mbrsId != ''">
+            and m101.mbrs_id like concat('%', #{req.mbrsId}, '%')
+        </if>
+        <if test="req.mbrsStaCd != null and req.mbrsStaCd != ''">
+            and m101.mbrs_sta_cd = #{req.mbrsStaCd}
+        </if>
+
+        <!--  행정동 코드 검색 (tbhxzm102 기준) -->
+        <if test="req.addoCd != null and req.addoCd != ''">
+            and m102.addo_cd = #{req.addoCd}
+        </if>
+
+        <if test="req.tpwJoinTypCd != null and req.tpwJoinTypCd != ''">
+            and m101.tpw_join_typ_cd = #{req.tpwJoinTypCd}
+        </if>
+        <if test="req.tpwSvcTypSno != null">
+            and m202.tpw_svc_typ_sno = #{req.tpwSvcTypSno}
+        </if>
+
+        ) sub
+
+        <choose>
+            <when test="req.sort != null and req.sort != ''">
+                order by sub.${req.sort} ${req.dir}
+            </when>
+            <otherwise>
+                order by sub.mbrs_svc_join_dt desc, sub.mbrs_id asc
+            </otherwise>
+        </choose>
+
+        limit #{req.size} offset #{req.offset}
+    </select>
+
+    <select id="readMbrsPtInfListCnt" resultType="long">
+        select count(*)
+        from ohxzown.tbhxzm101 m101
+        inner join ohxzown.tbhxzm102 m102 on m101.mbrs_id = m102.mbrs_id
+        inner join ohxzown.tbhxzm201 m201 on m102.tpw_svc_id = m201.tpw_svc_id
+        inner join ohxzown.tbhxzm202 m202 on m102.tpw_svc_id = m202.tpw_svc_id and m102.tpw_svc_typ_id = m202.tpw_svc_typ_id
+        where 1=1
+
+        <if test="orgCd != '0000000'">
+            and m201.org_cd = #{orgCd}
+        </if>
+        <if test="orgCd != null and orgCd != '' and orgCd != '0000000'">
+            and m201.org_cd like concat('%', #{orgCd}, '%')
+        </if>
+        <if test="req.cardNo != null and req.cardNo != ''">
+            and m102.card_no like concat('%', #{req.cardNo}, '%')
+        </if>
+        <if test="req.tpwSvcId != null and req.tpwSvcId != ''">
+            and m201.tpw_svc_id = #{req.tpwSvcId}
+            <choose>
+                <when test="req.tpwSvcTypId != null and req.tpwSvcTypId != ''">
+                    and m202.tpw_svc_typ_id = #{req.tpwSvcTypId}
+                </when>
+                <otherwise>
+                    and m201.tpw_svc_id = m202.tpw_svc_id
+                </otherwise>
+            </choose>
+        </if>
+        <if test="req.sttDt != null and req.sttDt != '' and req.endDt != null and req.endDt != ''">
+            and m102.mbrs_svc_join_dt between replace(#{req.sttDt}, '-', '') and replace(#{req.endDt}, '-', '')
+        </if>
+        <if test="req.mbrsNm != null and req.mbrsNm != ''">
+            and m101.mbrs_nm like concat('%', #{req.mbrsNm}, '%')
+        </if>
+        <if test="req.mbrsId != null and req.mbrsId != ''">
+            and m101.mbrs_id like concat('%', #{req.mbrsId}, '%')
+        </if>
+        <if test="req.mbrsStaCd != null and req.mbrsStaCd != ''">
+            and m101.mbrs_sta_cd = #{req.mbrsStaCd}
+        </if>
+
+        <!-- 행정동 코드 검색 -->
+        <if test="req.addoCd != null and req.addoCd != ''">
+            and m102.addo_cd = #{req.addoCd}
+        </if>
+
+        <if test="req.tpwJoinTypCd != null and req.tpwJoinTypCd != ''">
+            and m101.tpw_join_typ_cd = #{req.tpwJoinTypCd}
+        </if>
+        <if test="req.tpwSvcTypSno != null">
+            and m202.tpw_svc_typ_sno = #{req.tpwSvcTypSno}
+        </if>
+    </select>
+</mapper>

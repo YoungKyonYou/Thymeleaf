@@ -6,7 +6,6 @@
         <section class="section">
             <form class="section-header" action="/penstlmng/aplinf/penAplPtInf.do" th:object="${req}">
 
-                <div class="section-header">
                     <div class="title-wrap">
                         <h3 class="section-title">지급금신청내역관리</h3>
                     </div>
@@ -14,9 +13,8 @@
                     <div class="box-wrap">
                         <div class="box">
                             <p class="field-title">서비스 선택</p>
-                            <th:block th:replace="~{common/fragment/dropdowns :: cascadingDropdown(
-                                    'svcPair1','tpwSvcId','tpwSvcTypId'
-                                )}"></th:block>
+                            <th:block th:replace="~{common/fragment/dropdowns ::cascadingDropdown('svcOnlyRoot', 'tpwSvcId', 'tpwSvcTypId', true)}">
+                            </th:block>
                         </div>
                     </div>
                     <div class="box-wrap">
@@ -24,7 +22,7 @@
                             <p class="field-title">정산일자</p>
                             <div class="text-field datepicker">
                                 <input type="text" class="dp-input" placeholder="YYYY-MM-DD"
-                                       name="endDt" th:value="*{sttDt}"
+                                       name="sttDt" th:value="*{sttDt}"
                                 >
                                 <button type="button" class="dp-btn" data-dp-toggle></button>
                             </div>
@@ -50,9 +48,15 @@
                     </div>
 
                     <div class="btn-wrap">
+                        <button type="button" class="btn btn-secondary btn-icon-left"
+                            data-export="xlsx"
+                            data-provider="지급금신청내역조회"
+                        >
+                            엑셀 다운로드
+                            <i class="icon icon-save"></i>
+                        </button>
                         <button type="submit" class="btn btn-primary">검색</button>
                     </div>
-                </div>
                 <input th:field="*{sort}" type="hidden">
                 <input th:field="*{dir}" type="hidden">
             </form>
@@ -61,15 +65,13 @@
                 <div class="flex justify-space-between">
                     <b>검색결과: <span th:text="${pageData.total}">0</span>건</b>
                     <div class="flex col-">
-                        <a href="/penstlmng/aplinf/exportPenAplPtInf" type="button" class="btn btn-primary btn-icon-left">
-                            엑셀 다운로드 <i class="icon icon-save"></i>
-                        </a>
+
                         <button type="button" class="btn btn-dark-line">목록</button>
                     </div>
                 </div>
 
                 <div class="table-wrap mt20">
-                    <table class="table">
+                    <table class="table" id="grid">
                         <caption class="blind">지급금신청내역관리 테이블</caption>
                         <colgroup>
                             <col width="80px">
@@ -89,7 +91,7 @@
                             <col width="300px">
                             <col width="150px">
                         </colgroup>
-                        <thead id="grid-head">
+                        <thead id="grid-header">
                         <tr>
                             <th>
                                 <div class="control checkbox">
@@ -97,21 +99,21 @@
                                     <label for="cb0"></label>
                                 </div>
                             </th>
-                            <th scope="col">서비스유형명</th>
-                            <th scope="col">정산일자</th>
-                            <th scope="col">회원ID</th>
-                            <th scope="col">신청일자</th>
-                            <th scope="col">카드번호</th>
-                            <th scope="col">은행명</th>
-                            <th scope="col">계좌번호</th>
-                            <th scope="col">예금주명</th>
-                            <th scope="col">승인자ID</th>
-                            <th scope="col">승인일시</th>
-                            <th scope="col">승인상태</th>
-                            <th scope="col">승인하기</th>
-                            <th scope="col">지원 대상 유형</th>
-                            <th scope="col">첨부파일관리번호(링크 미리보기)</th>
-                            <th scope="col">신청진행상태</th>
+                            <th scope="col" data-sort="tpwSvcTypNm">서비스유형명</th>
+                            <th scope="col" data-sort="stlmDt">정산일자</th>
+                            <th scope="col" data-sort="mbrsId">회원ID</th>
+                            <th scope="col" data-sort="aplDt">신청일자</th>
+                            <th scope="col" data-sort="cardNo">카드번호</th>
+                            <th scope="col" data-sort="bnkCd">은행명</th>
+                            <th scope="col" data-sort="acntNo">계좌번호</th>
+                            <th scope="col" data-sort="ooaNm">예금주명</th>
+                            <th scope="col" data-sort="aproId">승인자ID</th>
+                            <th scope="col" data-sort="aprvDtm">승인일시</th>
+                            <th scope="col" data-sort="aprvStaCd">승인상태</th>
+                            <th scope="col" data-sort="">승인하기</th>
+                            <th scope="col" data-sort="tpwMbrsTypCdNm">지원 대상 유형</th>
+                            <th scope="col" data-sort="atflMngNo">첨부파일관리번호(링크 미리보기)</th>
+                            <th scope="col" data-sort="tpwAplPrgsStaCd">신청진행상태</th>
                         </tr>
                         </thead>
                         <tbody id="grid-tbody">
@@ -140,7 +142,30 @@
 
                                     <td th:text="*{cardNo}"></td>
 
-                                    <td th:text="*{bnkCd}"></td>
+                                    <!-- 은행코드ㅡ 0041-->
+                                    <td th:text="*{
+                                        bnkCd == '026' ? '신한은행' :
+                                        bnkCd == '027' ? '씨티은행(구한미)' :
+                                        bnkCd == '028' ? '동화은행' :
+                                        bnkCd == '029' ? '동남은행' :
+                                        bnkCd == '030' ? '대동은행' :
+                                        bnkCd == '031' ? '대구은행' :
+                                        bnkCd == '032' ? '부산은행' :
+                                        bnkCd == '033' ? '충청은행' :
+                                        bnkCd == '034' ? '광주은행' :
+                                        bnkCd == '050' ? '상호저축은행' :
+                                        bnkCd == '053' ? '씨티은행' :
+                                        bnkCd == '054' ? '홍콩상하이' :
+                                        bnkCd == '055' ? '도이치뱅크' :
+                                        bnkCd == '064' ? '산림조합' :
+                                        bnkCd == '071' ? '우체국' :
+                                        bnkCd == '081' ? '하나은행' :
+                                        bnkCd == '082' ? '보람은행' :
+                                        bnkCd == '083' ? '평화은행' :
+                                        ''
+                                    }">
+
+                                    </td>
 
                                     <td th:text="*{acntNo}"></td>
 
@@ -150,7 +175,13 @@
 
                                     <td th:text="${#strings.substring(u.aprvDtm, 0, 4) + '-' + #strings.substring(u.aprvDtm, 4, 6) + '-' + #strings.substring(u.aprvDtm, 6, 8) + ' ' + #strings.substring(u.aprvDtm, 8, 10) + ':' + #strings.substring(u.aprvDtm, 10, 12) + ':' + #strings.substring(u.aprvDtm, 12, 14)}"></td>
 
-                                    <td th:text="*{aprvStaCd}"></td>
+
+
+                                    <td th:text="*{aprvStaCd == '01' ? '요청'
+                                             : aprvStaCd == '02' ? '반려'
+                                             : aprvStaCd == '03' ? '승인'
+                                             : '' }">
+                                    </td>
 
                                     <td>
                                         <button type="button"
@@ -165,13 +196,26 @@
                                         </button>
                                     </td>
 
-                                    <td th:text="*{tpwMbrsTypCd}"></td>
+                                    <td th:text="*{tpwMbrsTypCdNm}"></td>
 
+
+
+                                    <!-- TODO: orgCd는 안받는걸로 시스템에서 바뀌어야 함 MngrVO에서 받는걸로-->
                                     <td>
-                                        <a href="#" th:text="*{atflMngNo}"></a>
+                                        <a th:if="*{atflMngNo != null}"
+                                           th:href="@{'/attachments/' + ${orgCd} + '/' + *{atflMngNo} + '/preview'}"
+                                           th:text="'미리보기 (' + *{atflMngNo} + ')'"
+                                           target="_blank">
+                                        </a>
                                     </td>
 
-                                    <td th:text="*{tpwAplPrgsStaCd}"></td>
+                                    <!-- 0017 신청진행상태-->
+
+                                    <td th:text="*{tpwAplPrgsStaCd == '01' ? '선급'
+                                             : tpwAplPrgsStaCd == '02' ? '정산내역'
+                                             : tpwAplPrgsStaCd == '03' ? '지급'
+                                             : '' }">
+                                    </td>
                                 </tr>
                             </th:block>
                         </th:block>
@@ -283,107 +327,76 @@
         </script>
 
         <script data-page="penApiPtInf" th:inline="javascript" type="text/javascript">
-            (function(){
-                const APPROVE_URL = '/penstlmng/aplinf/approve'; // 서버 승인 API URL
 
-                let form = document.querySelector('form');
-                let sort = form.querySelector('[name="sort"]');
-                let dir = form.querySelector('[name="dir"]');
-                const tbody = document.getElementById('grid-tbody');
+            
+            (function (){
+                const baseUrl = '/penstlmng/aplinf/penAplPtInf.do';
+                const grid = document.getElementById('grid');
+                const head = document.getElementById('grid-header');
+                const searchForm = document.querySelector('form');
+                const selectSize = searchForm?.querySelector('select[name="size"]');
+                const inputSort = document.getElementById('sort');
+                const inputDir = document.getElementById('dir');
+                const orgCd = [[${orgCd}]];
+                // const mngrId = [[${mngr?.mngrId}]];
+                const mngrId = '';
+                const loading = document.getElementById('mini-sp-loading');
 
-                // 검색 폼 제출 이벤트 (기존의 `return;`을 제거하고 실제 검색 로직을 활성화)
-                form.addEventListener('submit', function(e){
-                    e.preventDefault(); // 기본 폼 제출 방지
+                const payload = { orgCd, mngrId, dnRsn: '' };
 
-                    let applied = Common.collectFromForm(form);
+                const exportHandler = (e) => {
+                    const exportBtn = e.target.closest('button[data-export="xlsx"]');
+                    Common.bindExcelExport(searchForm, exportBtn, inputSort.value, inputDir.value, 'mbrs_id', payload);
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                };
+                document.body.addEventListener('click', exportHandler);
 
-                    // 목록 새로고침 (페이지 0, 쿼리 파라미터는 폼에서 수집)
+
+                bindPagination(baseUrl, {
+                    page: 0,
+                    size: parseInt(selectSize?.value || '10', 10),
+                    dir: inputDir.value || 'asc',
+                    sort: inputSort?.value || 'mbrs_id'
+                });
+
+                head.addEventListener('click', (e) => {
+                    const a = e.target.closest('[data-sort]');
+                    if (!a) return;
+                    e.preventDefault();
+                    const next = a.dataset.sort;
+                    const curr = inputSort.value || 'asc';
+                    const dir = next === curr ? (inputDir.value === 'asc' ? 'desc' : 'asc') : 'asc';
+                    if (inputSort) inputSort.value = next;
+                    if (inputDir) inputDir.value = dir;
+                    const applied = Common.collectFromForm(searchForm);
                     Common.reloadList({
                         page: 0,
-                        defaultSortColumn: sort.value,
-                        baseUrl: form.getAttribute('action'),
-                        // HTML에 size input이 없으므로 임시로 size 값을 객체 형태로 전달 (Common.reloadList 함수 시그니처 맞춤)
-                        selectSize: { value: '10' },
-                        inputSort: sort,
-                        inputDir: dir,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
                         applied
                     });
                 });
 
-                // 승인하기 버튼 클릭 이벤트 바인딩
-                if (tbody) {
-                    tbody.addEventListener('click', (e) => {
-                        const btn = e.target.closest('.btn-approve');
-                        if (!btn || btn.disabled) return;
-
-                        // 1. 필요한 데이터 수집 (data-* 속성 사용)
-                        const payload = {
-                            tpwSvcId: btn.dataset.tpwSvcId,
-                            tpwSvcTypSno: btn.dataset.tpwSvcTypSno,
-                            stlmDt: btn.dataset.stlmDt,
-                            mbrsId: btn.dataset.mbrsId,
-                            tpwSvcTypId: btn.dataset.tpwSvcTypId
-                            // 승인 상태 '03'은 서버에서 설정하므로 클라이언트에서 보낼 필요 없음
-                        };
-
-                        // 2. 모달로 사용자 확인
-                        Common.modalShow({
-                            title: '지급금 신청 승인',
-                            message: `회원ID ${payload.mbrsId}의 신청 건을 승인 처리하시겠습니까?`,
-                            buttons: 'ok-close',
-                            okText: '승인',
-                            onOk: () => {
-                                // 3. 승인 API 호출
-                                approveApplication(payload);
-                            }
-                        });
-                    });
-                }
-
-                /**
-                 * 승인 API를 호출하고 결과를 처리합니다.
-                 * @param {Object} payload - 승인에 필요한 식별 정보
-                 */
-                async function approveApplication(payload) {
-                    // Common.sendSafe를 사용하여 POST 요청 및 자동 오류/경고 모달 처리
-                    const result = await Common.sendSafe(APPROVE_URL, {
-                        method: 'POST',
-                        data: payload // RequestBody로 전송될 데이터
-                    });
-
-                    if (result && result.ok) {
-                        // 성공 모달 표시
-                        Common.modalShow({
-                            title: '알림',
-                            message: '성공적으로 승인 처리되었습니다.',
-                            buttons: 'close',
-                            onClose: () => {
-                                // 성공 시 목록 새로고침
-                                reloadListFromForm();
-                            }
-                        });
-                    }
-                    // 실패 시 Common.sendSafe 내부에서 이미 모달을 띄웁니다.
-                }
-
-                /**
-                 * 현재 검색 조건과 페이지를 유지하며 목록을 새로고침합니다.
-                 */
-                function reloadListFromForm() {
-                    let applied = Common.collectFromForm(form);
-                    const baseUrl = form.getAttribute('action');
-
+                searchForm?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const applied = Common.collectFromForm(searchForm);
                     Common.reloadList({
-                        // activePage()로 현재 페이지를 가져와 페이지를 유지
-                        page: Common.activePage(),
-                        defaultSortColumn: sort.value,
-                        baseUrl: baseUrl,
-                        selectSize: { value: '10' },
-                        inputSort: sort,
-                        inputDir: dir,
+                        page: 0,
+                        defaultSortColumn: 'mbrs_id',
+                        swapTargets: ['#grid-tbody', '#grid-pager', '#search-count'],
+                        selectSize,
+                        baseUrl,
+                        inputSort,
+                        inputDir,
                         applied
                     });
-                }
+                });
             })();
         </script>
 

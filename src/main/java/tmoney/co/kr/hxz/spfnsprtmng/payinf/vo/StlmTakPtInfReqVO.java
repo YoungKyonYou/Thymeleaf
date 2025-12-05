@@ -5,10 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * 마감확정내역 조회 요청 VO
@@ -19,20 +21,20 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class StlmTakPtInfReqVO {
-    
+
 
     // 실행구분
     private String exeDiv; // 'PERD' or 'SIM' 구분 정기, 시뮬레이션
-    
+
     /** 신청시작일 (YYYYMMDD) */
     @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
     private String aplSttDt;
-    
+
     /** 신청종료일 (YYYYMMDD) */
     @Size(max = 8, message = "신청일자는 8자리 이하이어야 합니다.")
     private String aplEndDt;
-    
-    
+
+
 
 
     /** 정산일자 (YYYYMMDD) */
@@ -81,8 +83,64 @@ public class StlmTakPtInfReqVO {
     @Size(max = 10, message = "정렬 방향은 10자리 이하이어야 합니다.")
     private String dir = "asc";
 
+    // [수정] 값이 없을 때만 Default 값을 세팅하도록 변경 (기존 값을 덮어쓰지 않음)
     public void updateDefaultDate(String startDate, String endDate) {
-        this.sttDt = startDate;
-        this.endDt = endDate;
+        if (this.sttDt == null || this.sttDt.isEmpty()) {
+            this.sttDt = startDate;
+        }
+        if (this.endDt == null || this.endDt.isEmpty()) {
+            this.endDt = endDate;
+        }
+    }
+
+    public StlmTakPtInfReqVO(Map<String, String> params) {
+        if ( params == null ) return;
+
+        this.exeDiv = params.getOrDefault("exeDiv", "PERD");
+        this.aplSttDt = params.get("aplSttDt");
+        this.aplEndDt = params.get("aplEndDt");
+        this.stlmDt = params.get("stlmDt");
+        this.fixDt = params.get("fixDt");
+        this.orgCd = params.get("orgCd");
+        this.sttDt = params.get("sttDt");
+        this.endDt = params.get("endDt");
+        this.svcNm = params.get("svcNm");
+        this.svcTypNm = params.get("svcTypNm");
+        this.tpwSvcId = params.get("tpwSvcId");
+        this.tpwSvcTypId = params.get("tpwSvcTypId");
+
+        // BigDecimal 타입 변환
+        String tpwSvcTypSnoStr = params.get("tpwSvcTypSno");
+        if ( tpwSvcTypSnoStr != null && !tpwSvcTypSnoStr.isEmpty() ) {
+            try {
+                this.tpwSvcTypSno = new BigDecimal(tpwSvcTypSnoStr);
+            } catch (NumberFormatException e) {
+                // 무시하거나 기본값 null
+                this.tpwSvcTypSno = null;
+            }
+        }
+
+        // int 타입 변환
+        String pageStr = params.get("page");
+        if ( pageStr != null ) {
+            try {
+                this.page = Integer.parseInt(pageStr);
+            } catch (NumberFormatException e) {
+                this.page = 0;
+            }
+        }
+
+        String sizeStr = params.get("size");
+        if ( sizeStr != null ) {
+            try {
+                this.size = Integer.parseInt(sizeStr);
+            } catch (NumberFormatException e) {
+                this.size = 10;
+            }
+        }
+
+        this.sort = params.getOrDefault("sort", "stlm_dt");
+        this.dir = params.getOrDefault("dir", "asc");
+        this.searchType = params.getOrDefault("searchType", "stlmDt");
     }
 }
