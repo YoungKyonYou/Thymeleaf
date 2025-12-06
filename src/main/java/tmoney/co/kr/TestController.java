@@ -1,11 +1,15 @@
 package tmoney.co.kr;
 
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tmoney.co.kr.imports.ImportDemoRequest;
 
 import java.util.List;
@@ -30,6 +34,36 @@ public class TestController {
 
 
         return "common/imports/import-demo";
+    }
+
+
+    @GetMapping("/test/multipart-form.do")
+    public String multipartForm() {
+        return "test/multipartForm";
+    }
+
+    @PostMapping(
+            value = "/test/multipart-echo.do",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseBody
+    public Map<String, Object> echo(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("data") MultipartEchoReq data
+    ) {
+        Map<String, Object> out = new LinkedHashMap<>();
+
+        Map<String, Object> fileInfo = new LinkedHashMap<>();
+        fileInfo.put("originalFilename", file != null ? file.getOriginalFilename() : null);
+        fileInfo.put("contentType", file != null ? file.getContentType() : null);
+        fileInfo.put("size", file != null ? file.getSize() : 0);
+
+        out.put("receivedData", data);
+        out.put("receivedFile", fileInfo);
+        out.put("success", true);
+
+        return out;
     }
 
 

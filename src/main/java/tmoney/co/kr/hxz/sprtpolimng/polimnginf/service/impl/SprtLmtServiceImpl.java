@@ -820,7 +820,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
             Map<PeriodKeyVO, String> prevSnoByPeriod = new HashMap<>();
             Set<PeriodKeyVO> newKeys = new LinkedHashSet<>();
 
-            if (editMode && hasExisting && "02".equals(curDvs)) {
+            if (editMode && hasExisting && "01".equals(curDvs)) {
                 // 수정 모드: 기존 동일 기간은 관리번호 & 이전 SNO 기억
                 for (SprtLmtRspVO row : existing) {
                     if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
@@ -928,7 +928,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         // 관리번호별 현재 SNO (existing은 USE_YN=Y만 넘어온다고 가정)
         Map<String, String> currentSnoByMngNo = new HashMap<>();
-        if (hasExisting && "02".equals(curDvs)) {
+        if (hasExisting && "01".equals(curDvs)) {
             for (SprtLmtRspVO row : existing) {
                 if (!dvs.equals(row.getTpwLmtDvsCd())) continue;
                 String mngNo = row.getSpfnLmtMngNo();
@@ -939,7 +939,7 @@ public class SprtLmtServiceImpl implements SprtLmtService {
 
         List<String> generated = Collections.emptyList();
 
-        if (editMode && hasExisting && "01".equals(curDvs)) {
+        if (editMode && hasExisting && "02".equals(curDvs)) {
             // 수정 모드: 관리번호가 없는 행(신규)에 대해서만 시퀀스 발급
             int needNew = (int) ncntSrc.stream()
                     .filter(n -> n.getSpfnLmtMngNo() == null || n.getSpfnLmtMngNo().isBlank())

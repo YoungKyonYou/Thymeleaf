@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Multipart RequestPart 테스트</title>
+
+    <script src="/js/common.js"></script>
+    <style>
+        .wrap { max-width: 720px; margin: 24px auto; padding: 16px; }
+        .row { display: flex; gap: 12px; margin-bottom: 10px; }
+        label { width: 120px; }
+        input, select { flex: 1; padding: 6px 8px; }
+        button { padding: 8px 14px; }
+        pre { background: #f6f6f6; padding: 12px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h2>RequestPart(file + data) 테스트</h2>
+
+    <div class="row">
+        <label for="file">파일</label>
+        <input type="file" id="file" />
+    </div>
+
+    <div class="row">
+        <label for="mngrId">mngrId</label>
+        <input type="text" id="mngrId" placeholder="예: admin01"/>
+    </div>
+
+    <div class="row">
+        <label for="mngrName">mngrName</label>
+        <input type="text" id="mngrName" placeholder="예: 홍길동"/>
+    </div>
+
+    <div class="row">
+        <label for="email">email</label>
+        <input type="text" id="email" placeholder="예: test@tmoney.co.kr"/>
+    </div>
+
+    <div class="row">
+        <label for="phone">phone</label>
+        <input type="text" id="phone" placeholder="예: 01012345678"/>
+    </div>
+
+    <div class="row">
+        <label for="roleName">roleName</label>
+        <input type="text" id="roleName" placeholder="예: ADMIN"/>
+    </div>
+
+    <div class="row">
+        <label for="useYn">useYn</label>
+        <select id="useYn">
+            <option value="Y" selected>Y</option>
+            <option value="N">N</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <label></label>
+        <button type="button" id="btnSend">전송</button>
+    </div>
+
+    <h3>응답</h3>
+    <pre id="result"></pre>
+</div>
+
+<script>
+    (function () {
+        const $ = (id) => document.getElementById(id);
+
+        const btn = $('btnSend');
+        const resultEl = $('result');
+
+        btn.addEventListener('click', async function () {
+            const fileInput = $('file');
+            const file = fileInput.files && fileInput.files[0];
+
+            if (!file) {
+                Common.modalShow({ title: '알림', message: '파일을 선택해주세요.' });
+                return;
+            }
+
+            const data = {
+                mngrId: $('mngrId').value || '',
+                mngrName: $('mngrName').value || '',
+                email: $('email').value || '',
+                phone: $('phone').value || '',
+                roleName: $('roleName').value || '',
+                useYn: $('useYn').value || 'Y'
+            };
+
+            const fd = new FormData();
+            fd.append('file', file);
+
+            fd.append('data', new Blob(
+                [JSON.stringify(data)],
+                { type: 'application/json' }
+            ));
+
+            const res = await Common.sendSafe('/test/multipart-echo.do', {
+                method: 'POST',
+                data: fd,
+                multipart: true
+            });
+
+            if (!res) return;
+
+            if (res.ok) {
+                const json = res.data;
+                resultEl.textContent = JSON.stringify(json, null, 2);
+
+                Common.modalShow({
+                    title: '성공',
+                    message: '서버에서 RequestPart 수신 완료'
+                });
+            } else {
+                resultEl.textContent = '요청 실패';
+            }
+        });
+    })();
+</script>
+</body>
+</html>

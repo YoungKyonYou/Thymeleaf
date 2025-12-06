@@ -295,7 +295,7 @@
         and tpw_lmt_dvs_cd = #{tpwLmtDvsCd}
         and spfn_lmt_sno   = #{prevSno}
         and use_yn         = 'Y'
-        <if test="mngNos != null and mngNos.size() > 0">
+        <if test="mngNos != null">
             and spfn_lmt_mng_no in
             <foreach collection="mngNos" item="m" open="(" close=")" separator=",">
                 #{m}
@@ -436,8 +436,7 @@
         from ohxzown.tbhxzd208 d208
         where d208.tpw_svc_id   = #{tpwSvcId}
         and d208.tpw_svc_typ_id = #{tpwSvcTypId}
-        and d208.tpw_lmt_dvs_cd = '01'   -- 금액
-        and d208.tpw_lmt_typ_cd = '02'   -- 분기
+        and d208.tpw_lmt_dvs_cd in ('01', '02')   -- 금액
         and d208.use_yn         = 'Y'
         group by d208.spfn_lmt_mng_no
     </select>
