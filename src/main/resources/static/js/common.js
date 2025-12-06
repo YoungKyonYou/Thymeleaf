@@ -1039,14 +1039,7 @@
                 swap(html, sel);
             }
 
-            if (typeof bindPagination === 'function') {
-                bindPagination(baseUrl, {
-                    page: 0,
-                    size: parseInt(selectSize?.value || '10', 10),
-                    dir: inputDir?.value || 'asc',
-                    sort: inputSort?.value || defaultSortColumn
-                });
-            }
+
 
             if (selectSize) selectSize.value = params.size;
             if (inputDir)  inputDir.value  = params.dir;
